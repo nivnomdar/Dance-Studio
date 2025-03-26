@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+body,
+:root,
+html {
+  background-color: black;
+  direction: rtl;
+}
+
+/* שינוי צבע הנקודות */
+.swiper-pagination-bullet {
+  background-color: white !important; /* צבע ברירת מחדל לנקודות */
+  transform: scale(1.1); /* גודל הנקודה */
+  opacity: 0.5; /* שקיפות */
+}
+
+/* שינוי צבע הנקודה הפעילה */
+.swiper-pagination-bullet-active {
+  background-color: rgb(255, 255, 0) !important; /* צבע הנקודה הפעילה */
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+/* @font-face {
+  font-family: "Agrandir Grand";
+  src: url("/fonts/Agrandir.woff2") format("woff2"),
+    url("/fonts/Agrandir.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+} */
