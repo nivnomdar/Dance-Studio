@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { products, Product } from '../data/products';
+import { products } from '../data/products';
+import { Product } from '../types/product';
 
 const ShopPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -188,7 +189,7 @@ const ShopPage = () => {
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">מידה</label>
                             <div className="flex space-x-2">
-                              {selectedProduct.sizes.map(size => (
+                              {selectedProduct.sizes.map((size: string) => (
                                 <button
                                   key={size}
                                   onClick={() => setSelectedSize(size)}
@@ -208,7 +209,7 @@ const ShopPage = () => {
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">צבע</label>
                             <div className="flex space-x-2">
-                              {selectedProduct.colors.map(color => (
+                              {selectedProduct.colors.map((color: string) => (
                                 <button
                                   key={color}
                                   onClick={() => setSelectedColor(color)}
@@ -254,7 +255,7 @@ const ShopPage = () => {
                           </button>
                         </div>
                         <div className="space-y-2">
-                          {selectedProduct.features.map((feature, index) => (
+                          {selectedProduct.features.map((feature: string, index: number) => (
                             <div key={index} className="flex items-center text-gray-600">
                               <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -268,7 +269,7 @@ const ShopPage = () => {
                         <div className="mt-8">
                           <h3 className="text-lg font-bold text-gray-900 mb-4">ביקורות ({selectedProduct.reviews.count})</h3>
                           <div className="space-y-4">
-                            {selectedProduct.reviews.comments.map((review, index) => (
+                            {selectedProduct.reviews.comments.map((review: { user: string; rating: number; comment: string; date: string }, index: number) => (
                               <div key={index} className="bg-gray-50 p-4 rounded-lg">
                                 <div className="flex justify-between items-start mb-2">
                                   <div>
