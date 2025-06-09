@@ -1,8 +1,9 @@
-import "./App.css";
-import HeroSection from "./components/HeroSection";
-import AboutSection from "./components/AboutSection";
-import JoinMe from "./components/JoinMe";
-import Contact from "./components/Contact";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/layout/Navbar';
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import ClassesPage from './pages/ClassesPage';
+import ContactPage from './pages/ContactPage';
 
 function App() {
   // const handleInstagram = () => {
@@ -10,12 +11,19 @@ function App() {
   // };
 
   return (
-    <div className="bg-black  text-white">
-      <HeroSection />
-      <AboutSection />
-      <JoinMe />
-      <Contact />
-    </div>
+    <Router>
+      <div className="min-h-screen bg-[#FDF9F6]">
+        <Navbar />
+        <main className="pt-16"> {/* Add padding-top to account for fixed navbar */}
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/classes" element={<ClassesPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 

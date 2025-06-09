@@ -8,13 +8,21 @@ function Contact() {
     phone: "",
   });
 
-  // const handleChange = (e: any) => {
-  //   const { fullName, phone } = e.target;
-  //   setFormData({
-  //     ...formData,
-  //     [fullName]: value,
-  //   });
-  // };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+    // כאן נוסיף את הלוגיקה לשליחת הטופס
+    console.log("Form submitted:", formData);
+    setSending(false);
+  };
 
   // const handleSubmit = async (e: any) => {
   //   console.log("Submitted");
@@ -58,57 +66,60 @@ function Contact() {
   // };
 
   return (
-    <div className="my-35 py-10 gap-4 relative mx-6">
-      <div className="z-10">
-        <h5 className="text-xl font-bold text-white">לפרטים נוספים</h5>
-        <p className="text-[#ADB7BE] mb-2 max-w-md">
-          השאירי פרטים ואדאג ליצור איתך קשר:
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-12">
+            <h5 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-4">
+              לפרטים נוספים
+            </h5>
+            <p className="text-[#ADB7BE] text-sm sm:text-base">
+              השאירי פרטים ואדאג ליצור איתך קשר:
+            </p>
+          </div>
 
-      <div>
-        <form
-          className="flex flex-col"
-          // onSubmit={handleSubmit}
-        >
-          <div className="mb-3">
-            <label
-              htmlFor="fullName"
-              className="text-white block mb-2 text-sm font-medium">
-              שם מלא
-            </label>
-            <input
-              name="fullName"
-              type="text"
-              id="fullName"
-              required
-              value={formData.fullName}
-              // onChange={handleChange}
-              // placeholder="שם פרטי ושם משפחה"
-              className="bg-[#18191E] border placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5"
-            />
+          <div className="bg-[#18191E] rounded-xl p-6 sm:p-8 shadow-lg">
+            <form className="flex flex-col" onSubmit={handleSubmit}>
+              <div className="mb-6">
+                <label
+                  htmlFor="fullName"
+                  className="text-white block mb-2 text-sm sm:text-base font-medium">
+                  שם מלא
+                </label>
+                <input
+                  name="fullName"
+                  type="text"
+                  id="fullName"
+                  required
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="bg-[#0a0a0a] border border-gray-700 text-gray-100 text-sm sm:text-base rounded-lg block w-full p-3 focus:ring-2 focus:ring-[#b9dd38] focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <div className="mb-8">
+                <label
+                  htmlFor="phone"
+                  className="text-white block text-sm sm:text-base mb-2 font-medium">
+                  מספר פלאפון
+                </label>
+                <input
+                  name="phone"
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="bg-[#0a0a0a] border border-gray-700 text-gray-100 text-sm sm:text-base rounded-lg block w-full p-3 focus:ring-2 focus:ring-[#b9dd38] focus:border-transparent transition-all duration-200"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={sending}
+                className="bg-[#b9dd38] text-white font-medium py-3 px-6 rounded-lg w-full text-sm sm:text-base hover:bg-[#a8c832] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                {sending ? 'שולח...' : 'שליחה'}
+              </button>
+            </form>
           </div>
-          <div className="mb-6">
-            <label
-              htmlFor="phone"
-              className="text-white block text-sm mb-2 font-medium">
-              מספר פלאפון
-            </label>
-            <input
-              name="phone"
-              id="phone"
-              value={formData.phone}
-              // onChange={handleChange}
-              className="bg-[#18191E] border border-orange-500 placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5"
-              // placeholder=""
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-[#b9dd38] text-white font-medium py-2.5 px-5 rounded-lg w-full">
-            שליחה
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
