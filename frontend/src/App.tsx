@@ -4,6 +4,8 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import ClassesPage from './pages/ClassesPage';
 import ContactPage from './pages/ContactPage';
+import UserProfile from './pages/UserProfile';
+import AuthCallback from './pages/AuthCallback';
 
 function App() {
   // const handleInstagram = () => {
@@ -20,6 +22,8 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
       </div>
