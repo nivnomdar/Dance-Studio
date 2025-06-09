@@ -97,6 +97,9 @@ function Navbar() {
             <Link to="/classes" className="text-[#FDF9F6] hover:text-[#E6C17C] px-3 py-2 text-sm font-medium transition-colors duration-200">
               שיעורים
             </Link>
+            <Link to="/shop" className="text-[#FDF9F6] hover:text-[#E6C17C] px-3 py-2 text-sm font-medium transition-colors duration-200">
+              חנות
+            </Link>
             <Link to="/contact" className="text-[#FDF9F6] hover:text-[#E6C17C] px-3 py-2 text-sm font-medium transition-colors duration-200">
               צור קשר
             </Link>
@@ -201,6 +204,13 @@ function Navbar() {
             onClick={() => setIsMenuOpen(false)}
           >
             שיעורים
+          </Link>
+          <Link
+            to="/shop"
+            className="block px-3 py-2 rounded-md text-base font-medium text-[#FDF9F6] hover:text-[#E6C17C] hover:bg-[#4B2E83]/80 transition-colors duration-200 text-right"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            חנות
           </Link>
           <Link
             to="/contact"

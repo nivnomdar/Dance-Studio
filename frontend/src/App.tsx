@@ -5,6 +5,7 @@ import AboutPage from './pages/AboutPage';
 import ClassesPage from './pages/ClassesPage';
 import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
+import ShopPage from './pages/ShopPage';
 import AuthCallback from './pages/AuthCallback';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/profile" element={<UserProfile />} />
+            <Route path="/shop" element={<ShopPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
