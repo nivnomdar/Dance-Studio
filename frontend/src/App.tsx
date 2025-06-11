@@ -7,6 +7,7 @@ import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
 import ShopPage from './pages/ShopPage';
 import AuthCallback from './pages/AuthCallback';
+import { PopupProvider } from './contexts/PopupContext';
 
 function App() {
   // const handleInstagram = () => {
@@ -14,6 +15,7 @@ function App() {
   // };
 
   return (
+    <PopupProvider>
     <Router>
       <div className="min-h-screen bg-[#FDF9F6]">
         <Navbar />
@@ -23,13 +25,14 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/shop" element={<ShopPage />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
       </div>
     </Router>
+    </PopupProvider>
   );
 }
 

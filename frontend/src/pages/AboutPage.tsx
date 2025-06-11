@@ -6,7 +6,7 @@ function AboutPage() {
     <div className="min-h-screen bg-[#FDF9F6] py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-[#4B2E83] mb-4 font-agrandir-grand">
+          <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             אודות הסטודיו
           </h1>
           <div className="w-24 h-1 bg-[#E6C17C] mx-auto"></div>

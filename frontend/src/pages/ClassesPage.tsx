@@ -45,7 +45,7 @@ function ClassesPage() {
     <div className="min-h-screen bg-[#FDF9F6] py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-[#4B2E83] mb-6 font-agrandir-grand">
+          <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             שיעורים
           </h1>
           <div className="w-24 h-1 bg-[#E6C17C] mx-auto mb-8"></div>
@@ -103,7 +103,7 @@ function ClassesPage() {
           ))}
         </div>
 
-        <div className="mt-20 bg-gradient-to-r from-[#4B2E83] to-[#6B4B9E] rounded-2xl p-12 text-center shadow-xl">
+        <div className="mt-20 bg-gradient-to-r from-[#EC4899] to-[#EC4899] rounded-2xl p-12 text-center shadow-xl">
           <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
             רוצות להתנסות?
           </h2>
@@ -112,7 +112,7 @@ function ClassesPage() {
           </p>
           <Link
             to="/contact"
-            className="inline-flex items-center justify-center bg-white text-[#4B2E83] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
+            className="inline-flex items-center justify-center bg-white text-[#EC4899] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
           >
             הזמיני שיעור ניסיון
             <FaArrowLeft className="w-5 h-5 mr-2" />
