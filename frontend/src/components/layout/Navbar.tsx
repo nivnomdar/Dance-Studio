@@ -206,6 +206,9 @@ function Navbar() {
             <Link to="/about" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
                 אודות
               </Link>
+            <Link to="/gallery" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
+                גלריה
+              </Link>
             <Link to="/classes" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
                 שיעורים
               </Link>
@@ -327,6 +330,13 @@ function Navbar() {
             onClick={() => setIsMenuOpen(false)}
           >
             אודות
+          </Link>
+          <Link
+            to="/gallery"
+            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            גלריה
           </Link>
           <Link
             to="/classes"

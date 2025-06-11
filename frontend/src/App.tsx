@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import HomePage from './pages/HomePage';
@@ -7,6 +8,7 @@ import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
 import ShopPage from './pages/ShopPage';
 import AuthCallback from './pages/AuthCallback';
+import GalleryPage from './pages/GalleryPage';
 import { PopupProvider } from './contexts/PopupContext';
 
 function App() {
@@ -25,9 +27,10 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/classes" element={<ClassesPage />} />
             <Route path="/contact" element={<ContactPage />} />
-              <Route path="/profile" element={<UserProfile />} />
-              <Route path="/shop" element={<ShopPage />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/gallery" element={<GalleryPage />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
       </div>

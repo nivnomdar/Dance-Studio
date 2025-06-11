@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaInstagram, FaWhatsapp } from 'react-icons/fa';
+import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
 
 function AboutPage() {
   return (
@@ -76,12 +76,20 @@ function AboutPage() {
           <h2 className="text-3xl font-bold text-[#4B2E83] mb-8 font-agrandir-grand">צרו איתנו קשר</h2>
           <div className="flex justify-center space-x-6">
             <a
-              href="https://instagram.com/avigail_dance"
+              href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw=="
               target="_blank"
               rel="noopener noreferrer"
               className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
             >
               <FaInstagram className="w-7 h-7" />
+            </a>
+            <a
+              href="https://www.facebook.com/alina.ladani.2025?locale=he_IL"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-14 h-14 bg-[#1877F2] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
+            >
+              <FaFacebook className="w-7 h-7" />
             </a>
             <a
               href="https://wa.me/972XXXXXXXXX"
