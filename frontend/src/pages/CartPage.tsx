@@ -1,102 +1,12 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Product } from '../types/product';
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-  size?: string;
-  color?: string;
-}
+import { useCart } from '../contexts/CartContext';
 
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // טעינת מוצרים מהסל (בינתיים נתחיל עם דוגמה)
-    const loadCartItems = () => {
-      // TODO: טעינה מ-localStorage או Supabase
-             const mockCartItems: CartItem[] = [
-         {
-           product: {
-             id: 1,
-             name: 'נעלי ריקוד מקצועיות',
-             price: 299,
-             description: 'נעלי ריקוד מקצועיות לסטודיו',
-             image: '/images/gallery1.jpg',
-             category: 'shoes',
-             rating: 4.5,
-             reviews: { 
-               count: 12,
-               comments: []
-             },
-             isNew: false,
-             isBestSeller: true,
-             sizes: ['36', '37', '38', '39'],
-             colors: ['שחור', 'לבן'],
-             features: ['נוחות מרבית', 'איכות גבוהה'],
-             inStock: true
-           },
-           quantity: 2,
-           size: '37',
-           color: 'שחור'
-         },
-         {
-           product: {
-             id: 2,
-             name: 'חולצת ריקוד אלגנטית',
-             price: 159,
-             description: 'חולצת ריקוד אלגנטית לסטודיו',
-             image: '/images/gallery1.jpg',
-             category: 'clothing',
-             rating: 4.2,
-             reviews: { 
-               count: 8,
-               comments: []
-             },
-             isNew: true,
-             isBestSeller: false,
-             sizes: ['S', 'M', 'L'],
-             colors: ['ורוד', 'שחור'],
-             features: ['אלגנטי', 'נוח'],
-             inStock: true
-           },
-           quantity: 1,
-           size: 'M',
-           color: 'ורוד'
-         }
-       ];
-      
-      setCartItems(mockCartItems);
-      setIsLoading(false);
-    };
-
-    loadCartItems();
-  }, []);
-
-  const updateQuantity = (productId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    setCartItems(prev => 
-      prev.map(item => 
-        item.product.id === productId 
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
-    );
-  };
-
-  const removeFromCart = (productId: number) => {
-    setCartItems(prev => prev.filter(item => item.product.id !== productId));
-  };
+  const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return getCartTotal();
   };
 
   const calculateShipping = () => {
@@ -106,17 +16,6 @@ const CartPage = () => {
   const calculateTotal = () => {
     return calculateSubtotal() + calculateShipping();
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען סל קניות...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (cartItems.length === 0) {
     return (
@@ -150,7 +49,7 @@ const CartPage = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[#EC4899] mb-2 font-agrandir-grand">סל קניות</h1>
-          <p className="text-gray-600">בדוק את המוצרים שלך והמשך לרכישה</p>
+          <p className="text-gray-600">בדקי את המוצרים שלך והמשיכי לרכישה</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

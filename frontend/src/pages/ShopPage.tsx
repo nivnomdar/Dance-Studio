@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { products } from '../data/products';
 import { Product } from '../types/product';
+import { useCart } from '../contexts/CartContext';
+import { usePopup } from '../contexts/PopupContext';
 
 const ShopPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -9,6 +11,8 @@ const ShopPage = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
+  const { addToCart } = useCart();
+  const { showPopup } = usePopup();
 
   const categories = [
     { id: 'all', name: 'הכל' },
@@ -29,14 +33,45 @@ const ShopPage = () => {
   };
 
   const handleAddToCart = () => {
-    // TODO: Implement cart functionality
-    console.log('Adding to cart:', {
-      product: selectedProduct,
-      size: selectedSize,
-      color: selectedColor,
-      quantity
+    if (!selectedProduct) return;
+
+    // Validate size and color if required
+    if (selectedProduct.sizes && selectedProduct.sizes.length > 0 && !selectedSize) {
+      showPopup({
+        title: 'שגיאה',
+        message: 'אנא בחרי מידה',
+        type: 'error',
+        duration: 3000
+      });
+      return;
+    }
+
+    if (selectedProduct.colors && selectedProduct.colors.length > 0 && !selectedColor) {
+      showPopup({
+        title: 'שגיאה',
+        message: 'אנא בחרי צבע',
+        type: 'error',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Add to cart
+    addToCart(selectedProduct, quantity, selectedSize, selectedColor);
+
+    // Show success message
+    showPopup({
+      title: 'הוספה לסל',
+      message: `${selectedProduct.name} נוסף לסל הקניות שלך`,
+      type: 'success',
+      duration: 3000
     });
+
+    // Reset form and close modal
     setSelectedProduct(null);
+    setSelectedSize('');
+    setSelectedColor('');
+    setQuantity(1);
   };
 
   return (

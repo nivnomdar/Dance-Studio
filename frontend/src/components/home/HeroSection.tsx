@@ -21,13 +21,14 @@ function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-start h-full text-white pt-20 md:pt-32">
-        <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">
-         
-          Studio Dance
-        </h1>
-        <p className="text-xl md:text-2xl mb-8 text-center">
-          סטודיו להעצמה נשית וחיבור לגוף
-        </p>
+        {/* Hero Image */}
+        <div className="mb-8">
+          <img
+            src="/images/ontopHero.png"
+            alt="Studio Dance - סטודיו להעצמה נשית וחיבור לגוף"
+            className="max-w-md md:max-w-lg lg:max-w-xl h-auto"
+          />
+        </div>
         <a
           href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw=="
           target="_blank"

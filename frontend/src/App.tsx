@@ -9,8 +9,8 @@ import UserProfile from './pages/UserProfile';
 import ShopPage from './pages/ShopPage';
 import CartPage from './pages/CartPage';
 import AuthCallback from './pages/AuthCallback';
-import GalleryPage from './pages/GalleryPage';
 import { PopupProvider } from './contexts/PopupContext';
+import { CartProvider } from './contexts/CartContext';
 
 function App() {
   // const handleInstagram = () => {
@@ -19,24 +19,25 @@ function App() {
 
   return (
     <PopupProvider>
-    <Router>
-      <div className="min-h-screen bg-black">
-        <Navbar />
-        <main className="pt-12"> {/* Add padding-top to account for fixed navbar */}
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/classes" element={<ClassesPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/gallery" element={<GalleryPage />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/shop" element={<ShopPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+      <CartProvider>
+        <Router>
+          <div className="min-h-screen bg-black">
+            <Navbar />
+            <main className="pt-12"> {/* Add padding-top to account for fixed navbar */}
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/classes" element={<ClassesPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/profile" element={<UserProfile />} />
+                <Route path="/shop" element={<ShopPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </CartProvider>
     </PopupProvider>
   );
 }

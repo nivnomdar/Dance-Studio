@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { handleAuthStateChange } from '../../lib/auth';
 import { usePopup } from '../../contexts/PopupContext';
+import { useCart } from '../../contexts/CartContext';
 import SecondaryNavbar from './SecondaryNavbar';
 
 function Navbar() {
@@ -12,6 +13,7 @@ function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
+  const { cartCount } = useCart();
 
   useEffect(() => {
     // בדיקת סטטוס המשתמש בטעינת הקומפוננטה
@@ -282,9 +284,11 @@ function Navbar() {
                 <circle cx="15" cy="12" r="1" />
               </svg>
               {/* Cart Items Counter */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                0
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -bottom-2 -right-2 bg-white text-[#EC4899] text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold border-2 border-[#EC4899] shadow-lg">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -298,9 +302,11 @@ function Navbar() {
                 <circle cx="15" cy="12" r="1" />
               </svg>
               {/* Cart Items Counter */}
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                0
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -bottom-2 -right-2 bg-white text-[#EC4899] text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold border-2 border-[#EC4899] shadow-lg">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
