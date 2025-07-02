@@ -62,6 +62,57 @@ function PhotosCarousel() {
           }}
           className="rounded-lg overflow-hidden"
         >
+          {/* Videos First */}
+          <SwiperSlide>
+            <div className="relative w-full h-96">
+              <video
+                src="/videos/NewHeroVideo.MP4"
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            <div className="relative w-full h-96">
+              <video
+                src="/videos/ClassesVideo.mp4"
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            <div className="relative w-full h-96">
+              <video
+                src="/videos/HeroVideo.MP4"
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            <div className="relative w-full h-96">
+              <video
+                src="/videos/Heronew.mp4"
+                className="w-full h-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            </div>
+          </SwiperSlide>
+
+          {/* Images After Videos */}
           <SwiperSlide>
             <img src="/carousel/image1.png" alt="ריקוד על עקבים" className="w-full h-96 object-cover" />
           </SwiperSlide>
