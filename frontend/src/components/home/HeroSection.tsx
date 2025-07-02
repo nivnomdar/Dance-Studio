@@ -12,7 +12,7 @@ function HeroSection() {
           playsInline
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
         >
-          <source src="/videos/NewHeroVideo.MP4" type="video/mp4" />
+          <source src="/videos/Heronew.mp4" type="video/mp4" />
         </video>
       </div>
 

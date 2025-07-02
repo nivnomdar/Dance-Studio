@@ -2,22 +2,32 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
 import { Link } from 'react-router-dom';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
+import 'swiper/swiper-bundle.css';
 
 function PhotosCarousel() {
   return (
     <section className="py-16 bg-black">
+      <style>{`
+        .swiper-button-next,
+        .swiper-button-prev {
+          color: #EC4899 !important;
+        }
+        .swiper-pagination-bullet {
+          background-color: #EC4899 !important;
+        }
+        .swiper-pagination-bullet-active {
+          background-color: #EC4899 !important;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-white mb-4 font-agrandir-grand">
             גלריית תמונות
           </h2>
-          <div className="w-24 h-1 bg-[#E6C17C] mx-auto mb-6"></div>
+          <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-6"></div>
           <Link 
             to="/gallery" 
-            className="inline-flex items-center gap-2 text-[#E6C17C] hover:text-[#EC4899] transition-colors duration-300 text-lg font-agrandir-regular group"
+            className="inline-flex items-center gap-2 text-[#EC4899] hover:text-[#EC4899]/80 transition-colors duration-300 text-lg font-agrandir-regular group"
           >
             <span>לצפייה בגלריה המלאה</span>
             <svg 

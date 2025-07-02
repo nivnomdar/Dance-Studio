@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { handleAuthStateChange } from '../../lib/auth';
 import { usePopup } from '../../contexts/PopupContext';
+import SecondaryNavbar from './SecondaryNavbar';
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -155,7 +156,7 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899]/90 backdrop-blur-sm shadow-lg z-50">
+    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50">
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-12">
@@ -262,68 +263,50 @@ function Navbar() {
 
           {/* Logo - Center for both mobile and desktop */}
           <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
-            <Link to="/" className="flex items-center">
+            <div className="flex items-center">
               <img
                 src="/images/LOGOladance.png"
                 alt="Ladance Avigail"
                 className="mt-2 md:mt-5 h-50 w-auto"
               />
-            </Link>
-          </div>
-
-          {/* Desktop Layout - Right side */}
-          <div className="hidden md:flex items-center">
-            {/* Shop Button - Right side */}
-            <Link to="/shop" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200" title="חנות">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                <circle cx="9" cy="12" r="1" />
-                <circle cx="15" cy="12" r="1" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Mobile Layout - Right side */}
-          <div className="md:hidden flex items-center">
-            {/* Shop Button */}
-            <Link to="/shop" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200" title="חנות">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                <circle cx="9" cy="12" r="1" />
-                <circle cx="15" cy="12" r="1" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Secondary Navigation Bar - Desktop Only */}
-      <div className="hidden md:block bg-[#EC4899]/80 backdrop-blur-sm border-t border-[#EC4899]/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center items-center h-10">
-            <div className="flex items-center space-x-8">
-              <Link
-                to="/"
-                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
-              >
-                דף הבית
-              </Link>
-              <Link
-                to="/classes"
-                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
-              >
-                שיעורים
-              </Link>
-              <Link
-                to="/contact"
-                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
-              >
-                צור קשר
-              </Link>
             </div>
           </div>
+
+          {/* Desktop Layout - left side */}
+          <div className="hidden md:flex items-center">
+            {/* Shopping Cart Button - left side */}
+            <Link to="/cart" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 relative" title="סל קניות">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <circle cx="9" cy="12" r="1" />
+                <circle cx="15" cy="12" r="1" />
+              </svg>
+              {/* Cart Items Counter */}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                0
+              </span>
+            </Link>
+          </div>
+
+          {/* Mobile Layout - left side */}
+          <div className="md:hidden flex items-center">
+            {/* Shopping Cart Button */}
+            <Link to="/cart" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 relative" title="סל קניות">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <circle cx="9" cy="12" r="1" />
+                <circle cx="15" cy="12" r="1" />
+              </svg>
+              {/* Cart Items Counter */}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                0
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
+
+      <SecondaryNavbar />
 
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-[#FFF5F9] shadow-lg`}>
@@ -341,6 +324,13 @@ function Navbar() {
             onClick={() => setIsMenuOpen(false)}
           >
             שיעורים
+          </Link>
+          <Link
+            to="/shop"
+            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            חנות
           </Link>
           <Link
             to="/contact"

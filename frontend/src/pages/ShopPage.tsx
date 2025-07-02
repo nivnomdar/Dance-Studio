@@ -45,7 +45,7 @@ const ShopPage = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
-            רוקד על עקב - חנות
+            חנות
           </h1>
           <p className="text-xl text-gray-600">מוצרים מקצועיים לריקוד - נעליים, בגדים ואביזרים מותאמים אישית</p>
         </div>

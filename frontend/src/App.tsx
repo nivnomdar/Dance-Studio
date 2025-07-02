@@ -7,6 +7,7 @@ import ClassesPage from './pages/ClassesPage';
 import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
 import ShopPage from './pages/ShopPage';
+import CartPage from './pages/CartPage';
 import AuthCallback from './pages/AuthCallback';
 import GalleryPage from './pages/GalleryPage';
 import { PopupProvider } from './contexts/PopupContext';
@@ -19,7 +20,7 @@ function App() {
   return (
     <PopupProvider>
     <Router>
-      <div className="min-h-screen bg-[#FDF9F6]">
+      <div className="min-h-screen bg-black">
         <Navbar />
         <main className="pt-12"> {/* Add padding-top to account for fixed navbar */}
           <Routes>
@@ -30,6 +31,7 @@ function App() {
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/shop" element={<ShopPage />} />
+            <Route path="/cart" element={<CartPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </main>
