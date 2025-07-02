@@ -2,7 +2,7 @@ import React from 'react';
 
 function HeroSection() {
   return (
-    <section className="relative w-full h-[100vh] overflow-hidden">
+    <section className="relative w-full h-[100vh] overflow-hidden pt-16">
       {/* Video Background */}
       <div className="absolute inset-0 w-full h-full">
         <video
@@ -22,10 +22,11 @@ function HeroSection() {
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-start h-full text-white pt-20 md:pt-32">
         <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">
-          סטודיו אביגיל לדאנס
+         
+          Studio Dance
         </h1>
         <p className="text-xl md:text-2xl mb-8 text-center">
-          מקום של תשוקה, יצירתיות והתפתחות אישית
+          סטודיו להעצמה נשית וחיבור לגוף
         </p>
         <a
           href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw=="
@@ -33,7 +34,7 @@ function HeroSection() {
           rel="noopener noreferrer"
           className="bg-[#EC4899] hover:bg-[#EC4899]/80 text-white px-8 py-3 rounded-full text-lg font-semibold transition-colors duration-200"
         >
-          לפרטים נוספים
+         לקביעת שיעור
         </a>
       </div>
     </section>

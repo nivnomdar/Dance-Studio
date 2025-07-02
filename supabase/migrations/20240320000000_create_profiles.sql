@@ -3,7 +3,17 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade not null primary key,
   email text,
   full_name text,
+  first_name text,
+  last_name text,
   avatar_url text,
+  role text default 'user',
+  is_active boolean default true,
+  terms_accepted boolean default false,
+  marketing_consent boolean default false,
+  last_login_at timestamp with time zone,
+  language text default 'he',
+  phone text,
+  address text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

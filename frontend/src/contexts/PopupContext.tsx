@@ -49,11 +49,11 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       {/* Popup Component */}
       {isVisible && popup && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
-          <div className={`p-4 rounded-lg shadow-xl min-w-[300px] max-w-[400px] backdrop-blur-sm border-2 border-black ${
-            popup.type === 'success' ? 'bg-[#EC4899]/90 text-white' :
-            popup.type === 'error' ? 'bg-red-500/90 text-white' :
-            popup.type === 'warning' ? 'bg-yellow-500/90 text-white' :
-            'bg-blue-500/90 text-white'
+          <div className={`p-4 rounded-lg shadow-xl min-w-[300px] max-w-[400px] backdrop-blur-sm border-2 border-[#EC4899] bg-white ${
+            popup.type === 'success' ? 'text-[#EC4899]' :
+            popup.type === 'error' ? 'text-red-500' :
+            popup.type === 'warning' ? 'text-yellow-500' :
+            'text-[#EC4899]'
           }`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -64,7 +64,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               </div>
               <button
                 onClick={hidePopup}
-                className="mr-2 text-white hover:text-gray-200 transition-colors duration-200"
+                className="mr-2 text-[#EC4899] hover:text-[#EC4899]/70 transition-colors duration-200"
                 aria-label="סגור"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

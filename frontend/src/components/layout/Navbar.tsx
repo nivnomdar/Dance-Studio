@@ -24,6 +24,9 @@ function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session);
       
+      // קריאה לפונקציה ליצירת פרופיל משתמש
+      await handleAuthStateChange(event, session);
+      
       // בדיקה אם זה רענון דף
       const isPageRefresh = event === 'INITIAL_SESSION' || 
                           (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'google' && 
@@ -153,15 +156,17 @@ function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-[#EC4899]/90 backdrop-blur-sm shadow-lg z-50">
+      {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Desktop Menu - Now on the left */}
-          <div className="hidden md:flex items-center space-x-8">
+        <div className="flex justify-between items-center h-12">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center">
+            {/* Login/Profile Button - Left side */}
             {user ? (
               <div className="relative">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className="text-white hover:text-black p-2 transition-colors duration-200 profile-button"
+                  className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 profile-button"
                   title="פרופיל משתמש"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -177,7 +182,7 @@ function Navbar() {
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
                       >
                         פרופיל משתמש
-            </Link>
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
@@ -187,7 +192,7 @@ function Navbar() {
                     </div>
                   </div>
                 )}
-          </div>
+              </div>
             ) : (
               <button
                 onClick={handleGoogleLogin}
@@ -200,34 +205,16 @@ function Navbar() {
                 </svg>
               </button>
             )}
-            <Link to="/" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-                בית
-              </Link>
-            <Link to="/about" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-                אודות
-              </Link>
-            <Link to="/gallery" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-                גלריה
-              </Link>
-            <Link to="/classes" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-                שיעורים
-              </Link>
-            <Link to="/shop" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-              חנות
-            </Link>
-            <Link to="/contact" className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200">
-                צור קשר
-              </Link>
           </div>
 
-          {/* Mobile menu button - Now on the left */}
-          <div className="md:hidden">
+          {/* Mobile Layout */}
+          <div className="md:hidden flex items-center space-x-2">
+            {/* Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-[#FDF9F6] hover:text-black hover:bg-[#EC4899] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#E6C17C] transition-colors duration-200"
             >
               <span className="sr-only">פתח תפריט</span>
-              {/* Hamburger icon */}
               <svg
                 className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -237,7 +224,6 @@ function Navbar() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-              {/* Close icon */}
               <svg
                 className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -248,23 +234,93 @@ function Navbar() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            
+            {/* Login/Profile Button - Left side on mobile */}
+            {user ? (
+              <button
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
+                title="פרופיל משתמש"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={handleGoogleLogin}
+                className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
+                title="התחבר"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="8" r="4" strokeWidth="1.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                </svg>
+              </button>
+            )}
           </div>
 
-          {/* Logo - Now on the right for both mobile and desktop */}
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex flex-col items-center">
-              <div className="flex items-center gap-2 text-black" >
-                <span className="text-2xl font-bold text-black font-agrandir-grand tracking-wide">
-                  Ladance
-                </span>
-                <span className="text-2xl font-bold text-black font-agrandir-grand tracking-wide">
-                  Avigail
-                </span>
-              </div>
-              <span className="text-sm text-black font-light-bold italic tracking-wide">
-                by Avigail Ladani
-              </span>
+          {/* Logo - Center for both mobile and desktop */}
+          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/images/LOGOladance.png"
+                alt="Ladance Avigail"
+                className="mt-2 md:mt-5 h-50 w-auto"
+              />
             </Link>
+          </div>
+
+          {/* Desktop Layout - Right side */}
+          <div className="hidden md:flex items-center">
+            {/* Shop Button - Right side */}
+            <Link to="/shop" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200" title="חנות">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <circle cx="9" cy="12" r="1" />
+                <circle cx="15" cy="12" r="1" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* Mobile Layout - Right side */}
+          <div className="md:hidden flex items-center">
+            {/* Shop Button */}
+            <Link to="/shop" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200" title="חנות">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <circle cx="9" cy="12" r="1" />
+                <circle cx="15" cy="12" r="1" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Secondary Navigation Bar - Desktop Only */}
+      <div className="hidden md:block bg-[#EC4899]/80 backdrop-blur-sm border-t border-[#EC4899]/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center h-10">
+            <div className="flex items-center space-x-8">
+              <Link
+                to="/"
+                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
+              >
+                דף הבית
+              </Link>
+              <Link
+                to="/classes"
+                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
+              >
+                שיעורים
+              </Link>
+              <Link
+                to="/contact"
+                className="text-[#FDF9F6] hover:text-black px-3 py-2 text-sm font-medium transition-colors duration-200"
+              >
+                צור קשר
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -272,71 +328,12 @@ function Navbar() {
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-[#FFF5F9] shadow-lg`}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-          {user ? (
-            <div className="flex flex-col space-y-2 mb-4 border-b border-[#EC4899]/20 pb-4">
-              <div className="flex items-center space-x-2">
-                <Link
-                  to="/profile"
-                  className="px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  פרופיל משתמש
-                </Link>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
-                </svg>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
-                  className="px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200"
-                >
-                  התנתק
-                </button>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2 mb-4 border-b border-[#EC4899]/20 pb-4">
-              <button
-                onClick={() => {
-                  handleGoogleLogin();
-                  setIsMenuOpen(false);
-                }}
-                className="px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200"
-              >
-                התחברי
-              </button>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-              </svg>
-            </div>
-          )}
           <Link
             to="/"
             className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
-            בית
-          </Link>
-          <Link
-            to="/about"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            אודות
-          </Link>
-          <Link
-            to="/gallery"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            גלריה
+            דף הבית
           </Link>
           <Link
             to="/classes"
@@ -346,18 +343,11 @@ function Navbar() {
             שיעורים
           </Link>
           <Link
-            to="/shop"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            חנות
-          </Link>
-          <Link
             to="/contact"
             className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
-            צרי קשר
+            צור קשר
           </Link>
         </div>
       </div>

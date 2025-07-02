@@ -21,7 +21,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-[#FDF9F6]">
         <Navbar />
-        <main className="pt-16"> {/* Add padding-top to account for fixed navbar */}
+        <main className="pt-12"> {/* Add padding-top to account for fixed navbar */}
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
