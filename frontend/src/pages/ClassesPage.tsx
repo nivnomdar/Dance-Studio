@@ -48,7 +48,7 @@ function ClassesPage() {
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             שיעורים
           </h1>
-          <div className="w-24 h-1 bg-[#E6C17C] mx-auto mb-8"></div>
+          <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
           <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
             בסטודיו שלנו תמצאו שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
             הצטרפו אלינו לחוויה מקצועית ומהנה של ריקוד על עקבים.

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { FaWaze } from "react-icons/fa";
 
 function ContactPage() {
   return (
@@ -8,7 +9,7 @@ function ContactPage() {
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             צור קשר
           </h1>
-          <div className="w-24 h-1 bg-[#E6C17C] mx-auto"></div>
+          <div className="w-24 h-1 bg-[#EC4899] mx-auto"></div>
           <p className="mt-6 text-lg text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular">
             נשמח לשמוע ממך! השאירי פרטים ונחזור אליך בהקדם
           </p>
@@ -81,34 +82,46 @@ function ContactPage() {
               <h3 className="text-xl font-bold text-[#4B2E83] mb-4 font-agrandir-grand">
                 פרטי התקשרות
               </h3>
-              <div className="space-y-4">
-                <p className="flex items-center text-[#2B2B2B]">
-                  <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+              <div className="grid grid-cols-2 gap-6">
+                {/* פרטי התקשרות - צד ימין */}
+                <div className="space-y-4">
+                  <p className="flex items-center text-[#2B2B2B]">
+                    <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>רחוב יוסף לישנסקי 6, ראשון לציון</span>
+                  </p>
+                  <p className="flex items-center text-[#2B2B2B]">
+                    <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span>03-1234567</span>
+                  </p>
+                  <p className="flex items-center text-[#2B2B2B]">
+                    <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>info@avigaildance.com</span>
+                  </p>
+                </div>
+
+                {/* אייקון וויז - צד שמאל */}
+                <div className="flex justify-center items-center">
                   <a 
-                    href="https://waze.com/ul?ll=31.9737,34.7928&navigate=yes" 
+                    href="https://waze.com/ul?q=רחוב%20יוסף%20לישנסקי%206%2C%20ראשון%20לציון&navigate=yes" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="mr-2 hover:text-[#4B2E83] transition-colors duration-200"
+                    className="flex flex-col items-center p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:-rotate-2 relative"
                   >
-                    רחוב יוסף לישנסקי 6, ראשון לציון
+                    <div className="w-12 h-12 bg-[#33C1FF] rounded-full flex items-center justify-center mb-2 group-hover:shadow-blue-300 group-hover:shadow-lg transition-all duration-300 ring-2 ring-[#33C1FF]/30 group-hover:ring-4 group-hover:ring-[#33C1FF]/50">
+                      <FaWaze className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[#4B2E83] font-medium group-hover:text-[#33C1FF] transition-colors duration-300">וויז</span>
+                    <span className="text-sm text-gray-500">מיקום הסטודיו</span>
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 bg-[#33C1FF] text-white text-xs rounded px-2 py-1 mt-2 transition-all duration-300 pointer-events-none shadow-lg">פתחי מיקום בוויז</span>
                   </a>
-                </p>
-                <p className="flex items-center text-[#2B2B2B]">
-                  <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  <a className="mr-2">03-1234567</a>
-                  
-                </p>
-                <p className="flex items-center text-[#2B2B2B]">
-                  <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <a className="mr-2">info@avigaildance.com</a>
-                </p>
+                </div>
               </div>
             </div>
 

@@ -9,7 +9,7 @@ function AboutPage() {
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             אודות הסטודיו
           </h1>
-          <div className="w-24 h-1 bg-[#E6C17C] mx-auto"></div>
+          <div className="w-24 h-1 bg-[#EC4899] mx-auto"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">

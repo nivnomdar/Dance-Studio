@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers } from 'react-icons/fa';
+import { FaWaze } from 'react-icons/fa';
 
 function TrialClassPage() {
   const [selectedDate, setSelectedDate] = useState('');
@@ -13,14 +14,9 @@ function TrialClassPage() {
   });
 
   const availableTimes = [
-    '10:00',
-    '11:30', 
-    '13:00',
-    '14:30',
-    '16:00',
-    '17:30',
+    '18:00',
     '19:00',
-    '20:30'
+    '20:00'
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,7 +32,7 @@ function TrialClassPage() {
         <div className="text-center mb-12">
           <Link 
             to="/classes" 
-            className="inline-flex items-center text-[#EC4899] hover:text-[#EC4899]/80 mb-6 transition-colors duration-200"
+            className="inline-flex items-center text-[#EC4899] hover:text-[#EC4899]/80 mb-6 transition-colors duration-200 relative z-10"
           >
             <FaArrowLeft className="w-4 h-4 ml-2" />
             חזרה לשיעורים
@@ -44,7 +40,7 @@ function TrialClassPage() {
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             שיעור ניסיון
           </h1>
-          <div className="w-24 h-1 bg-[#E6C17C] mx-auto mb-8"></div>
+          <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
           <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
             הזדמנות מושלמת להתנסות בריקוד על עקבים ולהכיר את הסטודיו שלנו
           </p>
@@ -107,6 +103,15 @@ function TrialClassPage() {
                     <div>
                       <p className="font-bold">מיקום הסטודיו</p>
                       <p className="text-[#2B2B2B]">רחוב יוסף לישנסקי 6, ראשון לציון</p>
+                      <a 
+                        href="https://waze.com/ul?q=רחוב%20יוסף%20לישנסקי%206%2C%20ראשון%20לציון&navigate=yes" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-pink-500 hover:text-pink-600 text-sm underline transition-colors duration-200 inline-flex items-center"
+                      >
+                        <FaWaze className="w-4 h-4 ml-1" />
+                        מיקום בוויז
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -150,39 +155,40 @@ function TrialClassPage() {
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Date Selection */}
-              <div>
-                <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                  <FaCalendarAlt className="w-4 h-4 inline ml-2" />
-                  בחרי תאריך
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors duration-200"
-                  required
-                />
-              </div>
+              {/* Date and Time Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
+                    <FaCalendarAlt className="w-4 h-4 inline ml-2" />
+                    תאריך
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors duration-200"
+                    required
+                  />
+                </div>
 
-              {/* Time Selection */}
-              <div>
-                <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                  <FaClock className="w-4 h-4 inline ml-2" />
-                  בחרי שעה
-                </label>
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors duration-200"
-                  required
-                >
-                  <option value="">בחרי שעה מתאימה</option>
-                  {availableTimes.map((time) => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
+                    <FaClock className="w-4 h-4 inline ml-2" />
+                    שעה
+                  </label>
+                  <select
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-colors duration-200"
+                    required
+                  >
+                    <option value="">בחרי שעה</option>
+                    {availableTimes.map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Personal Information */}
