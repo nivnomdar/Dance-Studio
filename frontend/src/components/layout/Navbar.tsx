@@ -158,7 +158,7 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50">
+    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50 overflow-hidden">
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-12">
@@ -264,7 +264,7 @@ function Navbar() {
           </div>
 
           {/* Logo - Center for both mobile and desktop */}
-          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
+          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2 pointer-events-none">
             <div className="flex items-center">
               <img
                 src="/images/LOGOladance.png"

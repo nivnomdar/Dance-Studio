@@ -50,8 +50,8 @@ function ClassesPage() {
           </h1>
           <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
           <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
-            בסטודיו שלנו תמצאו שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
-            הצטרפו אלינו לחוויה מקצועית ומהנה של ריקוד על עקבים.
+            בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
+            הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
           </p>
         </div>
 
@@ -92,7 +92,11 @@ function ClassesPage() {
                   </div>
                 </div>
                 <Link
-                  to={classItem.title === 'שיעור ניסיון' ? '/trial-class' : '/contact'}
+                  to={
+                    classItem.title === 'שיעור ניסיון' ? '/trial-class' : 
+                    classItem.title === 'שיעור בודד' ? '/single-class' : 
+                    '/contact'
+                  }
                   className={`inline-flex items-center justify-center w-full ${classItem.bgColor} ${classItem.hoverColor} text-white px-6 py-3 rounded-xl transition-colors duration-300 font-medium`}
                 >
                   הרשמה לשיעור
@@ -105,10 +109,10 @@ function ClassesPage() {
 
         <div className="mt-20 bg-gradient-to-r from-[#EC4899] to-[#EC4899] rounded-2xl p-12 text-center shadow-xl">
           <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
-            רוצות להתנסות?
+            רוצה להתנסות?
           </h2>
           <p className="text-white/90 text-xl mb-8 font-agrandir-regular max-w-2xl mx-auto">
-            הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מהחוויה המקצועית שלנו
+            הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מחוויה מקצועית
           </p>
           <Link
             to="/trial-class"

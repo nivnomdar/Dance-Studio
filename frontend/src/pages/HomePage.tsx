@@ -1,14 +1,13 @@
 import HeroSection from '../components/home/HeroSection';
 import PhotosCarousel from '../components/home/PhotosCarousel';
-import JoinMe from '../components/home/JoinMe';
+import AboutSection from '../components/home/AboutSection';
 
 function HomePage() {
   return (
     <main className="flex flex-col">
       <HeroSection />
-      {/* <div className="max-w-6xl mx-auto bg-[#FDF9F6] w-full">
-        <JoinMe />
-      </div> */}
+      
+      <AboutSection />
       <PhotosCarousel />
     </main>
   );

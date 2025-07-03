@@ -11,7 +11,7 @@ function ContactPage() {
           </h1>
           <div className="w-24 h-1 bg-[#EC4899] mx-auto"></div>
           <p className="mt-6 text-lg text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular">
-            נשמח לשמוע ממך! השאירי פרטים ונחזור אליך בהקדם
+            אשמח לשמוע ממך! השאירי פרטים ואחזור אליך בהקדם
           </p>
         </div>
 
