@@ -92,7 +92,7 @@ function ClassesPage() {
                   </div>
                 </div>
                 <Link
-                  to="/contact"
+                  to={classItem.title === 'שיעור ניסיון' ? '/trial-class' : '/contact'}
                   className={`inline-flex items-center justify-center w-full ${classItem.bgColor} ${classItem.hoverColor} text-white px-6 py-3 rounded-xl transition-colors duration-300 font-medium`}
                 >
                   הרשמה לשיעור
@@ -111,7 +111,7 @@ function ClassesPage() {
             הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מהחוויה המקצועית שלנו
           </p>
           <Link
-            to="/contact"
+            to="/trial-class"
             className="inline-flex items-center justify-center bg-white text-[#EC4899] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
           >
             הזמיני שיעור ניסיון
