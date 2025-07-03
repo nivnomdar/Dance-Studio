@@ -70,64 +70,107 @@ const CartPage = () => {
                       transition={{ duration: 0.3, delay: index * 0.1 }}
                       className="p-6"
                     >
-                      <div className="flex items-center space-x-4 space-x-reverse">
-                        {/* Product Image */}
-                        <div className="flex-shrink-0">
-                          <img
-                            src={item.product.image}
-                            alt={item.product.name}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
+                      <div className="flex items-start">
+                        {/* Product Image Container */}
+                        <div className="flex-shrink-0 mr-8">
+                          <div className="w-32 h-32 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <img
+                              src={item.product.image}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         </div>
 
+                        {/* Vertical Divider */}
+                        <div className="w-px h-32 bg-gray-200 mx-4"></div>
+
                         {/* Product Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                        <div className="flex-1 min-w-0 pl-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-gray-900 mb-2 font-agrandir-grand">
                                 {item.product.name}
                               </h3>
-                              <p className="text-sm text-gray-500 mb-2">
+                              <p className="text-gray-600 mb-3 leading-relaxed">
                                 {item.product.description}
                               </p>
-                              {item.size && (
-                                <p className="text-sm text-gray-500">מידה: {item.size}</p>
-                              )}
-                              {item.color && (
-                                <p className="text-sm text-gray-500">צבע: {item.color}</p>
-                              )}
+                              
+                              {/* Product Specifications */}
+                              <div className="flex flex-wrap gap-4 mb-4">
+                                {item.size && (
+                                  <div className="flex items-center space-x-2 space-x-reverse">
+                                    <span className="text-sm font-medium text-gray-500">מידה:</span>
+                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                                      {item.size}
+                                    </span>
+                                  </div>
+                                )}
+                                {item.color && (
+                                  <div className="flex items-center space-x-2 space-x-reverse">
+                                    <span className="text-sm font-medium text-gray-500">צבע:</span>
+                                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                                      {item.color}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-semibold text-[#EC4899]">
+                            
+                            {/* Price */}
+                            <div className="text-right ml-6 p-4 min-w-[120px]">
+                              <p className="text-sm text-gray-500 mb-1">מחיר ליחידה</p>
+                              <p className="text-2xl font-bold text-[#EC4899] mb-2">
                                 ₪{item.product.price}
                               </p>
+                              <div className="border-t border-gray-200 pt-2">
+                                <p className="text-sm text-gray-600">סכום כולל</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                  ₪{item.product.price * item.quantity}
+                                </p>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Quantity Controls */}
-                          <div className="flex items-center justify-between mt-4">
-                            <div className="flex items-center space-x-2 space-x-reverse">
-                              <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors duration-200"
-                              >
-                                -
-                              </button>
-                              <span className="w-12 text-center text-gray-900 font-medium">
-                                {item.quantity}
+                          {/* Quantity Controls and Actions */}
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <div className="flex items-center space-x-6 space-x-reverse">
+                              <div className="flex items-center space-x-3 space-x-reverse">
+                                <span className="text-sm font-medium text-gray-700">כמות:</span>
+                                <div className="flex items-center bg-gray-50 rounded-lg p-1">
+                                  <button
+                                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                                    className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-[#EC4899] transition-all duration-200 font-bold"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-12 text-center text-gray-900 font-bold text-lg mx-2">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                    className="w-8 h-8 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-[#EC4899] transition-all duration-200 font-bold"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="w-px h-8 bg-gray-200 mx-2"></div>
+                              
+                              <span className="text-sm text-gray-500 ml-2">
+                                סה"כ יחידות: {item.quantity}
                               </span>
-                              <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors duration-200"
-                              >
-                                +
-                              </button>
                             </div>
+                            
                             <button
                               onClick={() => removeFromCart(item.product.id)}
-                              className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-200"
+                              className="flex items-center space-x-2 space-x-reverse text-red-500 hover:text-red-700 text-sm font-medium transition-colors duration-200 hover:bg-red-50 px-3 py-2 rounded-lg"
                             >
-                              הסר מהסל
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>הסר מהסל</span>
                             </button>
                           </div>
                         </div>

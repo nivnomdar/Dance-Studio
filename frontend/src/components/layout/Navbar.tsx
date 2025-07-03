@@ -285,7 +285,7 @@ function Navbar() {
               </svg>
               {/* Cart Items Counter */}
               {cartCount > 0 && (
-                <span className="absolute -bottom-2 -right-2 bg-white text-[#EC4899] text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold border-2 border-[#EC4899] shadow-lg">
+                <span className="absolute -top-1 -right-1 bg-white text-[#EC4899] text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border border-[#EC4899] shadow-lg">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -303,7 +303,7 @@ function Navbar() {
               </svg>
               {/* Cart Items Counter */}
               {cartCount > 0 && (
-                <span className="absolute -bottom-2 -right-2 bg-white text-[#EC4899] text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold border-2 border-[#EC4899] shadow-lg">
+                <span className="absolute -top-1 -right-1 bg-white text-[#EC4899] text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border border-[#EC4899] shadow-lg">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
