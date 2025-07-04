@@ -25,10 +25,11 @@ function Navbar() {
 
     // האזנה לשינויים בסטטוס ההתחברות
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session);
-      
       // קריאה לפונקציה ליצירת פרופיל משתמש
       await handleAuthStateChange(event, session);
+      
+      // עדכון מצב המשתמש מיד
+      setUser(session?.user ?? null);
       
       // בדיקה אם זה רענון דף
       const isPageRefresh = event === 'INITIAL_SESSION' || 
@@ -40,7 +41,6 @@ function Navbar() {
       }
 
       if (event === 'SIGNED_IN') {
-        setUser(session?.user ?? null);
         // שמירת מידע שהפופ-אפ כבר הוצג
         localStorage.setItem('hasShownLoginPopup', 'true');
         showPopup({
@@ -158,17 +158,20 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50 overflow-hidden">
+    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50">
       {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+        <div className="flex justify-between items-center h-12 overflow-visible">
           {/* Desktop Layout */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center overflow-visible">
             {/* Login/Profile Button - Left side */}
             {user ? (
-              <div className="relative">
+              <div className="relative overflow-visible">
                 <button
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  onClick={() => {
+                    setIsProfileMenuOpen(!isProfileMenuOpen);
+                    setIsMenuOpen(false); // סגירת התפריט הנייד כשהפרופיל נפתח
+                  }}
                   className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 profile-button"
                   title="פרופיל משתמש"
                 >
@@ -177,7 +180,7 @@ function Navbar() {
                   </svg>
                 </button>
                 {isProfileMenuOpen && (
-                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu">
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
                     <div className="py-1">
                       <Link
                         to="/profile"
@@ -211,10 +214,13 @@ function Navbar() {
           </div>
 
           {/* Mobile Layout */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden flex items-center space-x-2 overflow-visible">
             {/* Menu Button */}
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => {
+                setIsMenuOpen(!isMenuOpen);
+                setIsProfileMenuOpen(false); // סגירת התפריט הפרופיל כשהתפריט הנייד נפתח
+              }}
               className="inline-flex items-center justify-center p-2 rounded-md text-[#FDF9F6] hover:text-black hover:bg-[#EC4899] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#E6C17C] transition-colors duration-200"
             >
               <span className="sr-only">פתח תפריט</span>
@@ -240,15 +246,39 @@ function Navbar() {
             
             {/* Login/Profile Button - Left side on mobile */}
             {user ? (
-              <button
-                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
-                title="פרופיל משתמש"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
-                </svg>
-              </button>
+              <div className="relative overflow-visible">
+                <button
+                  onClick={() => {
+                    setIsProfileMenuOpen(!isProfileMenuOpen);
+                    setIsMenuOpen(false); // סגירת התפריט הנייד כשהפרופיל נפתח
+                  }}
+                  className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 profile-button"
+                  title="פרופיל משתמש"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
+                  </svg>
+                </button>
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                      >
+                        פרופיל משתמש
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                      >
+                        התנתק
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 onClick={handleGoogleLogin}
