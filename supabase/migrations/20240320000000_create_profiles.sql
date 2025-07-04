@@ -1,22 +1,26 @@
 -- Create profiles table
 create table if not exists public.profiles (
-  id uuid references auth.users on delete cascade not null primary key,
-  email text,
-  full_name text,
-  first_name text,
-  last_name text,
-  avatar_url text,
-  role text default 'user',
-  is_active boolean default true,
-  terms_accepted boolean default false,
-  marketing_consent boolean default false,
-  last_login_at timestamp with time zone,
-  language text default 'he',
-  phone text,
-  address text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+  id uuid not null,
+  email text not null,
+  first_name text null,
+  last_name text null,
+  role text not null default 'user'::text,
+  phone_number text null,
+  city text null,
+  address text null,
+  postal_code text null,
+  created_at timestamp with time zone null default now(),
+  is_active boolean null default true,
+  terms_accepted boolean null default false,
+  marketing_consent boolean null default false,
+  avatar_url text null,
+  last_login_at timestamp without time zone null,
+  language text null default 'he'::text,
+  referral_code text null,
+  notes text null,
+  constraint profiles_pkey primary key (id),
+  constraint profiles_id_fkey foreign KEY (id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
 
 -- Enable Row Level Security
 alter table public.profiles enable row level security;

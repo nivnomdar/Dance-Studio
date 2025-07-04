@@ -1,22 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../types/product';
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-  size?: string;
-  color?: string;
-}
-
-interface CartContextType {
-  cartItems: CartItem[];
-  cartCount: number;
-  addToCart: (product: Product, quantity: number, size?: string, color?: string) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  clearCart: () => void;
-  getCartTotal: () => number;
-}
+import { CartItem, CartContextType, CartProviderProps } from '../types/cart';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -27,10 +11,6 @@ export const useCart = () => {
   }
   return context;
 };
-
-interface CartProviderProps {
-  children: ReactNode;
-}
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);

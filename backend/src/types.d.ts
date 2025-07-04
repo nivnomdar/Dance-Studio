@@ -1,12 +1,5 @@
-import { User } from '@supabase/supabase-js';
-import { Request } from 'express';
+// This file is deprecated. Please use the new types structure:
+// import { DatabaseConfig, DatabaseConnection, QueryResult } from './types/database';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
-}
-
-export {}; 
+// Re-export for backward compatibility
+export { DatabaseConfig, DatabaseConnection, QueryResult } from './types/database'; 

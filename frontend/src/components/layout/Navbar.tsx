@@ -1,35 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { User } from '@supabase/supabase-js';
 import { handleAuthStateChange } from '../../lib/auth';
 import { usePopup } from '../../contexts/PopupContext';
 import { useCart } from '../../contexts/CartContext';
+import { useAuth } from '../../contexts/AuthContext';
 import SecondaryNavbar from './SecondaryNavbar';
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { cartCount } = useCart();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
-    // בדיקת סטטוס המשתמש בטעינת הקומפוננטה
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-    };
-    checkUser();
-
     // האזנה לשינויים בסטטוס ההתחברות
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       // קריאה לפונקציה ליצירת פרופיל משתמש
       await handleAuthStateChange(event, session);
-      
-      // עדכון מצב המשתמש מיד
-      setUser(session?.user ?? null);
       
       // בדיקה אם זה רענון דף
       const isPageRefresh = event === 'INITIAL_SESSION' || 
@@ -50,7 +40,6 @@ function Navbar() {
           duration: 3000
         });
       } else if (event === 'SIGNED_OUT') {
-        setUser(null);
         // ניקוי מידע מקומי בהתנתקות
         localStorage.removeItem('supabase.auth.token');
         localStorage.removeItem('hasShownLoginPopup');
@@ -103,20 +92,10 @@ function Navbar() {
       sessionStorage.clear();
       localStorage.clear();
 
-      // איפוס מצב המשתמש מיד
-      setUser(null);
+
 
       // התנתקות מ-Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        showPopup({
-          title: 'שגיאת התנתקות',
-          message: 'אירעה שגיאה בניסיון להתנתק. אנא נסה שוב.',
-          type: 'error',
-          duration: 3000
-        });
-        return;
-      }
+      await signOut();
 
       // הצגת פופ-אפ התנתקות מוצלחת
       showPopup({

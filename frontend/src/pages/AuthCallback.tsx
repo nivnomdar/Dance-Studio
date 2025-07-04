@@ -7,16 +7,38 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
+      // timeout כללי של 10 שניות
+      const overallTimeout = setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 10000);
+      
       try {
-        const { error } = await supabase.auth.getSession();
-        if (error) throw error;
+        // נחכה לשינוי ב-auth state
+        const sessionPromise = new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Auth state change timeout'));
+          }, 5000);
+          
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            clearTimeout(timeout);
+            subscription.unsubscribe();
+            resolve(session);
+          });
+        });
         
-        // אם ההתחברות הצליחה, נווט לדף הבית
+        try {
+          await sessionPromise as any;
+        } catch (error) {
+          // Error handling without logging
+        }
+        
+        // נעבור לדף הבית מיד, הפרופיל ייווצר ברקע
         navigate('/', { replace: true });
       } catch (error) {
-        console.error('Error handling auth callback:', error);
         // במקרה של שגיאה, נווט לדף הבית בכל מקרה
         navigate('/', { replace: true });
+      } finally {
+        clearTimeout(overallTimeout);
       }
     };
 

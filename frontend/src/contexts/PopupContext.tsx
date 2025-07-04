@@ -1,25 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-// טיפוסים
-interface PopupContent {
-  title?: string;
-  message: string;
-  type?: 'success' | 'error' | 'info' | 'warning';
-  duration?: number;
-}
-
-interface PopupContextType {
-  showPopup: (content: PopupContent) => void;
-  hidePopup: () => void;
-  popup: PopupContent | null;
-  isVisible: boolean;
-}
+import React, { createContext, useContext, useState } from 'react';
+import { PopupContent, PopupContextType } from '../types/popup';
+import { ProviderProps } from '../types/common';
 
 // יצירת הקונטקסט
 const PopupContext = createContext<PopupContextType | undefined>(undefined);
 
 // Provider Component
-export const PopupProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const PopupProvider: React.FC<ProviderProps> = ({ children }) => {
   const [popup, setPopup] = useState<PopupContent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
