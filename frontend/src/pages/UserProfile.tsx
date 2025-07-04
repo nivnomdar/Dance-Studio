@@ -15,8 +15,6 @@ function UserProfile() {
     address: '',
     city: '',
     postalCode: '',
-    termsAccepted: false,
-    marketingConsent: false,
   });
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
@@ -26,23 +24,16 @@ function UserProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('UserProfile useEffect triggered:', { user: user?.email, authLoading });
-    let isMounted = true;
+    // רק אם יש משתמש ולא בטעינה
+    if (!user || authLoading) {
+      if (!user && !authLoading) {
+        setIsLoadingProfile(false);
+      }
+      return;
+    }
     
-    const checkUser = async () => {
-      try {
-        if (!isMounted) return;
-        if (!user) return;
-        
-        console.log('Loading profile for user:', user.id, user.email);
-        setIsLoadingProfile(true);
-        setProfileError(null);
-        
-        // נשתמש בנתונים מה-user metadata במקום לנסות לטעון מהדאטאבייס
-        console.log('Using user metadata instead of database...');
-        
-        // נשתמש בנתונים מה-metadata של המשתמש
-        const fallbackData = {
+            // השתמש בנתונים מה-metadata מיד
+        const profileData = {
           firstName: user.user_metadata?.first_name || '',
           lastName: user.user_metadata?.last_name || '',
           phone: user.user_metadata?.phone || '',
@@ -50,65 +41,13 @@ function UserProfile() {
           address: user.user_metadata?.address || '',
           city: user.user_metadata?.city || '',
           postalCode: user.user_metadata?.postal_code || '',
-          termsAccepted: false,
-          marketingConsent: false,
         };
-        
-        console.log('Setting form data from user metadata:', fallbackData);
-        setFormData(fallbackData);
-          
-        // נסה ליצור פרופיל בדאטאבייס ברקע (ללא חסימה)
-        setTimeout(async () => {
-          try {
-            console.log('Attempting to create profile in background...');
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert({
-                id: user.id,
-                email: user.email,
-                first_name: user.user_metadata?.first_name || '',
-                last_name: user.user_metadata?.last_name || '',
-                phone_number: user.user_metadata?.phone || '',
-                address: user.user_metadata?.address || '',
-                city: user.user_metadata?.city || '',
-                postal_code: user.user_metadata?.postal_code || '',
-                terms_accepted: false,
-                marketing_consent: false,
-              })
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('Background profile creation error:', createError);
-            } else {
-              console.log('Background profile creation successful:', newProfile);
-          }
-          } catch (error) {
-            console.error('Background profile creation failed:', error);
-          }
-        }, 1000);
-        
-        
-      } catch (error) {
-        console.error('Unexpected error in checkUser:', error);
-        if (isMounted) setProfileError('אירעה שגיאה בלתי צפויה בטעינת הפרופיל');
-      } finally {
-        console.log('Setting isLoadingProfile to false');
-        if (isMounted) setIsLoadingProfile(false);
-      }
-    };
     
-    // רק אם יש משתמש ולא בטעינה
-    if (user && !authLoading) {
-      checkUser();
-    } else if (!user && !authLoading) {
-      setIsLoadingProfile(false);
-    }
+    setFormData(profileData);
+    setIsLoadingProfile(false);
     
-    return () => {
-      isMounted = false;
-    };
-  }, [user, authLoading]); // Add both user and authLoading as dependencies
+
+  }, [user?.id, authLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -134,8 +73,6 @@ function UserProfile() {
           address: formData.address,
           city: formData.city,
           postal_code: formData.postalCode,
-          terms_accepted: formData.termsAccepted,
-          marketing_consent: formData.marketingConsent,
         })
         .eq('id', user.id);
       
@@ -191,7 +128,7 @@ function UserProfile() {
     return null;
   }
 
-  console.log('Render state:', { isLoadingProfile, profileError, user: user?.email });
+
 
   // Loading state
   if (isLoadingProfile) {
@@ -384,7 +321,7 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי שם פרטי"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
@@ -405,7 +342,7 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי שם משפחה"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
@@ -426,7 +363,7 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי מספר טלפון"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
@@ -445,7 +382,7 @@ function UserProfile() {
                         name="email"
                         value={formData.email}
                         disabled
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 bg-gray-50 text-gray-500 text-right cursor-not-allowed"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 bg-gray-50 text-gray-500 text-right cursor-not-allowed"
                       />
                     </div>
 
@@ -467,7 +404,7 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי כתובת מלאה"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
@@ -488,7 +425,7 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי שם העיר"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
@@ -510,59 +447,14 @@ function UserProfile() {
                         onChange={handleInputChange}
                         disabled={!isEditing}
                         placeholder="הכניסי מיקוד"
-                        className="w-full px-4 py-4 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
+                        className="w-full px-3 py-2 rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right"
                       />
                     </div>
 
 
                   </div>
 
-                  {/* Checkboxes Section */}
-                  <div className="space-y-6 pt-6 border-t border-[#4B2E83]/10">
-                    <h4 className="text-lg font-semibold text-[#4B2E83] mb-4">הגדרות נוספות</h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* הסכמה לתנאי שימוש */}
-                      <div className="flex items-start space-x-3 space-x-reverse">
-                        <input
-                          type="checkbox"
-                          name="termsAccepted"
-                          checked={formData.termsAccepted}
-                          onChange={(e) => setFormData(prev => ({ ...prev, termsAccepted: e.target.checked }))}
-                          disabled={!isEditing}
-                          className="mt-1 h-5 w-5 text-[#EC4899] focus:ring-[#EC4899] border-[#4B2E83]/20 rounded"
-                        />
-                        <div>
-                          <label className="mr-1 text-sm font-medium text-[#4B2E83]">
-                            הסכמה לתנאי שימוש
-                          </label>
-                          <p className="text-xs text-[#4B2E83]/60 mt-1">
-                            אני מסכימה לתנאי השימוש ולמדיניות הפרטיות של האתר
-                          </p>
-                        </div>
-                      </div>
 
-                      {/* הסכמה לשיווק */}
-                      <div className="flex items-start space-x-3 space-x-reverse">
-                        <input
-                          type="checkbox"
-                          name="marketingConsent"
-                          checked={formData.marketingConsent}
-                          onChange={(e) => setFormData(prev => ({ ...prev, marketingConsent: e.target.checked }))}
-                          disabled={!isEditing}
-                          className="mt-1 h-5 w-5 text-[#EC4899] focus:ring-[#EC4899] border-[#4B2E83]/20 rounded"
-                        />
-                        <div>
-                          <label className="mr-1 text-sm font-medium text-[#4B2E83]">
-                            הסכמה לקבלת עדכונים
-                          </label>
-                          <p className="text-xs text-[#4B2E83]/60 mt-1">
-                            אני מעוניינת לקבל עדכונים על שיעורים חדשים ומבצעים
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Submit Button */}
                   {isEditing && (
