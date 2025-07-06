@@ -21,19 +21,19 @@ const Footer: React.FC = () => {
           
           {/* Logo and Description */}
           <div className="lg:col-span-1">
-            <h4 className="text-lg font-semibold text-pink-400 mb-4 flex items-center">
+            <h4 className="text-lg font-semibold text-pink-400 ">סטודיו</h4>
+            <div className="flex items-center mb-4">
               <img 
                 src="/images/LOGOladance.png" 
-                alt="סטודיו אביגיל לריקוד" 
-                className="h-20 w-auto ml-3"
+                alt="סטודיו לריקוד של אביגיל" 
+                className="h-16 w-auto ml-3"
               />
-              סטודיו אביגיל
-            </h4>
-            <p className="text-gray-300 text-sm leading-relaxed mb-4">
-              סטודיו מקצועי ללימודי ריקוד ומחול לכל הגילאים. 
-              אני מאמינה שכל אחת יכולה לרקוד ולגלות את התשוקה לתנועה.
+            </div>
+            <p className="text-gray-300 text-sm leading-relaxed mb-6">
+              סטודיו מקצועי ללימודי ריקוד על עקבים מתאים לגילאי 18+. 
+              אני מאמינה שכל אישה יכולה לרקוד ולגלות את התשוקה לתנועה.
             </p>
-            <h4 className="text-lg font-semibold text-pink-400 mb-3">עקבי אחרינו</h4>
+            <h4 className="text-lg font-semibold text-pink-400 mb-4">עקבי אחרי</h4>
             <div className="flex justify-center items-center gap-6">
               <a 
                 href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw==" 
@@ -99,7 +99,7 @@ const Footer: React.FC = () => {
           {/* Quick Links */}
           <div className="lg:col-span-1">
             <h4 className="text-lg font-semibold text-pink-400 mb-4">ניווט מהיר</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               <li>
                 <Link to="/" className="text-gray-300 hover:text-pink-400 transition-colors duration-200 flex items-center">
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/trial-class" className="text-gray-300 hover:text-pink-400 transition-colors duration-200 flex items-center">
+                <Link to="/trial-class" className="text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center font-medium">
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
@@ -156,7 +156,10 @@ const Footer: React.FC = () => {
             <h4 className="text-lg font-semibold text-pink-400 mb-4">פרטי קשר</h4>
             <div className="space-y-3">
               <div className="flex items-start space-x-3 space-x-reverse">
-                <FaWaze className="w-5 h-5 text-[#33CCFF] mt-0.5 flex-shrink-0" />
+                <svg className="ml-2 w-4 h-4 text-pink-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
                 <a 
                   href="https://waze.com/ul/hsv8qj8q8q" 
                   target="_blank" 
@@ -169,7 +172,7 @@ const Footer: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-3 space-x-reverse">
-                <svg className="w-5 h-5 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="ml-2 w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                 </svg>
                 <a href="tel:+972-3-1234567" className="text-gray-300 hover:text-pink-400 transition-colors duration-200 text-sm">
@@ -178,7 +181,7 @@ const Footer: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-3 space-x-reverse">
-                <svg className="w-5 h-5 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="ml-2 w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
                 <a href="mailto:info@avigaildance.com" className="text-gray-300 hover:text-pink-400 transition-colors duration-200 text-sm">
@@ -187,12 +190,11 @@ const Footer: React.FC = () => {
               </div>
               
               <div className="flex items-center space-x-3 space-x-reverse">
-                <svg className="w-5 h-5 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="ml-2 w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <div>
-                  <p className="text-gray-300 text-sm">שני-שלישי: 18:00, 19:00, 20:00</p>
-                  <p className="text-gray-300 text-sm">שאר הימים: סגור</p>
+                  <p className="text-gray-300 text-sm">ראשון עד חמישי: 18:00, 19:00, 20:00</p>
                 </div>
               </div>
             </div>
@@ -232,19 +234,18 @@ const Footer: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © {currentYear} סטודיו אביגיל לריקוד. כל הזכויות שמורות.
+              © {currentYear} סטודיו אביגיל לדאנס לריקוד על עקבים. כל הזכויות שמורות.
             </div>
             
-            <div className="flex items-center space-x-6 space-x-reverse text-sm">
-              <Link to="/privacy" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
-                מדיניות פרטיות
-              </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
-                תנאי שימוש
-              </Link>
-              <Link to="/sitemap" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
-                מפת האתר
-              </Link>
+            <div className="flex items-center gap-1.5 text-sm">
+                <Link to="/privacy" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
+                  מדיניות פרטיות
+                </Link>
+                <span className="text-gray-500 text-xs">•</span>
+                <Link to="/terms" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
+                  תנאי שימוש
+                </Link>
+              
             </div>
           </div>
           
@@ -252,34 +253,23 @@ const Footer: React.FC = () => {
           <div className="mt-4 pt-4 border-t border-gray-800">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
               <div className="text-gray-500 text-xs flex items-center">
-                <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                </svg>
-                נבנה באהבה עם React, TypeScript ו-Tailwind CSS
+               
               </div>
               <div className="flex items-center space-x-2 space-x-reverse">
                 <span className="text-gray-500 text-xs">פותח על ידי:</span>
                 <a 
-                  href="https://github.com/niv-developer" 
+                  href="https://portfolio-teal-pi-42.vercel.app" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-pink-400 hover:text-pink-300 transition-colors duration-200 text-xs font-medium flex items-center"
                 >
-                  <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                   </svg>
-                  ניב המפתח
+                  Nif-Web
                 </a>
                 <span className="text-gray-500 text-xs">•</span>
-                <a 
-                  href="mailto:niv@example.com" 
-                  className="text-pink-400 hover:text-pink-300 transition-colors duration-200 text-xs flex items-center"
-                >
-                  <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  niv@example.com
-                </a>
+               
               </div>
             </div>
           </div>

@@ -273,14 +273,14 @@ function Navbar() {
           </div>
 
           {/* Logo - Center for both mobile and desktop */}
-          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2 pointer-events-none">
-            <div className="flex items-center">
+          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
+            <Link to="/" className="flex items-center">
               <img
                 src="/images/LOGOladance.png"
                 alt="Ladance Avigail"
-                className="mt-2 md:mt-5 h-50 w-auto"
+                className="sm:mb-4 h-25 w-auto -mt-1 sm:mt-4"
               />
-            </div>
+            </Link>
           </div>
 
           {/* Desktop Layout - left side */}

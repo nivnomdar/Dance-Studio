@@ -41,18 +41,14 @@ function UserProfile() {
     
     // רק אם יש משתמש ולא בטעינה
     if (!user || authLoading) {
-      console.log('No user or auth loading, setting isLoadingProfile to false');
       if (!user && !authLoading) {
         setIsLoadingProfile(false);
       }
       return;
     }
     
-    console.log('User and session ready, checking for profile...');
-    
     // אם יש פרופיל, נשתמש בו
     if (profile) {
-      console.log('Profile already loaded:', profile);
       const profileData = {
         firstName: profile.first_name || '',
         lastName: profile.last_name || '',
@@ -63,17 +59,12 @@ function UserProfile() {
         postalCode: profile.postal_code || '',
       };
       
-      console.log('Setting form data:', profileData);
       setFormData(profileData);
       setIsLoadingProfile(false);
     } else {
-      console.log('No profile found, loading directly with fetch...');
-      
       // טעינת הפרופיל ישירות עם fetch
       const loadProfileWithFetch = async () => {
         try {
-          console.log('Loading profile with fetch...');
-          
           // קריאה עם fetch
           const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
             headers: {
@@ -83,22 +74,15 @@ function UserProfile() {
             }
           });
           
-          console.log('Fetch response status:', response.status);
-          console.log('Fetch response ok:', response.ok);
-          
           if (!response.ok) {
             const errorText = await response.text();
-            console.log('Fetch error text:', errorText);
             throw new Error(`HTTP ${response.status}: ${errorText}`);
           }
           
           const profileDataArray = await response.json();
-          console.log('Fetch profile data:', profileDataArray);
           
           if (profileDataArray.length === 0) {
             // פרופיל לא קיים, נצור אחד חדש
-            console.log('Profile not found, creating new one...');
-            
             const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
               method: 'POST',
               headers: {
@@ -166,7 +150,6 @@ function UserProfile() {
   // useEffect נוסף לטיפול בפרופיל שנטען מאוחר יותר
   useEffect(() => {
     if (profile && isLoadingProfile) {
-      console.log('Profile loaded after component was ready:', profile);
       const profileData = {
         firstName: profile.first_name || '',
         lastName: profile.last_name || '',
@@ -177,7 +160,6 @@ function UserProfile() {
         postalCode: profile.postal_code || '',
       };
       
-      console.log('Setting form data from late-loaded profile:', profileData);
       setFormData(profileData);
       setIsLoadingProfile(false);
     }
@@ -196,11 +178,6 @@ function UserProfile() {
     setIsLoading(true);
     try {
       if (!user || !session) throw new Error('No user or session found');
-      
-      console.log('Updating profile for user:', user.id);
-      console.log('Form data:', formData);
-      
-      console.log('Starting profile update...');
       
       // עדכון ישיר עם fetch
       const profileData = {
@@ -230,7 +207,6 @@ function UserProfile() {
       }
       
       const updatedProfile = await updateResponse.json();
-      console.log('Profile updated successfully:', updatedProfile);
       
       setIsEditing(false);
       // הצגת הודעת הצלחה

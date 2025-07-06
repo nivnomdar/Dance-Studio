@@ -41,17 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // טעינת הפרופיל אם יש משתמש
       if (session?.user) {
-        console.log('=== AUTHCONTEXT SESSION DEBUG ===');
-        console.log('Session exists:', !!session);
-        console.log('User ID:', session.user.id);
-        console.log('User email:', session.user.email);
-        console.log('Session access token:', session.access_token ? 'Present' : 'Missing');
-        console.log('Session refresh token:', session.refresh_token ? 'Present' : 'Missing');
-        console.log('Session expires at:', session.expires_at);
-        console.log('Current time:', Math.floor(Date.now() / 1000));
-        console.log('Token expired:', session.expires_at ? (Math.floor(Date.now() / 1000) > session.expires_at) : 'Unknown');
-        console.log('================================');
-        
         try {
           const { data: profileData, error } = await supabase
             .from('profiles')
@@ -59,10 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq('id', session.user.id)
             .single();
           
-          console.log('Profile query result:', { profileData, error });
-          
           if (!error && profileData) {
-            console.log('Profile loaded on session init:', profileData);
             setProfile(profileData);
           } else if (error) {
             console.error('Error loading profile on session init:', error);
@@ -88,32 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
             try {
-              console.log('Creating profile in background for user:', session.user.email);
-              console.log('=== BACKGROUND SESSION DEBUG ===');
-              console.log('Session exists:', !!session);
-              console.log('User ID:', session.user.id);
-              console.log('Session access token:', session.access_token ? 'Present' : 'Missing');
-              console.log('Session expires at:', session.expires_at);
-              console.log('Current time:', Math.floor(Date.now() / 1000));
-              console.log('Token expired:', session.expires_at ? (Math.floor(Date.now() / 1000) > session.expires_at) : 'Unknown');
-              console.log('==================================');
-              
               // בדיקה פשוטה של החיבור ל-Supabase
-              console.log('Testing Supabase connection...');
               try {
                 const { data: testData, error: testError } = await supabase
                   .from('profiles')
                   .select('count')
                   .limit(1);
                 
-                console.log('Connection test result:', { testData, testError });
-                
                 if (testError) {
                   console.error('Connection test failed:', testError);
                   return;
                 }
-                
-                console.log('Connection test successful, proceeding with profile check...');
               } catch (error) {
                 console.error('Connection test threw exception:', error);
                 return;
@@ -125,10 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq('id', session.user.id)
                 .single();
 
-              console.log('Existing profile check result:', existingProfile);
-
               if (!existingProfile) {
-                console.log('Creating new profile...');
                 const fullName = session.user.user_metadata?.full_name || '';
                 const nameParts = fullName.split(' ');
                 const firstName = nameParts[0] || '';
@@ -158,12 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (createError) {
                   console.error('Error creating profile:', createError);
                 } else {
-                  console.log('Profile created successfully:', newProfile);
                   // שמירת הפרופיל ב-state
                   setProfile(newProfile);
                 }
               } else {
-                console.log('Profile already exists, updating last login...');
                 const { error: updateError } = await supabase
                   .from('profiles')
                   .update({ last_login_at: new Date().toISOString() })
