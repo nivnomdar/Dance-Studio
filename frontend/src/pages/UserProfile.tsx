@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 function UserProfile() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, session, profile, profileLoading, loadProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,30 +24,164 @@ function UserProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // איפוס מצב הטעינה כאשר המשתמש משתנה
+    setIsLoadingProfile(true);
+    setProfileError(null);
+    
+    // איפוס formData כאשר המשתמש משתנה
+    setFormData({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      address: '',
+      city: '',
+      postalCode: '',
+    });
+    
     // רק אם יש משתמש ולא בטעינה
     if (!user || authLoading) {
+      console.log('No user or auth loading, setting isLoadingProfile to false');
       if (!user && !authLoading) {
         setIsLoadingProfile(false);
       }
       return;
     }
     
-            // השתמש בנתונים מה-metadata מיד
-        const profileData = {
-          firstName: user.user_metadata?.first_name || '',
-          lastName: user.user_metadata?.last_name || '',
-          phone: user.user_metadata?.phone || '',
-          email: user.email || '',
-          address: user.user_metadata?.address || '',
-          city: user.user_metadata?.city || '',
-          postalCode: user.user_metadata?.postal_code || '',
-        };
+    console.log('User and session ready, checking for profile...');
     
-    setFormData(profileData);
-    setIsLoadingProfile(false);
-    
+    // אם יש פרופיל, נשתמש בו
+    if (profile) {
+      console.log('Profile already loaded:', profile);
+      const profileData = {
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        phone: profile.phone_number || '',
+        email: profile.email || user.email || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        postalCode: profile.postal_code || '',
+      };
+      
+      console.log('Setting form data:', profileData);
+      setFormData(profileData);
+      setIsLoadingProfile(false);
+    } else {
+      console.log('No profile found, loading directly with fetch...');
+      
+      // טעינת הפרופיל ישירות עם fetch
+      const loadProfileWithFetch = async () => {
+        try {
+          console.log('Loading profile with fetch...');
+          
+          // קריאה עם fetch
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Fetch response status:', response.status);
+          console.log('Fetch response ok:', response.ok);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.log('Fetch error text:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+          
+          const profileDataArray = await response.json();
+          console.log('Fetch profile data:', profileDataArray);
+          
+          if (profileDataArray.length === 0) {
+            // פרופיל לא קיים, נצור אחד חדש
+            console.log('Profile not found, creating new one...');
+            
+            const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
+              method: 'POST',
+              headers: {
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${session?.access_token}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+              },
+              body: JSON.stringify({
+                id: user.id,
+                email: user.email,
+                first_name: '',
+                last_name: '',
+                role: 'user',
+                created_at: new Date().toISOString(),
+                is_active: true,
+                terms_accepted: false,
+                marketing_consent: false,
+                last_login_at: new Date().toISOString(),
+                language: 'he'
+              })
+            });
+            
+            if (!createResponse.ok) {
+              const createErrorText = await createResponse.text();
+              throw new Error(`Create failed: ${createErrorText}`);
+            }
+            
+            setFormData({
+              firstName: '',
+              lastName: '',
+              phone: '',
+              email: user.email || '',
+              address: '',
+              city: '',
+              postalCode: '',
+            });
+          } else {
+            const profileData = profileDataArray[0];
+            const formDataFromProfile = {
+              firstName: profileData.first_name || '',
+              lastName: profileData.last_name || '',
+              phone: profileData.phone_number || '',
+              email: profileData.email || user.email || '',
+              address: profileData.address || '',
+              city: profileData.city || '',
+              postalCode: profileData.postal_code || '',
+            };
+            
+            setFormData(formDataFromProfile);
+          }
+          
+          setIsLoadingProfile(false);
+        } catch (error) {
+          console.error('Error loading profile:', error);
+          setProfileError(`שגיאה בטעינת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+          setIsLoadingProfile(false);
+        }
+      };
+      
+      loadProfileWithFetch();
+    }
+  }, [user?.id, authLoading, profile]);
 
-  }, [user?.id, authLoading]);
+  // useEffect נוסף לטיפול בפרופיל שנטען מאוחר יותר
+  useEffect(() => {
+    if (profile && isLoadingProfile) {
+      console.log('Profile loaded after component was ready:', profile);
+      const profileData = {
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        phone: profile.phone_number || '',
+        email: profile.email || user?.email || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        postalCode: profile.postal_code || '',
+      };
+      
+      console.log('Setting form data from late-loaded profile:', profileData);
+      setFormData(profileData);
+      setIsLoadingProfile(false);
+    }
+  }, [profile, isLoadingProfile, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -61,36 +195,42 @@ function UserProfile() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      if (!user) throw new Error('No user found');
+      if (!user || !session) throw new Error('No user or session found');
       
-      // עדכון טבלת profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone_number: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postal_code: formData.postalCode,
-        })
-        .eq('id', user.id);
+      console.log('Updating profile for user:', user.id);
+      console.log('Form data:', formData);
       
-      if (profileError) throw profileError;
+      console.log('Starting profile update...');
       
-      // עדכון user_metadata גם כן (למקרה שמשהו אחר משתמש בזה)
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postal_code: formData.postalCode,
-        }
+      // עדכון ישיר עם fetch
+      const profileData = {
+        email: user.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postal_code: formData.postalCode,
+      };
+      
+      const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(profileData)
       });
       
-      if (authError) throw authError;
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        throw new Error(`Update failed: ${errorText}`);
+      }
+      
+      const updatedProfile = await updateResponse.json();
+      console.log('Profile updated successfully:', updatedProfile);
       
       setIsEditing(false);
       // הצגת הודעת הצלחה
@@ -99,7 +239,7 @@ function UserProfile() {
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (error) {
       console.error('Error updating profile:', error);
-      setErrorMessage('אירעה שגיאה בעדכון הפרופיל. אנא נסה שוב.');
+      setErrorMessage(`אירעה שגיאה בעדכון הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
       setShowErrorPopup(true);
       // סגירת הפופאפ אחרי 5 שניות
       setTimeout(() => setShowErrorPopup(false), 5000);
@@ -127,8 +267,6 @@ function UserProfile() {
     navigate('/');
     return null;
   }
-
-
 
   // Loading state
   if (isLoadingProfile) {
@@ -169,10 +307,6 @@ function UserProfile() {
     );
   }
 
-
-
-
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-24 pb-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -243,17 +377,23 @@ function UserProfile() {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="text-center p-4 bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 rounded-2xl relative group">
                     <div className="text-2xl font-bold text-[#EC4899]">0</div>
-                    <div className="text-sm text-[#4B2E83]/70 mb-2">שיעורים שנרשמתי</div>
+                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">השיעורים שלי</div>
                     <button
                       onClick={() => window.open('http://localhost:5173/classes', '_blank')}
-                      className="w-full px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md"
+                      className="w-full px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
                       הרשמה לשיעור
                     </button>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-2xl">
+                  <div className="text-center p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-2xl relative group">
                     <div className="text-2xl font-bold text-[#4B2E83]">0</div>
-                    <div className="text-sm text-[#4B2E83]/70">הזמנות</div>
+                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">הזמנות שהזמנתי</div>
+                    <button
+                      onClick={() => window.open('http://localhost:5173/shop', '_blank')}
+                      className="w-full px-3 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
+                    >
+                      לקנייה בחנות
+                    </button>
                   </div>
                 </div>
 

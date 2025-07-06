@@ -38,6 +38,11 @@ create policy "Users can update their own profile."
   on profiles for update
   using ( auth.uid() = id );
 
+create policy "Users can upsert their own profile."
+  on profiles for all
+  using ( auth.uid() = id )
+  with check ( auth.uid() = id );
+
 -- Create function to handle updated_at
 create or replace function public.handle_updated_at()
 returns trigger as $$

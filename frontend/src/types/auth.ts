@@ -4,6 +4,9 @@ export interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  profile: any | null;
+  profileLoading: boolean;
+  loadProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
