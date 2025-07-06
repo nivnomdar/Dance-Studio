@@ -12,6 +12,7 @@ import CartPage from './pages/CartPage';
 import AuthCallback from './pages/AuthCallback';
 import TrialClassPage from './pages/TrialClassPage';
 import SingleClassPage from './pages/SingleClassPage';
+import PrivateLessonPage from './pages/PrivateLessonPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -35,6 +36,7 @@ function App() {
                   <Route path="/classes" element={<ClassesPage />} />
                   <Route path="/trial-class" element={<TrialClassPage />} />
                   <Route path="/single-class" element={<SingleClassPage />} />
+                  <Route path="/private-lesson" element={<PrivateLessonPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/shop" element={<ShopPage />} />
