@@ -16,6 +16,42 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
+export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
+  const { class_id, full_name, phone, email, selected_date, selected_time } = req.body;
+  
+  if (!class_id || !full_name || !phone || !email || !selected_date || !selected_time) {
+    throw new AppError('Missing required fields: class_id, full_name, phone, email, selected_date, and selected_time are required', 400);
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new AppError('Invalid email format', 400);
+  }
+  
+  // Validate phone format (basic validation)
+  if (phone.length < 9) {
+    throw new AppError('Phone number must be at least 9 digits', 400);
+  }
+  
+  // Validate date format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(selected_date)) {
+    throw new AppError('Invalid date format. Use YYYY-MM-DD', 400);
+  }
+  
+  // Validate that date is not in the past
+  const selectedDate = new Date(selected_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (selectedDate < today) {
+    throw new AppError('Selected date cannot be in the past', 400);
+  }
+  
+  next();
+};
+
 export const validateProduct = (req: Request, res: Response, next: NextFunction) => {
   const { name, description, price } = req.body;
   

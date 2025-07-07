@@ -4,4 +4,5 @@ export * from './auth';
 export * from './cart';
 export * from './popup';
 export * from './common';
-export * from './class'; 
+export * from './class';
+export * from './registration'; 

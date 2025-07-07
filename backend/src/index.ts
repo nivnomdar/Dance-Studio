@@ -12,7 +12,7 @@ import authRoutes from './routes/auth';
 import classesRoutes from './routes/classes';
 import shopRoutes from './routes/shop';
 import ordersRoutes from './routes/orders';
-import classRegistrationsRoutes from './routes/class-registrations';
+import registrationsRoutes from './routes/registrations';
 import profilesRoutes from './routes/profiles';
 
 const app = express();
@@ -37,7 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/classes', classesRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/orders', ordersRoutes);
-app.use('/api/registrations', classRegistrationsRoutes);
+app.use('/api/registrations', registrationsRoutes);
 app.use('/api/profiles', profilesRoutes);
 
 // Error handling

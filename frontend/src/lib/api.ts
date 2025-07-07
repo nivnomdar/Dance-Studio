@@ -1,3 +1,6 @@
+import { Class } from '../types/class';
+import { Registration, RegistrationWithDetails, CreateRegistrationRequest } from '../types/registration';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 class ApiError extends Error {
@@ -18,19 +21,75 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const apiService = {
   // Classes API
   classes: {
-    async getAll(): Promise<any[]> {
+    async getAll(): Promise<Class[]> {
       const response = await fetch(`${API_BASE_URL}/classes`);
-      return handleResponse<any[]>(response);
+      return handleResponse<Class[]>(response);
     },
 
-    async getById(id: string): Promise<any> {
+    async getById(id: string): Promise<Class | null> {
       const response = await fetch(`${API_BASE_URL}/classes/${id}`);
-      return handleResponse<any>(response);
+      return handleResponse<Class | null>(response);
     },
 
-    async getBySlug(slug: string): Promise<any> {
+    async getBySlug(slug: string): Promise<Class | null> {
       const response = await fetch(`${API_BASE_URL}/classes/slug/${slug}`);
-      return handleResponse<any>(response);
+      return handleResponse<Class | null>(response);
+    }
+  },
+
+  // Registrations API
+  registrations: {
+    async getAll(): Promise<RegistrationWithDetails[]> {
+      const response = await fetch(`${API_BASE_URL}/registrations`, {
+        credentials: 'include'
+      });
+      return handleResponse<RegistrationWithDetails[]>(response);
+    },
+
+    async getMy(): Promise<RegistrationWithDetails[]> {
+      const response = await fetch(`${API_BASE_URL}/registrations/my`, {
+        credentials: 'include'
+      });
+      return handleResponse<RegistrationWithDetails[]>(response);
+    },
+
+    async getById(id: string): Promise<RegistrationWithDetails | null> {
+      const response = await fetch(`${API_BASE_URL}/registrations/${id}`, {
+        credentials: 'include'
+      });
+      return handleResponse<RegistrationWithDetails | null>(response);
+    },
+
+    async create(data: CreateRegistrationRequest): Promise<RegistrationWithDetails> {
+      const response = await fetch(`${API_BASE_URL}/registrations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      return handleResponse<RegistrationWithDetails>(response);
+    },
+
+    async updateStatus(id: string, status: string): Promise<RegistrationWithDetails> {
+      const response = await fetch(`${API_BASE_URL}/registrations/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status })
+      });
+      return handleResponse<RegistrationWithDetails>(response);
+    },
+
+    async delete(id: string): Promise<{ message: string }> {
+      const response = await fetch(`${API_BASE_URL}/registrations/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      return handleResponse<{ message: string }>(response);
     }
   }
 }; 

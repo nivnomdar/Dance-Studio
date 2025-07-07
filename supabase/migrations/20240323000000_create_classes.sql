@@ -25,11 +25,14 @@ create table if not exists public.classes (
 -- Enable Row Level Security
 alter table public.classes enable row level security;
 
--- Create policies
+-- Create policies for classes
+
+-- Everyone can view active classes (no authentication required)
 create policy "Classes are viewable by everyone."
   on classes for select
   using ( is_active = true );
 
+-- Only admins can insert new classes
 create policy "Admins can insert classes."
   on classes for insert
   with check ( 
@@ -40,6 +43,7 @@ create policy "Admins can insert classes."
     )
   );
 
+-- Only admins can update classes
 create policy "Admins can update classes."
   on classes for update
   using ( 
@@ -50,6 +54,7 @@ create policy "Admins can update classes."
     )
   );
 
+-- Only admins can delete classes
 create policy "Admins can delete classes."
   on classes for delete
   using ( 
@@ -65,6 +70,12 @@ create trigger handle_classes_updated_at
   before update on public.classes
   for each row
   execute procedure public.handle_updated_at();
+
+-- Create indexes for better performance
+create index idx_classes_is_active on public.classes(is_active);
+create index idx_classes_category on public.classes(category);
+create index idx_classes_created_at on public.classes(created_at);
+create index idx_classes_slug on public.classes(slug);
 
 -- Insert sample data
 insert into public.classes (name, slug, description, price, duration, level, category, image_url) values

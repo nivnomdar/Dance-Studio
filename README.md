@@ -87,6 +87,14 @@ Avigail Dance Studio/
 - `PUT /api/classes/:id` - עדכון שיעור (admin only)
 - `DELETE /api/classes/:id` - מחיקת שיעור (admin only)
 
+### Registrations
+- `GET /api/registrations` - קבלת כל ההרשמות (admin only)
+- `GET /api/registrations/my` - קבלת ההרשמות של המשתמש המחובר
+- `GET /api/registrations/:id` - קבלת הרשמה לפי ID
+- `POST /api/registrations` - יצירת הרשמה חדשה
+- `PUT /api/registrations/:id/status` - עדכון סטטוס הרשמה (admin only)
+- `DELETE /api/registrations/:id` - מחיקת הרשמה
+
 ## מבנה נתונים
 
 ### טבלת Classes
@@ -115,6 +123,26 @@ create table public.classes (
 );
 ```
 
+### טבלת Registrations
+```sql
+create table public.registrations (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid not null references public.classes(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  full_name text not null,
+  phone text not null,
+  email text not null,
+  experience text,
+  selected_date date not null,
+  selected_time text not null,
+  notes text,
+  status text default 'pending' check (status in ('pending', 'confirmed', 'cancelled')),
+  payment_id text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
 ## פיתוח
 
 ### Backend
@@ -136,9 +164,11 @@ npm run lint    # בדיקת קוד
 ## תכונות עיקריות
 
 - ✅ שיעורי ריקוד עם נתונים מה-DB
-- ✅ מערכת הרשמה לשיעורים
+- ✅ מערכת הרשמה לשיעורים עם פרטים מלאים
 - ✅ ניהול פרופיל משתמש
 - ✅ מערכת קניות
 - ✅ אימות משתמשים עם Google
 - ✅ ממשק משתמש מודרני ויפה
-- ✅ תמיכה בעברית ו-RTL 
+- ✅ תמיכה בעברית ו-RTL
+- ✅ ניהול הרשמות עם סטטוסים
+- ✅ אבטחה מלאה עם RLS 
