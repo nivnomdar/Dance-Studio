@@ -108,6 +108,7 @@ function ClassesPage() {
                     classItem.title === 'שיעור ניסיון' ? '/trial-class' : 
                     classItem.title === 'שיעור בודד' ? '/single-class' : 
                     classItem.title === 'שיעור אישי' ? '/private-lesson' : 
+                    classItem.title === 'מנוי חודשי' ? '/monthly-subscription' : 
                     '/contact'
                   }
                   className={`inline-flex items-center justify-center w-full ${classItem.bgColor} ${classItem.hoverColor} text-white px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-sm`}

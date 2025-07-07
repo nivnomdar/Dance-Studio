@@ -13,6 +13,7 @@ import AuthCallback from './pages/AuthCallback';
 import TrialClassPage from './pages/TrialClassPage';
 import SingleClassPage from './pages/SingleClassPage';
 import PrivateLessonPage from './pages/PrivateLessonPage';
+import MonthlySubscriptionPage from './pages/MonthlySubscriptionPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -37,6 +38,7 @@ function App() {
                   <Route path="/trial-class" element={<TrialClassPage />} />
                   <Route path="/single-class" element={<SingleClassPage />} />
                   <Route path="/private-lesson" element={<PrivateLessonPage />} />
+                  <Route path="/monthly-subscription" element={<MonthlySubscriptionPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/shop" element={<ShopPage />} />
