@@ -108,12 +108,12 @@ function ContactPage() {
 
                 {/* אייקון וויז - צד שמאל */}
                 <div className="flex justify-center items-center">
-                  <a 
-                    href="https://waze.com/ul?q=רחוב%20יוסף%20לישנסקי%206%2C%20ראשון%20לציון&navigate=yes" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-center p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:-rotate-2 relative"
-                  >
+                                      <a 
+                      href="https://ul.waze.com/ul?place=EitZb3NlZiBMaXNoYW5za2kgQmx2ZCwgUmlzaG9uIExlWmlvbiwgSXNyYWVsIi4qLAoUChIJyUzrhYSzAhURYAgXG887oa8SFAoSCf9mqyc4tAIVEbh6GldKxbwX&ll=31.99049600%2C34.76588500&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:-rotate-2 relative"
+                    >
                     <div className="w-12 h-12 bg-[#33C1FF] rounded-full flex items-center justify-center mb-2 group-hover:shadow-blue-300 group-hover:shadow-lg transition-all duration-300 ring-2 ring-[#33C1FF]/30 group-hover:ring-4 group-hover:ring-[#33C1FF]/50">
                       <FaWaze className="w-6 h-6 text-white" />
                     </div>

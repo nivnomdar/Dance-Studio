@@ -102,13 +102,13 @@ function TrialClassPage() {
                     <FaMapMarkerAlt className="w-6 h-6 ml-3" />
                     <div>
                       <p className="font-bold">מיקום הסטודיו</p>
-                      <p className="text-[#2B2B2B]">רחוב יוסף לישנסקי 6, ראשון לציון</p>
-                      <a 
-                        href="https://waze.com/ul?q=רחוב%20יוסף%20לישנסקי%206%2C%20ראשון%20לציון&navigate=yes" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-pink-500 hover:text-pink-600 text-sm underline transition-colors duration-200 inline-flex items-center"
-                      >
+                      <p className="text-[#2B2B2B]">רחוב יוסף לישנסקי 6 ראשון לציון ישראל</p>
+                                              <a 
+                          href="https://ul.waze.com/ul?place=EitZb3NlZiBMaXNoYW5za2kgQmx2ZCwgUmlzaG9uIExlWmlvbiwgSXNyYWVsIi4qLAoUChIJyUzrhYSzAhURYAgXG887oa8SFAoSCf9mqyc4tAIVEbh6GldKxbwX&ll=31.99049600%2C34.76588500&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-pink-500 hover:text-pink-600 text-sm underline transition-colors duration-200 inline-flex items-center"
+                        >
                         <FaWaze className="w-4 h-4 ml-1" />
                         מיקום בוויז
                       </a>

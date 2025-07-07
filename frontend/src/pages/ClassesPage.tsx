@@ -32,7 +32,7 @@ function ClassesPage() {
       description: 'שיעור פרטי אחד על אחד עם אביגיל. מתאים למי שרוצה תשומת לב אישית והתקדמות מהירה.',
       schedule: 'לפי תיאום מראש',
       level: 'כל הרמות',
-      price: '120 ש"ח',
+      price: '150 ש"ח',
       image: '/carousel/image4.png',
       color: 'from-emerald-500 to-teal-500',
       textColor: 'text-emerald-600',

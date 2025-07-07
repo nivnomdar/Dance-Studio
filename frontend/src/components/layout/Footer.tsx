@@ -81,7 +81,7 @@ const Footer: React.FC = () => {
                 </div>
               </a>
               <a 
-                href="https://waze.com/ul/hsv8qj8q8q" 
+                href="https://ul.waze.com/ul?place=EitZb3NlZiBMaXNoYW5za2kgQmx2ZCwgUmlzaG9uIExlWmlvbiwgSXNyYWVsIi4qLAoUChIJyUzrhYSzAhURYAgXG887oa8SFAoSCf9mqyc4tAIVEbh6GldKxbwX&ll=31.99049600%2C34.76588500&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="group relative p-2.5 rounded-full bg-[#33CCFF] hover:bg-[#2BB5E6] transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-blue-400/25"
@@ -161,7 +161,7 @@ const Footer: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
                 <a 
-                  href="https://waze.com/ul/hsv8qj8q8q" 
+                  href="https://ul.waze.com/ul?place=EitZb3NlZiBMaXNoYW5za2kgQmx2ZCwgUmlzaG9uIExlWmlvbiwgSXNyYWVsIi4qLAoUChIJyUzrhYSzAhURYAgXG887oa8SFAoSCf9mqyc4tAIVEbh6GldKxbwX&ll=31.99049600%2C34.76588500&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-gray-300 hover:text-pink-400 transition-colors duration-200 text-sm"
