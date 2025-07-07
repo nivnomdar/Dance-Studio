@@ -13,13 +13,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const { data, error } = await supabase
       .from('classes')
       .select('*')
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
       throw new AppError('Failed to fetch classes', 500);
     }
 
-    res.json(data);
+    res.json(data || []);
   } catch (error) {
     next(error);
   }
@@ -33,6 +34,32 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       .from('classes')
       .select('*')
       .eq('id', id)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      throw new AppError('Failed to fetch class', 500);
+    }
+
+    if (!data) {
+      throw new AppError('Class not found', 404);
+    }
+
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get class by slug
+router.get('/slug/:slug', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { slug } = req.params;
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_active', true)
       .single();
 
     if (error) {
