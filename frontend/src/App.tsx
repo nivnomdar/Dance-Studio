@@ -10,10 +10,7 @@ import UserProfile from './pages/UserProfile';
 import ShopPage from './pages/ShopPage';
 import CartPage from './pages/CartPage';
 import AuthCallback from './pages/AuthCallback';
-import TrialClassPage from './pages/TrialClassPage';
-import SingleClassPage from './pages/SingleClassPage';
-import PrivateLessonPage from './pages/PrivateLessonPage';
-import MonthlySubscriptionPage from './pages/MonthlySubscriptionPage';
+import ClassDetailPage from './components/ClassDetailPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -35,10 +32,7 @@ function App() {
                   <Route path="/" element={<HomePage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/trial-class" element={<TrialClassPage />} />
-                  <Route path="/single-class" element={<SingleClassPage />} />
-                  <Route path="/private-lesson" element={<PrivateLessonPage />} />
-                  <Route path="/monthly-subscription" element={<MonthlySubscriptionPage />} />
+                  <Route path="/class/:slug" element={<ClassDetailPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/shop" element={<ShopPage />} />

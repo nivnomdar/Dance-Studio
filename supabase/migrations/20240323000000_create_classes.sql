@@ -15,6 +15,7 @@ create table if not exists public.classes (
   image_url text,
   video_url text,
   category text,
+  color_scheme text default 'pink', -- צבע ערכת נושא: pink, purple, emerald, blue
   is_active boolean default true,
   start_time timestamptz, -- אם תרצה תאריכים בעתיד
   end_time timestamptz,
@@ -78,8 +79,8 @@ create index idx_classes_created_at on public.classes(created_at);
 create index idx_classes_slug on public.classes(slug);
 
 -- Insert sample data
-insert into public.classes (name, slug, description, price, duration, level, category, image_url) values
-('שיעור ניסיון', 'trial-class', 'שיעור ניסיון ראשון במחיר מיוחד. הזדמנות מצוינת להתנסות בריקוד על עקבים ולהכיר את הסטודיו.', 60, 60, 'מתחילות', 'trial', '/carousel/image1.png'),
-('שיעור בודד', 'single-class', 'שיעור בודד לקבוצת מתחילות. מתאים למי שרוצה להתנסות או להשתתף באופן חד פעמי.', 75, 60, 'מתחילות', 'single', '/carousel/image2.png'),
-('שיעור אישי', 'private-lesson', 'שיעור פרטי אחד על אחד עם אביגיל. מתאים למי שרוצה תשומת לב אישית והתקדמות מהירה.', 150, 60, 'כל הרמות', 'private', '/carousel/image4.png'),
-('מנוי חודשי', 'monthly-subscription', 'מנוי חודשי הכולל 4 שעות שיעורים. שומר מקום קבוע בקבוצה ומחיר משתלם.', 350, 240, 'מתחילות', 'subscription', '/carousel/image3.png'); 
+insert into public.classes (name, slug, description, price, duration, level, category, image_url, color_scheme) values
+('שיעור ניסיון', 'trial-class', 'שיעור ניסיון ראשון במחיר מיוחד. הזדמנות מצוינת להתנסות בריקוד על עקבים ולהכיר את הסטודיו.', 60, 60, 'מתחילות', 'trial', '/carousel/image1.png', 'pink'),
+('שיעור בודד', 'single-class', 'שיעור בודד לקבוצת מתחילות. מתאים למי שרוצה להתנסות או להשתתף באופן חד פעמי.', 75, 60, 'מתחילות', 'single', '/carousel/image2.png', 'purple'),
+('שיעור אישי', 'private-lesson', 'שיעור פרטי אחד על אחד עם אביגיל. מתאים למי שרוצה תשומת לב אישית והתקדמות מהירה.', 150, 60, 'כל הרמות', 'private', '/carousel/image4.png', 'emerald'),
+('מנוי חודשי', 'monthly-subscription', 'מנוי חודשי הכולל 4 שעות שיעורים. שומר מקום קבוע בקבוצה ומחיר משתלם.', 350, 240, 'מתחילות', 'subscription', '/carousel/image3.png', 'blue'); 

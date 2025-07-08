@@ -28,3 +28,57 @@ html {
   font-weight: normal;
   font-style: normal;
 } */
+
+/* עיצוב שדה התאריך עם פורמט dd/mm/yyyy */
+input[type="date"] {
+  position: relative;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  padding: 0 2px;
+  color: #6b7280;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  padding: 0;
+  color: #2b2b2b;
+  font-weight: 500;
+}
+
+/* Firefox */
+input[type="date"]::-moz-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-moz-datetime-edit-text {
+  padding: 0 2px;
+  color: #6b7280;
+}
+
+input[type="date"]::-moz-datetime-edit-month-field,
+input[type="date"]::-moz-datetime-edit-day-field,
+input[type="date"]::-moz-datetime-edit-year-field {
+  padding: 0;
+  color: #2b2b2b;
+  font-weight: 500;
+}
+
+/* הסתרת האייקון המקורי של הדפדפן */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+
+input[type="date"]::-moz-calendar-picker-indicator {
+  display: none !important;
+}
+

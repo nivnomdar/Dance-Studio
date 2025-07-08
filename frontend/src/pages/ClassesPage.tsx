@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaArrowLeft } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
-import { Class } from '../types/class';
+import { Class, AvailableColorScheme } from '../types/class';
 
 function ClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -25,10 +25,43 @@ function ClassesPage() {
     fetchClasses();
   }, []);
 
-  // Helper function to get color scheme based on class name or category
-  const getColorScheme = (className: string, category?: string) => {
-    const name = className.toLowerCase();
-    const cat = category?.toLowerCase() || '';
+  // Helper function to get color scheme from class data or fallback
+  const getColorScheme = (classItem: Class) => {
+    // אם יש color_scheme מה-backend, השתמש בו
+    if (classItem.color_scheme) {
+      const schemes = {
+        pink: {
+          color: 'from-pink-500 to-rose-500',
+          textColor: 'text-pink-600',
+          bgColor: 'bg-pink-500',
+          hoverColor: 'hover:bg-pink-600'
+        },
+        purple: {
+          color: 'from-purple-500 to-indigo-500',
+          textColor: 'text-purple-600',
+          bgColor: 'bg-purple-500',
+          hoverColor: 'hover:bg-purple-600'
+        },
+        emerald: {
+          color: 'from-emerald-500 to-teal-500',
+          textColor: 'text-emerald-600',
+          bgColor: 'bg-emerald-500',
+          hoverColor: 'hover:bg-emerald-600'
+        },
+        blue: {
+          color: 'from-blue-500 to-cyan-500',
+          textColor: 'text-blue-600',
+          bgColor: 'bg-blue-500',
+          hoverColor: 'hover:bg-blue-600'
+        }
+      };
+      
+      return schemes[classItem.color_scheme as keyof typeof schemes] || schemes.pink;
+    }
+    
+    // fallback לפי שם השיעור
+    const name = classItem.name.toLowerCase();
+    const cat = classItem.category?.toLowerCase() || '';
     
     if (name.includes('ניסיון') || cat.includes('trial')) {
       return {
@@ -72,17 +105,9 @@ function ClassesPage() {
     };
   };
 
-  // Helper function to get route based on class name or slug
-  const getClassRoute = (className: string, slug: string) => {
-    const name = className.toLowerCase();
-    
-    if (name.includes('ניסיון')) return '/trial-class';
-    if (name.includes('בודד')) return '/single-class';
-    if (name.includes('אישי')) return '/private-lesson';
-    if (name.includes('מנוי') || name.includes('חודשי')) return '/monthly-subscription';
-    
-    // Fallback to slug-based route
-    return `/${slug}`;
+  // Helper function to get route based on slug
+  const getClassRoute = (slug: string) => {
+    return `/class/${slug}`;
   };
 
   if (loading) {
@@ -134,8 +159,8 @@ function ClassesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...classes].reverse().map((classItem) => {
-              const colorScheme = getColorScheme(classItem.name, classItem.category);
-              const route = getClassRoute(classItem.name, classItem.slug);
+              const colorScheme = getColorScheme(classItem);
+              const route = getClassRoute(classItem.slug);
               
               return (
                 <div 
@@ -148,7 +173,7 @@ function ClassesPage() {
                       alt={classItem.name}
                       className="w-full h-full object-cover"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${colorScheme.color} opacity-60`}></div>
+
                     <div className="absolute bottom-3 right-3">
                       <span className={`${colorScheme.bgColor} text-white px-3 py-1 rounded-full text-xs font-medium`}>
                         {classItem.price} ש"ח
@@ -198,7 +223,7 @@ function ClassesPage() {
             הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מחוויה מקצועית
           </p>
           <Link
-            to="/trial-class"
+            to="/class/trial-class"
             className="inline-flex items-center justify-center bg-white text-[#EC4899] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
           >
             הזמיני שיעור ניסיון
