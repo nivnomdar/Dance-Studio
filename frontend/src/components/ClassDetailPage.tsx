@@ -29,9 +29,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     first_name: '',
     last_name: '',
     phone: '',
-    email: '',
-    experience: 'beginner',
-    notes: ''
+    email: ''
   });
 
   // קבלת תאריכים זמינים לכפתורים
@@ -105,10 +103,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         last_name: formData.last_name,
         phone: formData.phone,
         email: formData.email,
-        experience: formData.experience,
         selected_date: selectedDate,
-        selected_time: selectedTime,
-        notes: formData.notes
+        selected_time: selectedTime
       };
       
       // שליחה לשרת
@@ -304,7 +300,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
                         <FaCalendarAlt className="w-4 h-4 inline ml-2" />
-                      בחרי תאריך לשיעור
+                      בחרי תאריך לשיעור *
                       </label>
                     <div className="grid grid-cols-3 gap-3">
                       {availableDates.map((date) => {
@@ -364,7 +360,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
                         <FaClock className="w-4 h-4 inline ml-2" />
-                        בחרי שעה לשיעור
+                        בחרי שעה לשיעור *
                       </label>
                       <div className="grid grid-cols-3 gap-3">
                         {getAvailableTimesForDate(selectedDate, classData.schedule).map((time) => {
@@ -424,7 +420,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                          שם פרטי
+                          שם פרטי *
                         </label>
                         <input
                           type="text"
@@ -438,7 +434,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                       </div>
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                          שם משפחה
+                          שם משפחה *
                       </label>
                       <input
                         type="text"
@@ -454,14 +450,14 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
 
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        מספר טלפון
+                        מספר טלפון *
                       </label>
                       <input
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                        placeholder="עדכני את מספר הטלפון"
+                        placeholder="עדכני את מספר הטלפון שלך"
                         dir="rtl"
                         required
                       />
@@ -469,7 +465,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
 
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        אימייל (אופציונלי)
+                        אימייל *
                       </label>
                       <input
                         type="email"
@@ -478,45 +474,13 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
                         placeholder="עדכני את כתובת האימייל שלך"
                         dir="rtl"
+                        required
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        ניסיון בריקוד
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={formData.experience}
-                          onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                          className={`w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg appearance-none cursor-pointer`}
-                        >
-                          <option value="beginner">מתחילה - אין ניסיון</option>
-                          <option value="some">יש לי קצת ניסיון</option>
-                          <option value="intermediate">רמה בינונית</option>
-                          <option value="advanced">רמה מתקדמת</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        הודעה נוספת (אופציונלי)
-                      </label>
-                      <textarea
-                        value={formData.notes}
-                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                        rows={4}
-                        placeholder="ספרי לי על המטרות שלך, סגנון מועדף, או כל דבר אחר שתרצי שאדע..."
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg resize-none text-right`}
-                        dir="rtl"
-                      />
-                    </div>
+
+
                   </div>
 
                   {/* Price Summary */}
@@ -533,13 +497,13 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={!selectedDate || !selectedTime || (() => {
+                    disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || !formData.email || (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       return spotsInfo?.available === 0;
                     })()}
                     className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl ${
-                      selectedDate && selectedTime && (() => {
+                      selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && formData.email && (() => {
                         const spotsKey = `${selectedDate}-${selectedTime}`;
                         const spotsInfo = availableSpots[spotsKey];
                         return spotsInfo?.available !== 0;
@@ -548,7 +512,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : (() => {
+                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : !formData.email ? 'מלאי כתובת אימייל' : (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       if (spotsInfo?.available === 0) {
