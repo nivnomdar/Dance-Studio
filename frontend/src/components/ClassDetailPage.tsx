@@ -28,8 +28,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    phone: '',
-    email: ''
+    phone: ''
   });
 
   // קבלת תאריכים זמינים לכפתורים
@@ -52,8 +51,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       [key]: spots
     }));
   };
-
-
 
   // טעינת נתוני השיעור אם לא הועברו
   useEffect(() => {
@@ -87,10 +84,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     }
   }, [selectedDate, classData]);
 
-
-
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -102,7 +95,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
-        email: formData.email,
+        email: user?.email || '',
         selected_date: selectedDate,
         selected_time: selectedTime
       };
@@ -465,22 +458,15 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
 
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        אימייל *
+                        אימייל
                       </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                        placeholder="עדכני את כתובת האימייל שלך"
-                        dir="rtl"
-                        required
-                      />
+                      <div className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-right text-[#2B2B2B]`}>
+                        {user?.email || 'לא זמין'}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 font-agrandir-regular">
+                        האימייל שלך מהחשבון המקושר
+                      </p>
                     </div>
-
-
-
-
                   </div>
 
                   {/* Price Summary */}
@@ -497,13 +483,13 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || !formData.email || (() => {
+                    disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       return spotsInfo?.available === 0;
                     })()}
                     className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl ${
-                      selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && formData.email && (() => {
+                      selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && (() => {
                         const spotsKey = `${selectedDate}-${selectedTime}`;
                         const spotsInfo = availableSpots[spotsKey];
                         return spotsInfo?.available !== 0;
@@ -512,7 +498,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : !formData.email ? 'מלאי כתובת אימייל' : (() => {
+                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       if (spotsInfo?.available === 0) {
@@ -526,8 +512,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                 {/* Additional Info */}
                 <div className="mt-6 text-sm text-gray-600 space-y-2">
                   <p>✓ ביטול חינם עד 48 שעות לפני השיעור</p>
-               
-               
                   <p>✓ גמישות בבחירת התאריך והשעה</p>
                 </div>
               </>

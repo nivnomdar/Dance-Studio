@@ -80,7 +80,7 @@ function ClassesPage() {
             <p className="text-[#2B2B2B] font-agrandir-regular text-lg">אין שיעורים זמינים כרגע</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {[...classes].reverse().map((classItem) => {
               const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
@@ -88,9 +88,9 @@ function ClassesPage() {
               return (
                 <div 
                   key={classItem.id} 
-                  className="bg-white rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition-all duration-300"
+                  className="bg-white rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition-all duration-300 h-full lg:flex lg:flex-col"
                 >
-                  <div className="relative h-48">
+                  <div className="relative h-40 lg:h-48 hidden lg:block">
                     <img
                       src={classItem.image_url || '/carousel/image1.png'}
                       alt={classItem.name}
@@ -103,34 +103,38 @@ function ClassesPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className={`text-xl font-bold ${colorScheme.textColor} mb-3 font-agrandir-grand`}>
+                  <div className="p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-4">
+                    <h3 className={`text-lg lg:text-xl font-bold ${colorScheme.textColor} mb-3 font-agrandir-grand`}>
                       {classItem.name}
                     </h3>
-                    <p className="text-[#2B2B2B] mb-4 font-agrandir-regular leading-relaxed text-sm">
-                      {classItem.description}
-                    </p>
-                    <div className="space-y-2 mb-6">
+                    <div className="h-16 lg:h-20 mb-4">
+                      <p className="text-[#2B2B2B] font-agrandir-regular leading-relaxed text-xs lg:text-sm line-clamp-3">
+                        {classItem.description}
+                      </p>
+                    </div>
+                    <div className="space-y-2 mb-6 h-12 lg:h-14">
                       {classItem.duration && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-sm`}>
+                        <div className={`flex items-center ${colorScheme.textColor} text-xs lg:text-sm`}>
                           <FaClock className="w-4 h-4 ml-2" />
                           <span className="font-agrandir-regular">{classItem.duration} דקות</span>
                         </div>
                       )}
                       {classItem.level && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-sm`}>
+                        <div className={`flex items-center ${colorScheme.textColor} text-xs lg:text-sm`}>
                           <FaUserGraduate className="w-4 h-4 ml-2" />
                           <span className="font-agrandir-regular">רמה: {classItem.level}</span>
                         </div>
                       )}
                     </div>
-                    <Link
-                      to={route}
-                      className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-sm`}
-                    >
-                      הרשמה
-                      <FaArrowLeft className="w-3 h-3 mr-2" />
-                    </Link>
+                    <div className="lg:mt-auto">
+                      <Link
+                        to={route}
+                        className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-xs lg:text-sm`}
+                      >
+                        הרשמה
+                        <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
