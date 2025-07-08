@@ -165,13 +165,13 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const colors = getColorScheme('pink');
 
   return (
-    <div className="min-h-screen bg-[#FDF9F6] py-16">
+    <div className="min-h-screen bg-[#FDF9F6] py-8 lg:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 lg:mb-12">
           <Link 
             to="/classes" 
-            className="inline-flex items-center text-[#EC4899] hover:text-[#EC4899]/80 mb-6 transition-colors duration-200 relative z-10"
+            className="inline-flex items-center text-[#EC4899] hover:text-[#EC4899]/80 mb-4 lg:mb-6 transition-colors duration-200 relative z-10"
           >
             <FaArrowLeft className="w-4 h-4 ml-2" />
             חזרה לשיעורים
@@ -185,11 +185,11 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Class Details */}
-          <div className="space-y-8">
+          <div className="space-y-6 lg:space-y-8">
             {/* Hero Image */}
-            <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl">
+            <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl hidden lg:block">
               <img
                 src={classData.image_url || '/carousel/image1.png'}
                 alt={classData.name}
@@ -213,10 +213,10 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   {classData.long_description || classData.description}
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6">
                   {classData.duration && (
-                    <div className={`flex items-center ${colors.textColor}`}>
-                      <FaClock className="w-6 h-6 ml-3" />
+                    <div className={`flex items-start ${colors.textColor}`}>
+                      <FaClock className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-bold">משך השיעור</p>
                         <p className="text-[#2B2B2B]">{classData.duration} דקות</p>
@@ -224,8 +224,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     </div>
                   )}
                   {classData.level && (
-                    <div className={`flex items-center ${colors.textColor}`}>
-                      <FaUserGraduate className="w-6 h-6 ml-3" />
+                    <div className={`flex items-start ${colors.textColor}`}>
+                      <FaUserGraduate className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-bold">רמה</p>
                         <p className="text-[#2B2B2B]">{classData.level}</p>
@@ -233,19 +233,19 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     </div>
                   )}
                   {classData.max_participants && (
-                    <div className={`flex items-center ${colors.textColor}`}>
-                      <FaUsers className="w-6 h-6 ml-3" />
+                    <div className={`flex items-start ${colors.textColor}`}>
+                      <FaUsers className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-bold">גודל קבוצה</p>
                         <p className="text-[#2B2B2B]">עד {classData.max_participants} משתתפות</p>
                       </div>
                     </div>
                   )}
-                  <div className={`flex items-center ${colors.textColor}`}>
-                    <FaMapMarkerAlt className="w-6 h-6 ml-3" />
+                  <div className={`flex items-start ${colors.textColor}`}>
+                    <FaMapMarkerAlt className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
                     <div>
                       <p className="font-bold">מיקום הסטודיו</p>
-                      <p className="text-[#2B2B2B]">רחוב יוסף לישנסקי 6 ראשון לציון ישראל</p>
+                      <p className="text-[#2B2B2B]"> יוסף לישנסקי 6, ראשון לציון</p>
                       <a 
                         href="https://ul.waze.com/ul?place=EitZb3NlZiBMaXNoYW5za2kgQmx2ZCwgUmlzaG9uIExlWmlvbiwgSXNyYWVsIi4qLAoUChIJyUzrhYSzAhURYAgXG887oa8SFAoSCf9mqyc4tAIVEbh6GldKxbwX&ll=31.99049600%2C34.76588500&navigate=yes&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location" 
                         target="_blank" 
@@ -295,7 +295,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         <FaCalendarAlt className="w-4 h-4 inline ml-2" />
                       בחרי תאריך לשיעור *
                       </label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 gap-2 lg:gap-3">
                       {availableDates.map((date) => {
                         const dateObj = new Date(date);
                         const isSelected = selectedDate === date;
@@ -313,7 +313,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                               setSelectedTime(''); // איפוס השעה כשמשנים תאריך
                             }}
                             className={`
-                              p-3 py-5 rounded-xl border-2 transition-all duration-200 text-sm font-bold relative
+                              p-2 lg:p-3 py-4 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative
                               ${isSelected 
                                 ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
                                 : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
@@ -355,7 +355,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         <FaClock className="w-4 h-4 inline ml-2" />
                         בחרי שעה לשיעור *
                       </label>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2 lg:gap-3">
                         {getAvailableTimesForDate(selectedDate, classData.schedule).map((time) => {
                           const isSelected = selectedTime === time;
                           const spotsKey = `${selectedDate}-${time}`;
@@ -373,7 +373,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                               }}
                               disabled={spotsInfo?.available === 0}
                               className={`
-                                p-4 rounded-xl border-2 transition-all duration-200 text-lg font-bold relative
+                                p-3 lg:p-4 rounded-xl border-2 transition-all duration-200 text-base lg:text-lg font-bold relative
                                 ${isSelected 
                                   ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
                                   : spotsInfo?.available === 0
@@ -382,7 +382,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                 }
                               `}
                             >
-                              <div className="text-center">
+                                                            <div className="text-center">
                                 <div>{time}</div>
                                 {spotsInfo?.message && (
                                   <div className={`text-xs mt-1 font-bold ${
@@ -393,8 +393,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                         : 'text-green-500'
                                   }`}>
                                     {spotsInfo.message}
-                          </div>
-                        )}
+                                  </div>
+                                )}
                               </div>
                             </button>
                           );
