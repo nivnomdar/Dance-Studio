@@ -3,9 +3,12 @@ import { Link, useParams } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaStar, FaCheck, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
-import { Class, AvailableColorScheme } from '../types/class';
+import { registrationsService } from '../lib/registrations';
+import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { isDateAllowed, getNextAllowedDate, getAvailableDatesMessage, getDateNotAllowedMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
+import { getColorScheme } from '../utils/colorUtils';
 
 interface ClassDetailPageProps {
   // אם לא מעבירים class, הקומפוננטה תטען אותו לפי slug
@@ -21,19 +24,38 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [availableSpots, setAvailableSpots] = useState<{ [key: string]: { available: number; message: string } }>({});
   const [formData, setFormData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
     phone: '',
     email: '',
     experience: 'beginner',
-    message: ''
+    notes: ''
   });
 
-  const availableTimes = [
-    '18:00',
-    '19:00',
-    '20:00'
-  ];
+  // קבלת תאריכים זמינים לכפתורים
+  const availableDates = getAvailableDatesForButtons(classData?.schedule);
+
+  // פונקציה לבדיקת מקומות זמינים
+  const checkAvailableSpots = async (date: string, time: string) => {
+    if (!classData) return;
+    
+    const key = `${date}-${time}`;
+    const spots = await getAvailableSpots(
+      classData.id, 
+      date, 
+      time, 
+      classData.max_participants || 10
+    );
+    
+    setAvailableSpots(prev => ({
+      ...prev,
+      [key]: spots
+    }));
+  };
+
+
 
   // טעינת נתוני השיעור אם לא הועברו
   useEffect(() => {
@@ -57,209 +79,49 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     }
   }, [slug, initialClass]);
 
-  // פונקציה לקבלת ערכת צבעים לפי שם הצבע
-  const getColorScheme = (colorScheme?: AvailableColorScheme) => {
-    const schemes = {
-      pink: {
-        gradient: 'from-pink-500 to-rose-500',
-        textColor: 'text-pink-600',
-        bgColor: 'bg-pink-500',
-        hoverColor: 'hover:bg-pink-600',
-        lightBg: 'bg-pink-50',
-        focusRing: 'focus:ring-pink-500',
-        focusBorder: 'focus:border-pink-500'
-      },
-      purple: {
-        gradient: 'from-purple-500 to-indigo-500',
-        textColor: 'text-purple-600',
-        bgColor: 'bg-purple-500',
-        hoverColor: 'hover:bg-purple-600',
-        lightBg: 'bg-purple-50',
-        focusRing: 'focus:ring-purple-500',
-        focusBorder: 'focus:border-purple-500'
-      },
-      emerald: {
-        gradient: 'from-emerald-500 to-teal-500',
-        textColor: 'text-emerald-600',
-        bgColor: 'bg-emerald-500',
-        hoverColor: 'hover:bg-emerald-600',
-        lightBg: 'bg-emerald-50',
-        focusRing: 'focus:ring-emerald-500',
-        focusBorder: 'focus:border-emerald-500'
-      },
-      blue: {
-        gradient: 'from-blue-500 to-cyan-500',
-        textColor: 'text-blue-600',
-        bgColor: 'bg-blue-500',
-        hoverColor: 'hover:bg-blue-600',
-        lightBg: 'bg-blue-50',
-        focusRing: 'focus:ring-blue-500',
-        focusBorder: 'focus:border-blue-500'
-      },
-      red: {
-        gradient: 'from-red-500 to-pink-500',
-        textColor: 'text-red-600',
-        bgColor: 'bg-red-500',
-        hoverColor: 'hover:bg-red-600',
-        lightBg: 'bg-red-50',
-        focusRing: 'focus:ring-red-500',
-        focusBorder: 'focus:border-red-500'
-      },
-      orange: {
-        gradient: 'from-orange-500 to-red-500',
-        textColor: 'text-orange-600',
-        bgColor: 'bg-orange-500',
-        hoverColor: 'hover:bg-orange-600',
-        lightBg: 'bg-orange-50',
-        focusRing: 'focus:ring-orange-500',
-        focusBorder: 'focus:border-orange-500'
-      },
-      yellow: {
-        gradient: 'from-yellow-500 to-orange-500',
-        textColor: 'text-yellow-600',
-        bgColor: 'bg-yellow-500',
-        hoverColor: 'hover:bg-yellow-600',
-        lightBg: 'bg-yellow-50',
-        focusRing: 'focus:ring-yellow-500',
-        focusBorder: 'focus:border-yellow-500'
-      },
-      green: {
-        gradient: 'from-green-500 to-emerald-500',
-        textColor: 'text-green-600',
-        bgColor: 'bg-green-500',
-        hoverColor: 'hover:bg-green-600',
-        lightBg: 'bg-green-50',
-        focusRing: 'focus:ring-green-500',
-        focusBorder: 'focus:border-green-500'
-      },
-      teal: {
-        gradient: 'from-teal-500 to-cyan-500',
-        textColor: 'text-teal-600',
-        bgColor: 'bg-teal-500',
-        hoverColor: 'hover:bg-teal-600',
-        lightBg: 'bg-teal-50',
-        focusRing: 'focus:ring-teal-500',
-        focusBorder: 'focus:border-teal-500'
-      },
-      cyan: {
-        gradient: 'from-cyan-500 to-blue-500',
-        textColor: 'text-cyan-600',
-        bgColor: 'bg-cyan-500',
-        hoverColor: 'hover:bg-cyan-600',
-        lightBg: 'bg-cyan-50',
-        focusRing: 'focus:ring-cyan-500',
-        focusBorder: 'focus:border-cyan-500'
-      },
-      indigo: {
-        gradient: 'from-indigo-500 to-purple-500',
-        textColor: 'text-indigo-600',
-        bgColor: 'bg-indigo-500',
-        hoverColor: 'hover:bg-indigo-600',
-        lightBg: 'bg-indigo-50',
-        focusRing: 'focus:ring-indigo-500',
-        focusBorder: 'focus:border-indigo-500'
-      },
-      violet: {
-        gradient: 'from-violet-500 to-purple-500',
-        textColor: 'text-violet-600',
-        bgColor: 'bg-violet-500',
-        hoverColor: 'hover:bg-violet-600',
-        lightBg: 'bg-violet-50',
-        focusRing: 'focus:ring-violet-500',
-        focusBorder: 'focus:border-violet-500'
-      },
-      fuchsia: {
-        gradient: 'from-fuchsia-500 to-pink-500',
-        textColor: 'text-fuchsia-600',
-        bgColor: 'bg-fuchsia-500',
-        hoverColor: 'hover:bg-fuchsia-600',
-        lightBg: 'bg-fuchsia-50',
-        focusRing: 'focus:ring-fuchsia-500',
-        focusBorder: 'focus:border-fuchsia-500'
-      },
-      rose: {
-        gradient: 'from-rose-500 to-pink-500',
-        textColor: 'text-rose-600',
-        bgColor: 'bg-rose-500',
-        hoverColor: 'hover:bg-rose-600',
-        lightBg: 'bg-rose-50',
-        focusRing: 'focus:ring-rose-500',
-        focusBorder: 'focus:border-rose-500'
-      },
-      slate: {
-        gradient: 'from-slate-500 to-gray-500',
-        textColor: 'text-slate-600',
-        bgColor: 'bg-slate-500',
-        hoverColor: 'hover:bg-slate-600',
-        lightBg: 'bg-slate-50',
-        focusRing: 'focus:ring-slate-500',
-        focusBorder: 'focus:border-slate-500'
-      },
-      gray: {
-        gradient: 'from-gray-500 to-slate-500',
-        textColor: 'text-gray-600',
-        bgColor: 'bg-gray-500',
-        hoverColor: 'hover:bg-gray-600',
-        lightBg: 'bg-gray-50',
-        focusRing: 'focus:ring-gray-500',
-        focusBorder: 'focus:border-gray-500'
-      },
-      zinc: {
-        gradient: 'from-zinc-500 to-gray-500',
-        textColor: 'text-zinc-600',
-        bgColor: 'bg-zinc-500',
-        hoverColor: 'hover:bg-zinc-600',
-        lightBg: 'bg-zinc-50',
-        focusRing: 'focus:ring-zinc-500',
-        focusBorder: 'focus:border-zinc-500'
-      },
-      neutral: {
-        gradient: 'from-neutral-500 to-gray-500',
-        textColor: 'text-neutral-600',
-        bgColor: 'bg-neutral-500',
-        hoverColor: 'hover:bg-neutral-600',
-        lightBg: 'bg-neutral-50',
-        focusRing: 'focus:ring-neutral-500',
-        focusBorder: 'focus:border-neutral-500'
-      },
-      stone: {
-        gradient: 'from-stone-500 to-gray-500',
-        textColor: 'text-stone-600',
-        bgColor: 'bg-stone-500',
-        hoverColor: 'hover:bg-stone-600',
-        lightBg: 'bg-stone-50',
-        focusRing: 'focus:ring-stone-500',
-        focusBorder: 'focus:border-stone-500'
-      },
-      amber: {
-        gradient: 'from-amber-500 to-orange-500',
-        textColor: 'text-amber-600',
-        bgColor: 'bg-amber-500',
-        hoverColor: 'hover:bg-amber-600',
-        lightBg: 'bg-amber-50',
-        focusRing: 'focus:ring-amber-500',
-        focusBorder: 'focus:border-amber-500'
-      },
-      lime: {
-        gradient: 'from-lime-500 to-green-500',
-        textColor: 'text-lime-600',
-        bgColor: 'bg-lime-500',
-        hoverColor: 'hover:bg-lime-600',
-        lightBg: 'bg-lime-50',
-        focusRing: 'focus:ring-lime-500',
-        focusBorder: 'focus:border-lime-500'
-      }
-    };
-    
-    return schemes[colorScheme || 'pink'] || schemes.pink;
-  };
+  // טעינת מקומות זמינים כשנבחר תאריך
+  useEffect(() => {
+    if (selectedDate && classData) {
+      const times = getAvailableTimesForDate(selectedDate, classData.schedule);
+      times.forEach(time => {
+        checkAvailableSpots(selectedDate, time);
+      });
+    }
+  }, [selectedDate, classData]);
 
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // כאן יהיה הלוגיקה לשליחת הטופס
-    console.log('Class registration:', { selectedDate, selectedTime, formData, classData });
+    
+    if (!classData) return;
+    
+    try {
+      const registrationData = {
+        class_id: classData.id,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        email: formData.email,
+        experience: formData.experience,
+        selected_date: selectedDate,
+        selected_time: selectedTime,
+        notes: formData.notes
+      };
+      
+      // שליחה לשרת
+      const result = await registrationsService.createRegistration(registrationData);
+      console.log('Registration successful:', result);
+      
+      // כאן אפשר להוסיף הודעת הצלחה או ניווט לדף אחר
+      alert('ההרשמה בוצעה בהצלחה!');
+      
+    } catch (error) {
+      console.error('Registration failed:', error);
+      alert('שגיאה בהרשמה. נסי שוב.');
+    }
   };
 
   // פונקציה לטיפול בהתחברות
@@ -310,7 +172,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     );
   }
 
-  const colors = getColorScheme(classData.color_scheme);
+  // בדף פרטי שיעור - תמיד ורוד
+  const colors = getColorScheme('pink');
 
   return (
     <div className="min-h-screen bg-[#FDF9F6] py-16">
@@ -344,8 +207,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                 className="w-full h-full object-cover"
               />
 
-              <div className="absolute bottom-4 right-4">
-                <span className={`${colors.bgColor} text-white px-6 py-3 rounded-full text-lg font-bold shadow-lg`}>
+              <div className="absolute top-4 right-4">
+                <span className={`${colors.bgColor} text-white px-5 py-1 rounded-xl text-lg font-bold shadow-lg`}>
                   {classData.price} ש"ח
                 </span>
               </div>
@@ -437,103 +300,156 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                 </h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Date and Time Selection */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Date Selection */}
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
                         <FaCalendarAlt className="w-4 h-4 inline ml-2" />
-                        תאריך השיעור
+                      בחרי תאריך לשיעור
                       </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          onClick={(e) => e.currentTarget.showPicker?.()}
-                          min={new Date().toISOString().split('T')[0]}
-                          className={`w-full px-4 py-3 pl-12 pr-4 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg cursor-pointer`}
-                          required
-                          placeholder="בחרי תאריך"
-                        />
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <FaCalendarAlt className={`w-5 h-5 ${selectedDate ? colors.textColor : 'text-gray-400'}`} />
+                    <div className="grid grid-cols-3 gap-3">
+                      {availableDates.map((date) => {
+                        const dateObj = new Date(date);
+                        const isSelected = selectedDate === date;
+                        const today = new Date().toISOString().split('T')[0];
+                        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                        const isToday = date === today;
+                        const isTomorrow = date === tomorrow;
+                        
+                        return (
+                          <button
+                            key={date}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDate(date);
+                              setSelectedTime(''); // איפוס השעה כשמשנים תאריך
+                            }}
+                            className={`
+                              p-3 py-5 rounded-xl border-2 transition-all duration-200 text-sm font-bold relative
+                              ${isSelected 
+                                ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
+                                : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
+                              }
+                            `}
+                          >
+                            {isToday && (
+                              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
+                                היום
                         </div>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className={`w-5 h-5 ${selectedDate ? colors.textColor : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                        {selectedDate && (
-                          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                            <div className={`w-2 h-2 ${colors.bgColor} rounded-full`}></div>
+                            )}
+                            {isTomorrow && (
+                              <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
+                                מחר
                           </div>
                         )}
+                            <div className="text-center">
+                              <div>
+                                {dateObj.toLocaleDateString('he-IL', { 
+                                  day: 'numeric', 
+                                  month: 'numeric', 
+                                  year: 'numeric' 
+                                })} - {dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}
+                              </div>
                       </div>
-                      {selectedDate && (
-                        <p className="text-sm text-gray-600 mt-2 font-agrandir-regular">
-                          נבחר: {new Date(selectedDate).toLocaleDateString('he-IL', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-3 font-agrandir-regular">
+                      {getAvailableDatesMessage(classData?.schedule)}
                         </p>
-                      )}
                     </div>
 
+                  {/* Time Selection - מוצג רק אחרי בחירת תאריך */}
+                  {selectedDate && (
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
                         <FaClock className="w-4 h-4 inline ml-2" />
-                        שעת השיעור
+                        בחרי שעה לשיעור
                       </label>
-                      <div className="relative">
-                        <select
-                          value={selectedTime}
-                          onChange={(e) => setSelectedTime(e.target.value)}
-                          className={`w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg appearance-none cursor-pointer`}
-                          required
-                        >
-                          <option value="">בחרי שעה</option>
-                          {availableTimes.map((time) => (
-                            <option key={time} value={time}>{time}</option>
-                          ))}
-                        </select>
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <FaClock className={`w-5 h-5 ${selectedTime ? colors.textColor : 'text-gray-400'}`} />
-                        </div>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className={`w-5 h-5 ${selectedTime ? colors.textColor : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                        {selectedTime && (
-                          <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                            <div className={`w-2 h-2 ${colors.bgColor} rounded-full`}></div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {getAvailableTimesForDate(selectedDate, classData.schedule).map((time) => {
+                          const isSelected = selectedTime === time;
+                          const spotsKey = `${selectedDate}-${time}`;
+                          const spotsInfo = availableSpots[spotsKey];
+                          
+                          return (
+                            <button
+                              key={time}
+                              type="button"
+                              onClick={() => {
+                                setSelectedTime(time);
+                                if (!spotsInfo) {
+                                  checkAvailableSpots(selectedDate, time);
+                                }
+                              }}
+                              disabled={spotsInfo?.available === 0}
+                              className={`
+                                p-4 rounded-xl border-2 transition-all duration-200 text-lg font-bold relative
+                                ${isSelected 
+                                  ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
+                                  : spotsInfo?.available === 0
+                                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                                  : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
+                                }
+                              `}
+                            >
+                              <div className="text-center">
+                                <div>{time}</div>
+                                {spotsInfo?.message && (
+                                  <div className={`text-xs mt-1 font-bold ${
+                                    spotsInfo.available === 0 
+                                      ? 'text-red-500' 
+                                      : spotsInfo.available === 1 
+                                        ? 'text-orange-500' 
+                                        : 'text-green-500'
+                                  }`}>
+                                    {spotsInfo.message}
                           </div>
                         )}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                       {selectedTime && (
                         <p className="text-sm text-gray-600 mt-2 font-agrandir-regular">
-                          נבחרה: {selectedTime}
+                          השעה שנבחרה: {selectedTime}
                         </p>
                       )}
                     </div>
-                  </div>
+                  )}
 
                   {/* Personal Information */}
                   <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
+                          שם פרטי
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.first_name}
+                          onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                          className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
+                          placeholder="עדכני את שמך הפרטי"
+                          dir="rtl"
+                          required
+                        />
+                      </div>
                     <div>
                       <label className="block text-sm font-bold text-[#2B2B2B] mb-3">
-                        שם מלא
+                          שם משפחה
                       </label>
                       <input
                         type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg`}
-                        placeholder="הכנסי את שמך המלא"
+                          value={formData.last_name}
+                          onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                          className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
+                          placeholder="עדכני את שם המשפחה"
+                          dir="rtl"
                         required
                       />
+                      </div>
                     </div>
 
                     <div>
@@ -544,8 +460,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg`}
-                        placeholder="הכנסי מספר טלפון"
+                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
+                        placeholder="עדכני את מספר הטלפון"
+                        dir="rtl"
                         required
                       />
                     </div>
@@ -558,8 +475,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg`}
-                        placeholder="הכנסי כתובת אימייל"
+                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
+                        placeholder="עדכני את כתובת האימייל שלך"
+                        dir="rtl"
                       />
                     </div>
 
@@ -591,11 +509,12 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         הודעה נוספת (אופציונלי)
                       </label>
                       <textarea
-                        value={formData.message}
-                        onChange={(e) => setFormData({...formData, message: e.target.value})}
+                        value={formData.notes}
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
                         rows={4}
                         placeholder="ספרי לי על המטרות שלך, סגנון מועדף, או כל דבר אחר שתרצי שאדע..."
-                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg resize-none`}
+                        className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg resize-none text-right`}
+                        dir="rtl"
                       />
                     </div>
                   </div>
@@ -607,24 +526,44 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                       <span className={`text-2xl font-bold ${colors.textColor}`}>{classData.price} ש"ח</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-2">
-                      התשלום יתבצע במקום לפני השיעור
+                      התשלום יתבצע בדף הבא
                     </p>
                   </div>
 
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className={`w-full ${colors.bgColor} ${colors.hoverColor} text-white py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl`}
+                    disabled={!selectedDate || !selectedTime || (() => {
+                      const spotsKey = `${selectedDate}-${selectedTime}`;
+                      const spotsInfo = availableSpots[spotsKey];
+                      return spotsInfo?.available === 0;
+                    })()}
+                    className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl ${
+                      selectedDate && selectedTime && (() => {
+                        const spotsKey = `${selectedDate}-${selectedTime}`;
+                        const spotsInfo = availableSpots[spotsKey];
+                        return spotsInfo?.available !== 0;
+                      })()
+                        ? `${colors.bgColor} ${colors.hoverColor} text-white`
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
-                    הזמיני {classData.name}
+                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : (() => {
+                      const spotsKey = `${selectedDate}-${selectedTime}`;
+                      const spotsInfo = availableSpots[spotsKey];
+                      if (spotsInfo?.available === 0) {
+                        return 'מלא - אין מקומות זמינים';
+                      }
+                      return `הזמיני ${classData.name}`;
+                    })()}
                   </button>
                 </form>
 
                 {/* Additional Info */}
                 <div className="mt-6 text-sm text-gray-600 space-y-2">
-                  <p>✓ ביטול חינם עד 24 שעות לפני השיעור</p>
-                  <p>✓ נא להגיע עם נעליים נוחות</p>
-                  <p>✓ השיעור מתאים לכל הרמות</p>
+                  <p>✓ ביטול חינם עד 48 שעות לפני השיעור</p>
+               
+               
                   <p>✓ גמישות בבחירת התאריך והשעה</p>
                 </div>
               </>

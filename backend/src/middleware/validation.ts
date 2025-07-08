@@ -17,10 +17,10 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
 };
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
-  const { class_id, full_name, phone, email, selected_date, selected_time } = req.body;
+  const { class_id, first_name, last_name, phone, email, selected_date, selected_time } = req.body;
   
-  if (!class_id || !full_name || !phone || !email || !selected_date || !selected_time) {
-    throw new AppError('Missing required fields: class_id, full_name, phone, email, selected_date, and selected_time are required', 400);
+  if (!class_id || !first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
+    throw new AppError('Missing required fields: class_id, first_name, last_name, phone, email, selected_date, and selected_time are required', 400);
   }
   
   // Validate email format

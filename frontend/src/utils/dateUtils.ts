@@ -1,0 +1,186 @@
+// Utility functions for handling class schedules
+
+import { ClassSchedule, DaySchedule } from '../types/class';
+
+/**
+ * בדיקה אם תאריך מותר לפי לוח הזמנים
+ */
+export const isDateAllowed = (dateString: string, schedule?: ClassSchedule): boolean => {
+  if (!schedule) {
+    return true; // אם אין לוח זמנים, כל התאריכים מותרים
+  }
+  
+  const date = new Date(dateString);
+  const dayOfWeek = date.getDay();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dayOfWeek] as keyof ClassSchedule;
+  
+  return schedule[dayName]?.available || false;
+};
+
+/**
+ * קבלת התאריך הבא המותר
+ */
+export const getNextAllowedDate = (schedule?: ClassSchedule): string => {
+  if (!schedule) {
+    return new Date().toISOString().split('T')[0];
+  }
+  
+  const today = new Date();
+  let nextDate = new Date(today);
+  
+  // חיפוש התאריך הבא המותר
+  for (let i = 0; i < 7; i++) { // חיפוש עד שבוע אחד קדימה
+    nextDate.setDate(today.getDate() + i);
+    if (isDateAllowed(nextDate.toISOString().split('T')[0], schedule)) {
+      return nextDate.toISOString().split('T')[0];
+    }
+  }
+  return today.toISOString().split('T')[0];
+};
+
+/**
+ * קבלת הודעה על התאריכים הזמינים
+ */
+export const getAvailableDatesMessage = (schedule?: ClassSchedule): string => {
+  if (!schedule) {
+    return 'כל התאריכים זמינים';
+  }
+  
+  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  const availableDays = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][i] as keyof ClassSchedule;
+    if (schedule[dayKey]?.available) {
+      availableDays.push(dayNames[i]);
+    }
+  }
+  
+  if (availableDays.length === 0) {
+    return 'אין ימים זמינים';
+  }
+  
+  return `השיעורים מתקיימים בימים: ${availableDays.join(', ')}`;
+};
+
+/**
+ * קבלת הודעת שגיאה לתאריך לא מותר
+ */
+export const getDateNotAllowedMessage = (schedule?: ClassSchedule): string => {
+  if (!schedule) {
+    return 'תאריך זה אינו זמין לשיעורים';
+  }
+  
+  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  const availableDays = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][i] as keyof ClassSchedule;
+    if (schedule[dayKey]?.available) {
+      availableDays.push(dayNames[i]);
+    }
+  }
+  
+  if (availableDays.length === 0) {
+    return 'אין ימים זמינים לשיעורים';
+  }
+  
+  return `תאריך זה אינו זמין לשיעורים. השיעורים מתקיימים בימים: ${availableDays.join(', ')}`;
+};
+
+/**
+ * קבלת תאריכים זמינים לכפתורים
+ */
+export const getAvailableDatesForButtons = (schedule?: ClassSchedule): string[] => {
+  if (!schedule) {
+    // אם אין לוח זמנים, החזר את 7 הימים הבאים (שבוע אחד)
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
+  }
+  
+  // החזר את התאריכים הבאים של הימים הזמינים (עד שבוע אחד)
+  const dates: string[] = [];
+  const today = new Date();
+  
+  for (let i = 0; i < 7; i++) { // חיפוש עד שבוע אחד קדימה
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const dayOfWeek = date.getDay();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[dayOfWeek] as keyof ClassSchedule;
+    
+    if (schedule[dayName]?.available) {
+      dates.push(date.toISOString().split('T')[0]);
+    }
+  }
+  
+  return dates;
+};
+
+/**
+ * קבלת שעות זמינות לפי תאריך
+ */
+export const getAvailableTimesForDate = (selectedDate: string, schedule?: ClassSchedule): string[] => {
+  if (!schedule) {
+    return ['18:00', '19:00', '20:00'];
+  }
+  
+  const date = new Date(selectedDate);
+  const dayOfWeek = date.getDay();
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dayOfWeek] as keyof ClassSchedule;
+  
+  return schedule[dayName]?.times || ['18:00', '19:00', '20:00'];
+};
+
+/**
+ * בדיקת מקומות זמינים לשיעור בתאריך ושעה מסוימים
+ */
+export const getAvailableSpots = async (
+  classId: string, 
+  selectedDate: string, 
+  selectedTime: string,
+  maxParticipants: number
+): Promise<{ available: number; message: string }> => {
+  try {
+    const { supabase } = await import('../lib/supabase');
+    
+    // ספירת רשומות קיימות לשיעור זה בתאריך ושעה אלה
+    const { count, error } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('class_id', classId)
+      .eq('selected_date', selectedDate)
+      .eq('selected_time', selectedTime)
+      .eq('status', 'confirmed'); // רק רשומות מאושרות נחשבות
+    
+    if (error) {
+      console.error('Error checking available spots:', error);
+      return { available: maxParticipants, message: '' };
+    }
+    
+    const takenSpots = count || 0;
+    const availableSpots = maxParticipants - takenSpots;
+    
+    let message = '';
+    if (availableSpots <= 0) {
+      message = 'מלא';
+    } else if (availableSpots === 1) {
+      message = 'נותר מקום אחרון';
+    } else if (availableSpots <= 3) {
+      message = `נותרו ${availableSpots} מקומות אחרונים`;
+    }
+    
+    return { available: availableSpots, message };
+  } catch (error) {
+    console.error('Error checking available spots:', error);
+    return { available: maxParticipants, message: '' };
+  }
+}; 

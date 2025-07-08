@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaArrowLeft } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
-import { Class, AvailableColorScheme } from '../types/class';
+import { Class } from '../types/class';
+import { getSimpleColorScheme } from '../utils/colorUtils';
 
 function ClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
@@ -25,85 +26,7 @@ function ClassesPage() {
     fetchClasses();
   }, []);
 
-  // Helper function to get color scheme from class data or fallback
-  const getColorScheme = (classItem: Class) => {
-    // אם יש color_scheme מה-backend, השתמש בו
-    if (classItem.color_scheme) {
-      const schemes = {
-        pink: {
-          color: 'from-pink-500 to-rose-500',
-          textColor: 'text-pink-600',
-          bgColor: 'bg-pink-500',
-          hoverColor: 'hover:bg-pink-600'
-        },
-        purple: {
-          color: 'from-purple-500 to-indigo-500',
-          textColor: 'text-purple-600',
-          bgColor: 'bg-purple-500',
-          hoverColor: 'hover:bg-purple-600'
-        },
-        emerald: {
-          color: 'from-emerald-500 to-teal-500',
-          textColor: 'text-emerald-600',
-          bgColor: 'bg-emerald-500',
-          hoverColor: 'hover:bg-emerald-600'
-        },
-        blue: {
-          color: 'from-blue-500 to-cyan-500',
-          textColor: 'text-blue-600',
-          bgColor: 'bg-blue-500',
-          hoverColor: 'hover:bg-blue-600'
-        }
-      };
-      
-      return schemes[classItem.color_scheme as keyof typeof schemes] || schemes.pink;
-    }
-    
-    // fallback לפי שם השיעור
-    const name = classItem.name.toLowerCase();
-    const cat = classItem.category?.toLowerCase() || '';
-    
-    if (name.includes('ניסיון') || cat.includes('trial')) {
-      return {
-        color: 'from-pink-500 to-rose-500',
-        textColor: 'text-pink-600',
-        bgColor: 'bg-pink-500',
-        hoverColor: 'hover:bg-pink-600'
-      };
-    }
-    if (name.includes('בודד') || cat.includes('single')) {
-      return {
-        color: 'from-purple-500 to-indigo-500',
-        textColor: 'text-purple-600',
-        bgColor: 'bg-purple-500',
-        hoverColor: 'hover:bg-purple-600'
-      };
-    }
-    if (name.includes('אישי') || cat.includes('private')) {
-      return {
-        color: 'from-emerald-500 to-teal-500',
-        textColor: 'text-emerald-600',
-        bgColor: 'bg-emerald-500',
-        hoverColor: 'hover:bg-emerald-600'
-      };
-    }
-    if (name.includes('מנוי') || name.includes('חודשי') || cat.includes('subscription')) {
-      return {
-        color: 'from-blue-500 to-cyan-500',
-        textColor: 'text-blue-600',
-        bgColor: 'bg-blue-500',
-        hoverColor: 'hover:bg-blue-600'
-      };
-    }
-    
-    // Default color scheme
-    return {
-      color: 'from-gray-500 to-gray-600',
-      textColor: 'text-gray-600',
-      bgColor: 'bg-gray-500',
-      hoverColor: 'hover:bg-gray-600'
-    };
-  };
+
 
   // Helper function to get route based on slug
   const getClassRoute = (slug: string) => {
@@ -159,7 +82,7 @@ function ClassesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...classes].reverse().map((classItem) => {
-              const colorScheme = getColorScheme(classItem);
+              const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
               
               return (

@@ -20,7 +20,8 @@ export interface Registration {
   id: string;
   class_id: string;
   user_id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   email: string;
   experience?: string;
@@ -52,7 +53,8 @@ export interface RegistrationWithDetails extends Registration {
 
 export interface CreateRegistrationRequest {
   class_id: string;
-  full_name: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   email: string;
   experience?: string;
@@ -115,6 +117,7 @@ export interface Class {
   is_active: boolean;
   start_time?: string;
   end_time?: string;
+  available_dates?: (string | number)[]; // תאריכים זמינים או ימי שבוע
   created_at: string;
   updated_at: string;
 }

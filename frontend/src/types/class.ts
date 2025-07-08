@@ -22,6 +22,22 @@ export type AvailableColorScheme =
   | 'amber'
   | 'lime';
 
+// מבנה לוח זמנים של שיעור
+export interface DaySchedule {
+  available: boolean;
+  times: string[];
+}
+
+export interface ClassSchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 export interface Class {
   id: string;
   name: string;
@@ -42,6 +58,7 @@ export interface Class {
   is_active: boolean;
   start_time?: string;
   end_time?: string;
+  schedule?: ClassSchedule; // לוח זמנים מלא של השיעור - ימים זמינים ושעות לכל יום
   created_at: string;
   updated_at: string;
 } 

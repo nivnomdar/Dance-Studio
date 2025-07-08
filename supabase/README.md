@@ -37,7 +37,8 @@
 - `id` - מזהה ייחודי
 - `class_id` - מזהה השיעור (קישור ל-classes)
 - `user_id` - מזהה המשתמש (קישור ל-profiles)
-- `full_name` - שם מלא
+- `first_name` - שם פרטי
+- `last_name` - שם משפחה
 - `phone` - מספר טלפון
 - `email` - כתובת אימייל
 - `experience` - ניסיון בריקוד
@@ -96,7 +97,7 @@ select * from registrations where user_id = auth.uid();
 
 -- בדיקה שמשתמשים יכולים להירשם לשיעורים
 insert into registrations (
-  class_id, user_id, full_name, phone, email, 
+  class_id, user_id, first_name, last_name, phone, email, 
   selected_date, selected_time
 ) values (
   'class-id-here', auth.uid(), 'שם מלא', '0501234567', 
