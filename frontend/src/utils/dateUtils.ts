@@ -2,42 +2,7 @@
 
 import { ClassSchedule, DaySchedule } from '../types/class';
 
-/**
- * בדיקה אם תאריך מותר לפי לוח הזמנים
- */
-export const isDateAllowed = (dateString: string, schedule?: ClassSchedule): boolean => {
-  if (!schedule) {
-    return true; // אם אין לוח זמנים, כל התאריכים מותרים
-  }
-  
-  const date = new Date(dateString);
-  const dayOfWeek = date.getDay();
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const dayName = dayNames[dayOfWeek] as keyof ClassSchedule;
-  
-  return schedule[dayName]?.available || false;
-};
 
-/**
- * קבלת התאריך הבא המותר
- */
-export const getNextAllowedDate = (schedule?: ClassSchedule): string => {
-  if (!schedule) {
-    return new Date().toISOString().split('T')[0];
-  }
-  
-  const today = new Date();
-  let nextDate = new Date(today);
-  
-  // חיפוש התאריך הבא המותר
-  for (let i = 0; i < 7; i++) { // חיפוש עד שבוע אחד קדימה
-    nextDate.setDate(today.getDate() + i);
-    if (isDateAllowed(nextDate.toISOString().split('T')[0], schedule)) {
-      return nextDate.toISOString().split('T')[0];
-    }
-  }
-  return today.toISOString().split('T')[0];
-};
 
 /**
  * קבלת הודעה על התאריכים הזמינים
@@ -64,30 +29,7 @@ export const getAvailableDatesMessage = (schedule?: ClassSchedule): string => {
   return `השיעורים מתקיימים בימים: ${availableDays.join(', ')}`;
 };
 
-/**
- * קבלת הודעת שגיאה לתאריך לא מותר
- */
-export const getDateNotAllowedMessage = (schedule?: ClassSchedule): string => {
-  if (!schedule) {
-    return 'תאריך זה אינו זמין לשיעורים';
-  }
-  
-  const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-  const availableDays = [];
-  
-  for (let i = 0; i < 7; i++) {
-    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][i] as keyof ClassSchedule;
-    if (schedule[dayKey]?.available) {
-      availableDays.push(dayNames[i]);
-    }
-  }
-  
-  if (availableDays.length === 0) {
-    return 'אין ימים זמינים לשיעורים';
-  }
-  
-  return `תאריך זה אינו זמין לשיעורים. השיעורים מתקיימים בימים: ${availableDays.join(', ')}`;
-};
+
 
 /**
  * קבלת תאריכים זמינים לכפתורים

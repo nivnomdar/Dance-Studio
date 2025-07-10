@@ -211,7 +211,7 @@ const CartPage = () => {
                     className="w-full bg-[#EC4899] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#EC4899]/80 transition-colors duration-200"
                     onClick={() => {
                       // TODO: ניווט לדף התשלום
-                      console.log('Proceeding to checkout...');
+                      // Proceeding to checkout...
                     }}
                   >
                     המשך לרכישה

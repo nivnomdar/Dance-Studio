@@ -4,8 +4,10 @@ import { FaClock, FaUserGraduate, FaArrowLeft } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 function ClassesPage() {
+  const { profile } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,21 +144,43 @@ function ClassesPage() {
           </div>
         )}
 
-        <div className="mt-20 bg-gradient-to-r from-[#EC4899] to-[#EC4899] rounded-2xl p-12 text-center shadow-xl">
-          <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
-            רוצה להתנסות?
-          </h2>
-          <p className="text-white/90 text-xl mb-8 font-agrandir-regular max-w-2xl mx-auto">
-            הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מחוויה מקצועית
-          </p>
-          <Link
-            to="/class/trial-class"
-            className="inline-flex items-center justify-center bg-white text-[#EC4899] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
-          >
-            הזמיני שיעור ניסיון
-            <FaArrowLeft className="w-5 h-5 mr-2" />
-          </Link>
-        </div>
+        {/* הצג שיעור ניסיון רק אם המשתמש לא השתמש בו עדיין */}
+        {!profile?.has_used_trial_class && (
+          <div className="mt-20 bg-gradient-to-r from-[#EC4899] to-[#EC4899] rounded-2xl p-12 text-center shadow-xl">
+            <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
+              רוצה להתנסות?
+            </h2>
+            <p className="text-white/90 text-xl mb-8 font-agrandir-regular max-w-2xl mx-auto">
+              הזמיני שיעור ניסיון במחיר מיוחד של 60 ש"ח וקבלי טעימה מחוויה מקצועית
+            </p>
+            <Link
+              to="/class/trial-class"
+              className="inline-flex items-center justify-center bg-white text-[#EC4899] px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
+            >
+              הזמיני שיעור ניסיון
+              <FaArrowLeft className="w-5 h-5 mr-2" />
+            </Link>
+          </div>
+        )}
+        
+        {/* הצג הודעה אם כבר השתמש בשיעור ניסיון */}
+        {profile?.has_used_trial_class && (
+          <div className="mt-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-2xl p-12 text-center shadow-xl">
+            <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
+              כבר התנסית?
+            </h2>
+            <p className="text-white/90 text-xl mb-8 font-agrandir-regular max-w-2xl mx-auto">
+              כבר השתמשת בשיעור ניסיון. הזמיני שיעור רגיל כדי להמשיך להתקדם
+            </p>
+            <Link
+              to="/classes"
+              className="inline-flex items-center justify-center bg-white text-gray-600 px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
+            >
+              לכל השיעורים
+              <FaArrowLeft className="w-5 h-5 mr-2" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

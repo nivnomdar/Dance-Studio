@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaWaze } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Footer: React.FC = () => {
+  const { profile } = useAuth();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');
+  const [newsletterMessage, setNewsletterMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // כאן תוכלי להוסיף לוגיקה לשליחת האימייל
-    alert('תודה! נרשמת בהצלחה לעדכונים שלי.');
+    setNewsletterMessage({ type: 'success', text: 'תודה! נרשמת בהצלחה לעדכונים שלי.' });
     setEmail('');
+    
+    // הסתרת ההודעה אחרי 3 שניות
+    setTimeout(() => {
+      setNewsletterMessage({ type: null, text: '' });
+    }, 3000);
   };
 
   return (
@@ -124,14 +132,17 @@ const Footer: React.FC = () => {
                   שיעורים
                 </Link>
               </li>
-              <li>
-                <Link to="/class/trial-class" className="text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center font-medium">
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                  שיעור ניסיון
-                </Link>
-              </li>
+              {/* הצג לינק לשיעור ניסיון רק אם לא השתמש בו */}
+              {!profile?.has_used_trial_class && (
+                <li>
+                  <Link to="/class/trial-class" className="text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center font-medium">
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    שיעור ניסיון
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link to="/shop" className="text-gray-300 hover:text-pink-400 transition-colors duration-200 flex items-center">
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,9 +230,24 @@ const Footer: React.FC = () => {
                 type="submit"
                 className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
               >
-               
                 הרשמה
               </button>
+              
+              {/* הודעת הצלחה/שגיאה */}
+              {newsletterMessage.type && (
+                <div className={`p-3 rounded-md border-2 ${
+                  newsletterMessage.type === 'success' 
+                    ? 'bg-green-900/20 border-green-500/30 text-green-300' 
+                    : 'bg-red-900/20 border-red-500/30 text-red-300'
+                }`}>
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-2 ${
+                      newsletterMessage.type === 'success' ? 'bg-green-400' : 'bg-red-400'
+                    }`}></div>
+                    <span className="text-sm font-medium">{newsletterMessage.text}</span>
+                  </div>
+                </div>
+              )}
             </form>
           </div>
         </div>

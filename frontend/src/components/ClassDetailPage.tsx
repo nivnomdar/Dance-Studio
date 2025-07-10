@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaStar, FaCheck, FaSignInAlt } from 'react-icons/fa';
+import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { registrationsService } from '../lib/registrations';
 import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { isDateAllowed, getNextAllowedDate, getAvailableDatesMessage, getDateNotAllowedMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
+import { getAvailableDatesMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
 import { getColorScheme } from '../utils/colorUtils';
 
 interface ClassDetailPageProps {
@@ -17,7 +17,7 @@ interface ClassDetailPageProps {
 
 function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, session, profile, loadProfile } = useAuth();
   const [classData, setClassData] = useState<Class | null>(initialClass || null);
   const [loading, setLoading] = useState(!initialClass);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +30,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     last_name: '',
     phone: ''
   });
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // קבלת תאריכים זמינים לכפתורים
   const availableDates = getAvailableDatesForButtons(classData?.schedule);
@@ -89,6 +91,15 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     
     if (!classData) return;
     
+    // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו
+    if (classData.slug === 'trial-class' && profile?.has_used_trial_class) {
+      setMessage({ type: 'error', text: 'כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.' });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setMessage({ type: null, text: '' });
+    
     try {
       const registrationData = {
         class_id: classData.id,
@@ -102,14 +113,51 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       
       // שליחה לשרת
       const result = await registrationsService.createRegistration(registrationData);
-      console.log('Registration successful:', result);
       
-      // כאן אפשר להוסיף הודעת הצלחה או ניווט לדף אחר
-      alert('ההרשמה בוצעה בהצלחה!');
+      // אם זה שיעור ניסיון, עדכן את הפרופיל
+      if (classData.slug === 'trial-class') {
+        await updateProfileTrialClass();
+      }
+      
+      // הצגת הודעת הצלחה
+      setMessage({ type: 'success', text: 'ההרשמה בוצעה בהצלחה!' });
+      
+      // איפוס הטופס
+      setFormData({ first_name: '', last_name: '', phone: '' });
+      setSelectedDate('');
+      setSelectedTime('');
       
     } catch (error) {
-      console.error('Registration failed:', error);
-      alert('שגיאה בהרשמה. נסי שוב.');
+      setMessage({ type: 'error', text: 'שגיאה בהרשמה. נסי שוב.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // פונקציה חדשה לעדכון הפרופיל
+  const updateProfileTrialClass = async () => {
+    if (!user || !session) return;
+    
+    try {
+      const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          has_used_trial_class: true
+        })
+      });
+      
+      if (updateResponse.ok) {
+        // רענון הפרופיל בקונטקסט
+        await loadProfile();
+      }
+    } catch (error) {
+      console.error('Error updating trial class status:', error);
     }
   };
 
@@ -129,7 +177,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       
       if (error) throw error;
     } catch (error) {
-      console.error('Error logging in with Google:', error);
+      // Handle login error silently or show user-friendly message
     }
   };
 
@@ -287,6 +335,22 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                 <h2 className={`text-3xl font-bold ${colors.textColor} mb-6 font-agrandir-grand`}>
                   הרשמה ל{classData.name}
                 </h2>
+                
+                {/* הודעות הצלחה/שגיאה */}
+                {message.type && (
+                  <div className={`p-4 rounded-xl border-2 ${
+                    message.type === 'success' 
+                      ? 'bg-green-50 border-green-200 text-green-800' 
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}>
+                    <div className="flex items-center">
+                      <div className={`w-5 h-5 rounded-full mr-3 ${
+                        message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <span className="font-bold">{message.text}</span>
+                    </div>
+                  </div>
+                )}
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Date Selection */}
@@ -483,13 +547,13 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || (() => {
+                    disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || isSubmitting || (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       return spotsInfo?.available === 0;
                     })()}
                     className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl ${
-                      selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && (() => {
+                      selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && !isSubmitting && (() => {
                         const spotsKey = `${selectedDate}-${selectedTime}`;
                         const spotsInfo = availableSpots[spotsKey];
                         return spotsInfo?.available !== 0;
@@ -498,7 +562,12 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {!selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
+                    {isSubmitting ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></div>
+                        שולחת...
+                      </div>
+                    ) : !selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;
                       const spotsInfo = availableSpots[spotsKey];
                       if (spotsInfo?.available === 0) {

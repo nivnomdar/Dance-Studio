@@ -4,7 +4,7 @@ export interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  profile: any | null;
+  profile: UserProfile | null;
   profileLoading: boolean;
   loadProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -28,4 +28,5 @@ export interface UserProfile {
   language: string;
   created_at: string;
   updated_at: string;
+  has_used_trial_class: boolean;
 } 

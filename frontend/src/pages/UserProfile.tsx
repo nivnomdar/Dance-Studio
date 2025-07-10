@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import type { UserProfile } from '../types/auth';
 
 function UserProfile() {
-  const { user, loading: authLoading, session, profile, profileLoading, loadProfile } = useAuth();
+  const { user, loading: authLoading, session, profile: contextProfile, profileLoading, loadProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ function UserProfile() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,19 +49,20 @@ function UserProfile() {
       return;
     }
     
-    // אם יש פרופיל, נשתמש בו
-    if (profile) {
+    // אם יש פרופיל מה-context, נשתמש בו
+    if (contextProfile) {
       const profileData = {
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        phone: profile.phone_number || '',
-        email: profile.email || user.email || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        postalCode: profile.postal_code || '',
+        firstName: contextProfile.first_name || '',
+        lastName: contextProfile.last_name || '',
+        phone: contextProfile.phone_number || '',
+        email: contextProfile.email || user.email || '',
+        address: contextProfile.address || '',
+        city: contextProfile.city || '',
+        postalCode: contextProfile.postal_code || '',
       };
       
       setFormData(profileData);
+      setLocalProfile(contextProfile);
       setIsLoadingProfile(false);
     } else {
       // טעינת הפרופיל ישירות עם fetch
@@ -102,7 +105,9 @@ function UserProfile() {
                 terms_accepted: false,
                 marketing_consent: false,
                 last_login_at: new Date().toISOString(),
-                language: 'he'
+                language: 'he',
+                // הוספת השדה החדש
+                has_used_trial_class: false
               })
             });
             
@@ -111,6 +116,23 @@ function UserProfile() {
               throw new Error(`Create failed: ${createErrorText}`);
             }
             
+            const newProfile: UserProfile = {
+              id: user.id,
+              email: user.email || '',
+              first_name: '',
+              last_name: '',
+              role: 'user',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_active: true,
+              terms_accepted: false,
+              marketing_consent: false,
+              last_login_at: new Date().toISOString(),
+              language: 'he',
+              has_used_trial_class: false
+            };
+            
+            setLocalProfile(newProfile);
             setFormData({
               firstName: '',
               lastName: '',
@@ -133,6 +155,7 @@ function UserProfile() {
             };
             
             setFormData(formDataFromProfile);
+            setLocalProfile(profileData);
           }
           
           setIsLoadingProfile(false);
@@ -145,25 +168,26 @@ function UserProfile() {
       
       loadProfileWithFetch();
     }
-  }, [user?.id, authLoading, profile]);
+  }, [user?.id, authLoading, contextProfile]);
 
   // useEffect נוסף לטיפול בפרופיל שנטען מאוחר יותר
   useEffect(() => {
-    if (profile && isLoadingProfile) {
+    if (contextProfile && isLoadingProfile) {
       const profileData = {
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        phone: profile.phone_number || '',
-        email: profile.email || user?.email || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        postalCode: profile.postal_code || '',
+        firstName: contextProfile.first_name || '',
+        lastName: contextProfile.last_name || '',
+        phone: contextProfile.phone_number || '',
+        email: contextProfile.email || user?.email || '',
+        address: contextProfile.address || '',
+        city: contextProfile.city || '',
+        postalCode: contextProfile.postal_code || '',
       };
       
       setFormData(profileData);
+      setLocalProfile(contextProfile);
       setIsLoadingProfile(false);
     }
-  }, [profile, isLoadingProfile, user]);
+  }, [contextProfile, isLoadingProfile, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -207,6 +231,9 @@ function UserProfile() {
       }
       
       const updatedProfile = await updateResponse.json();
+      
+      // עדכון הפרופיל המקומי
+      setLocalProfile(updatedProfile[0]);
       
       setIsEditing(false);
       // הצגת הודעת הצלחה
@@ -380,6 +407,25 @@ function UserProfile() {
                     <span className="text-sm font-semibold text-[#4B2E83]">
                       {user ? new Date(user.created_at).toLocaleDateString('he-IL') : ''}
                     </span>
+                  </div>
+                  
+                  {/* הוספת סטטוס שיעור ניסיון */}
+                  <div className="relative p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
+                    {/* כפתור הרשמה בפינה השמאלית העליונה */}
+                    {!localProfile?.has_used_trial_class && user && (
+                      <Link
+                        to="/class/trial-class"
+                        className="absolute top-2 left-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 text-xs font-medium shadow-md hover:shadow-lg transform hover:scale-105"
+                      >
+                        הרשמה לשיעור ניסיון                       </Link>
+                    )}
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#4B2E83]/70">שיעור ניסיון:</span>
+                      <span className={`text-sm font-semibold ${localProfile?.has_used_trial_class ? 'text-red-600' : 'text-green-600'}`}>
+                        {localProfile?.has_used_trial_class ? 'נוצל בעבר' : 'לא נוצל עדיין'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

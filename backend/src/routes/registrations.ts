@@ -158,6 +158,23 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       throw new AppError('Already registered for this class', 400);
     }
 
+    // Check if this is a trial class and user has already used it
+    if (classData.slug === 'trial-class') {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('has_used_trial_class')
+        .eq('id', req.user!.id)
+        .single();
+
+      if (profileError) {
+        throw new AppError('Failed to check trial class status', 500);
+      }
+
+      if (userProfile?.has_used_trial_class) {
+        throw new AppError('Already used trial class. Cannot register for another trial class.', 400);
+      }
+    }
+
     // Create registration
     const { data, error } = await supabase
       .from('registrations')
@@ -183,6 +200,19 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 
     if (error) {
       throw new AppError('Failed to create registration', 500);
+    }
+
+    // If this is a trial class, update the user's profile
+    if (classData.slug === 'trial-class') {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ has_used_trial_class: true })
+        .eq('id', req.user!.id);
+
+      if (updateError) {
+        logger.error('Failed to update trial class status:', updateError);
+        // Don't fail the registration, just log the error
+      }
     }
 
     res.status(201).json(data);

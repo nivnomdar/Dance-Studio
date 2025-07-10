@@ -24,7 +24,7 @@ export const GoogleLogin = () => {
       if (error) throw error
       
       // If we get here, the sign in was successful
-      console.log('Google sign in successful:', data)
+      // Google sign in successful
       
     } catch (error) {
       console.error('Error logging in with Google:', error)

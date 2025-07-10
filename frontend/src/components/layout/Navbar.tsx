@@ -74,14 +74,12 @@ function Navbar() {
         throw error;
       }
     } catch (error) {
-      console.error('Error logging in with Google:', error);
+      // Handle login error silently
     }
   };
 
   const handleLogout = async () => {
     try {
-      console.log('Starting logout process...');
-      
       // סגירת התפריטים
       setIsProfileMenuOpen(false);
       setIsMenuOpen(false);
@@ -113,7 +111,6 @@ function Navbar() {
         window.location.reload();
       }, 3000);
     } catch (error) {
-      console.error('Error during logout:', error);
       showPopup({
         title: 'שגיאת התנתקות',
         message: 'אירעה שגיאה בניסיון להתנתק. אנא נסה שוב.',

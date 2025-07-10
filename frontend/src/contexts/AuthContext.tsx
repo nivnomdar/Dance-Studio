@@ -1,27 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { AuthContextType } from '../types/auth';
-
-// הוספת טיפוס לפרופיל
-interface Profile {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone_number?: string;
-  address?: string;
-  city?: string;
-  postal_code?: string;
-  role: string;
-  avatar_url?: string;
-  created_at: string;
-  is_active: boolean;
-  terms_accepted: boolean;
-  marketing_consent: boolean;
-  last_login_at: string;
-  language: string;
-}
+import { AuthContextType, UserProfile } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -29,7 +9,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null); // שימוש בטיפוס הקיים
   const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
@@ -117,7 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       terms_accepted: false,
                       marketing_consent: false,
                       last_login_at: new Date().toISOString(),
-                      language: 'he'
+                      language: 'he',
+                      // הוספת השדה החדש
+                      has_used_trial_class: false
                     }
                   ])
                   .select()

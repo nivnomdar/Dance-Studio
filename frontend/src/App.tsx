@@ -16,10 +16,6 @@ import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
-  // const handleInstagram = () => {
-  //   console.log("Clicked");
-  // };
-
   return (
     <AuthProvider>
       <PopupProvider>
