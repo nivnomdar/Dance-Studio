@@ -181,8 +181,34 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     }
   };
 
+  // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו - חסימת גישה
+  if (classData?.slug === 'trial-class' && user && !authLoading && profile?.has_used_trial_class) {
+    return (
+      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 shadow-lg">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-red-600 mb-4 font-agrandir-grand">
+              גישה נחסמה
+            </h1>
+            <p className="text-red-700 mb-6 font-agrandir-regular">
+              כבר השתמשת בשיעור ניסיון. לא ניתן לגשת לשיעור ניסיון נוסף.
+            </p>
+            <Link 
+              to="/classes" 
+              className="inline-flex items-center bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium"
+            >
+              <FaArrowLeft className="w-4 h-4 ml-2" />
+              חזרה לשיעורים
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // הצג מסך טעינה רק אם טוענים את השיעור עצמו, לא את ה-auth
-  if (loading) {
+  if (loading || (user && authLoading)) {
     return (
       <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
         <div className="text-center">
@@ -191,6 +217,12 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         </div>
       </div>
     );
+  }
+
+  // אם זה שיעור ניסיון והמשתמש מחובר אבל אין פרופיל - חזור לדף השיעורים
+  if (classData?.slug === 'trial-class' && user && !profile) {
+    window.location.href = '/classes';
+    return null;
   }
 
   if (error || !classData) {
