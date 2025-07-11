@@ -5,7 +5,6 @@ import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth';
 
 function ClassesPage() {
@@ -15,6 +14,7 @@ function ClassesPage() {
   const [error, setError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -151,13 +151,7 @@ function ClassesPage() {
     // קבל את הפרופיל הנכון (local או context)
     const profile = localProfile || contextProfile;
 
-    console.log('Trial class badge debug:', {
-      slug: classItem.slug,
-      user: !!user,
-      isLoadingProfile,
-      profile: !!profile,
-      hasUsedTrial: profile?.has_used_trial_class
-    });
+
 
     // אם יש profile - הצג סטטוס
     if (profile) {
@@ -190,33 +184,7 @@ function ClassesPage() {
     );
   };
 
-  // Helper function to get trial class status text for mobile
-  const getTrialClassStatusText = (classItem: Class) => {
-    if (classItem.slug !== 'trial-class') return null;
 
-    // קבל את הפרופיל הנכון (local או context)
-    const profile = localProfile || contextProfile;
-
-    // אם יש profile - הצג סטטוס
-    if (profile) {
-      const hasUsedTrial = profile.has_used_trial_class;
-      
-      return (
-        <div className={`text-lg font-bold ${
-          hasUsedTrial ? 'text-red-500' : 'text-green-500'
-        }`}>
-          {hasUsedTrial ? 'נוצל' : 'זמין!'}
-        </div>
-      );
-    }
-
-    // אם אין פרופיל או משתמש לא מחובר
-    return (
-      <div className="text-lg font-bold text-gray-500">
-        שגיאה
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -274,11 +242,7 @@ function ClassesPage() {
               const route = getClassRoute(classItem.slug);
               const isTrialClass = classItem.slug === 'trial-class';
               
-              console.log('Class debug:', {
-                name: classItem.name,
-                slug: classItem.slug,
-                isTrialClass
-              });
+
               
               return (
                 <div 
@@ -287,9 +251,6 @@ function ClassesPage() {
                     isTrialClass && profile?.has_used_trial_class ? 'lg:opacity-50 opacity-40 grayscale' : ''
                   }`}
                 >
-
-                  
-
                   <div className="relative h-40 lg:h-48 hidden lg:block">
                     <img
                       src={classItem.image_url || '/carousel/image1.png'}
@@ -351,10 +312,6 @@ function ClassesPage() {
             })}
           </div>
         )}
-
-
-        
-
 
         {/* הצג הודעה למשתמש לא מחובר */}
         {!user && (
