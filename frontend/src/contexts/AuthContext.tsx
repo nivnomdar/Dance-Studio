@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // טעינת הפרופיל אם יש משתמש
       if (session?.user) {
         try {
+          setProfileLoading(true);
           const { data: profileData, error } = await supabase
             .from('profiles')
             .select('*')
@@ -32,13 +33,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(profileData);
           } else if (error) {
             console.error('Error loading profile on session init:', error);
+            // אם הפרופיל לא קיים, נצור אותו
+            if (error.code === 'PGRST116') {
+              await createProfileForUser(session.user);
+            }
           }
         } catch (error) {
           console.error('Error loading profile on session init:', error);
+        } finally {
+          setProfileLoading(false);
         }
       }
       
       setLoading(false);
+    };
+
+    // פונקציה ליצירת פרופיל למשתמש
+    const createProfileForUser = async (user: User) => {
+      try {
+        const fullName = user.user_metadata?.full_name || '';
+        const nameParts = fullName.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: user.id,
+              email: user.email,
+              first_name: firstName,
+              last_name: lastName,
+              role: 'user',
+              avatar_url: user.user_metadata?.avatar_url || null,
+              created_at: new Date().toISOString(),
+              is_active: true,
+              terms_accepted: false,
+              marketing_consent: false,
+              last_login_at: new Date().toISOString(),
+              language: 'he',
+              has_used_trial_class: false
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+        } else {
+          setProfile(newProfile);
+        }
+      } catch (error) {
+        console.error('Error in createProfileForUser:', error);
+      }
     };
 
     getSession();
@@ -53,9 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ניקוי פרופיל בזמן התנתקות
         if (event === 'SIGNED_OUT') {
           setProfile(null);
+          setProfileLoading(false);
         }
-        
-
         
         // יצירת פרופיל ברקע אם המשתמש התחבר
         if (event === 'SIGNED_IN' && session?.user) {
