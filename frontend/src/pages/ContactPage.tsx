@@ -96,7 +96,7 @@ function ContactPage() {
                     <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
-                    <span className="mr-2">03-1234567</span>
+                    <span className="mr-2">03-1234567 {/* TODO: החלף במספר טלפון אמיתי */}</span>
                   </p>
                   <p className="flex items-center text-[#2B2B2B]">
                     <svg className="w-6 h-6 text-[#D8A7B1] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,8 +172,9 @@ function ContactPage() {
                   <span className="text-sm text-gray-500">Avigail Ladani</span>
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 bg-[#1877F2] text-white text-xs rounded px-2 py-1 mt-2 transition-all duration-300 pointer-events-none shadow-lg">עקבי אחרי בפייסבוק</span>
                 </a>
+                {/* TODO: החלף במספר וואטסאפ אמיתי */}
                 <a 
-                  href="https://wa.me/972XXXXXXXXX" 
+                  href="https://wa.me/972XXXXXXXXX"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:-rotate-2 relative"

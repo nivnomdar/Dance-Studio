@@ -35,12 +35,13 @@ export const PopupProvider: React.FC<ProviderProps> = ({ children }) => {
       {children}
       {/* Popup Component */}
       {isVisible && popup && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in">
-          <div className={`p-4 rounded-lg shadow-xl min-w-[300px] max-w-[400px] backdrop-blur-sm border-2 border-[#EC4899] bg-white ${
-            popup.type === 'success' ? 'text-[#EC4899]' :
-            popup.type === 'error' ? 'text-red-500' :
-            popup.type === 'warning' ? 'text-yellow-500' :
-            'text-[#EC4899]'
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in transition-all duration-300 ease-in-out">
+          <div className={`p-4 rounded-lg shadow-xl min-w-[300px] max-w-[400px] backdrop-blur-sm border-2 bg-white ${
+            popup.type === 'success' ? 'text-[#EC4899] border-[#EC4899]' :
+            popup.type === 'error' ? 'text-red-500 border-red-500' :
+            popup.type === 'warning' ? 'text-yellow-500 border-yellow-500' :
+            popup.type === 'info' ? 'text-blue-500 border-blue-500' :
+            'text-[#EC4899] border-[#EC4899]'
           }`}>
             <div className="flex items-start justify-between">
               <div className="flex-1">

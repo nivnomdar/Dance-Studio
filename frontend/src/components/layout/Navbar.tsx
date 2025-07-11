@@ -12,39 +12,24 @@ function Navbar() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
-  const { cartCount } = useCart();
+  const { cartCount, clearCart } = useCart();
   const { user, signOut } = useAuth();
 
+  // האזנה לשינויים בסטטוס ההתחברות רק לפופאפ
   useEffect(() => {
-    // האזנה לשינויים בסטטוס ההתחברות
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // קריאה לפונקציה ליצירת פרופיל משתמש
-      await handleAuthStateChange(event, session);
-      
-      // בדיקה אם זה רענון דף
-      const isPageRefresh = event === 'INITIAL_SESSION' || 
-                          (event === 'SIGNED_IN' && session?.user?.app_metadata?.provider === 'google' && 
-                           localStorage.getItem('hasShownLoginPopup') === 'true');
-
-      if (isPageRefresh) {
-        return;
-      }
-
-      if (event === 'SIGNED_IN') {
-        // שמירת מידע שהפופ-אפ כבר הוצג
-        localStorage.setItem('hasShownLoginPopup', 'true');
-        showPopup({
-          title: 'התחברות מוצלחת',
-          message: 'ברוך הבא! התחברת בהצלחה למערכת.',
-          type: 'success',
-          duration: 3000
-        });
-      } else if (event === 'SIGNED_OUT') {
-        // ניקוי מידע מקומי בהתנתקות
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('hasShownLoginPopup');
-        sessionStorage.clear();
-        localStorage.clear();
+      if (event === 'SIGNED_IN' && session?.user) {
+        // בדיקה אם זה לא רענון דף
+        const isPageRefresh = session?.user?.app_metadata?.provider === 'google';
+        
+        if (!isPageRefresh) {
+          showPopup({
+            title: 'התחברות מוצלחת',
+            message: 'ברוך הבא! התחברת בהצלחה למערכת.',
+            type: 'success',
+            duration: 3000
+          });
+        }
       }
     });
 
@@ -78,44 +63,57 @@ function Navbar() {
     }
   };
 
+  /**
+   * טיפול בהתנתקות המשתמש
+   * מציג הודעות למשתמש ומנקה את המידע
+   */
   const handleLogout = async () => {
     try {
-      // סגירת התפריטים
+      // סגירת התפריטים מיד
       setIsProfileMenuOpen(false);
       setIsMenuOpen(false);
 
-      // ניקוי כל המידע המקומי קודם
-      localStorage.removeItem('supabase.auth.token');
-      localStorage.removeItem('hasShownLoginPopup');
-      sessionStorage.clear();
-      localStorage.clear();
+      // הצגת הודעת טעינה
+      showPopup({
+        title: 'מתנתק...',
+        message: 'מתנתק מהמערכת, אנא המתן.',
+        type: 'info',
+        duration: 2000
+      });
 
+      // ניקוי הסל לפני ההתנתקות
+      clearCart();
 
-
-      // התנתקות מ-Supabase
+      // התנתקות מהמערכת
       await signOut();
+
+      // ניקוי session storage
+      sessionStorage.clear();
 
       // הצגת פופ-אפ התנתקות מוצלחת
       showPopup({
         title: 'התנתקות מוצלחת',
         message: 'התנתקת בהצלחה מהמערכת.',
         type: 'success',
-        duration: 3000
+        duration: 2000
       });
 
-      // ניתוב לדף הבית
-      navigate('/', { replace: true });
-
-      // ריענון הדף אחרי שהפופ-אפ הוצג
+      // ניתוב לדף הבית ורענון
       setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+        navigate('/', { replace: true });
+        // רענון הדף אחרי 2 שניות כדי לוודא שהכל מתנקה
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }, 1500);
+
     } catch (error) {
+      console.error('Logout error:', error);
       showPopup({
         title: 'שגיאת התנתקות',
         message: 'אירעה שגיאה בניסיון להתנתק. אנא נסה שוב.',
         type: 'error',
-        duration: 3000
+        duration: 4000
       });
     }
   };

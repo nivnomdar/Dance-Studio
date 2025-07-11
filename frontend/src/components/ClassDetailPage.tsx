@@ -181,7 +181,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     }
   };
 
-  if (loading || authLoading) {
+  // הצג מסך טעינה רק אם טוענים את השיעור עצמו, לא את ה-auth
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
         <div className="text-center">

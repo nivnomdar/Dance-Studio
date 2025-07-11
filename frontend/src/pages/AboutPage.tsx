@@ -91,6 +91,7 @@ function AboutPage() {
             >
               <FaFacebook className="w-7 h-7" />
             </a>
+            {/* TODO: החלף במספר וואטסאפ אמיתי */}
             <a
               href="https://wa.me/972XXXXXXXXX"
               target="_blank"

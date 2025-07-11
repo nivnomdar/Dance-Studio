@@ -382,7 +382,7 @@ function UserProfile() {
                     <div className="text-2xl font-bold text-[#EC4899]">0</div>
                     <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">השיעורים שלי</div>
                     <button
-                      onClick={() => window.open('http://localhost:5173/classes', '_blank')}
+                      onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
                       className="w-full px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
                       הרשמה לשיעור
@@ -392,7 +392,7 @@ function UserProfile() {
                     <div className="text-2xl font-bold text-[#4B2E83]">0</div>
                     <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">הזמנות שהזמנתי</div>
                     <button
-                      onClick={() => window.open('http://localhost:5173/shop', '_blank')}
+                      onClick={() => window.open(`${window.location.origin}/shop`, '_blank')}
                       className="w-full px-3 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
                       לקנייה בחנות
@@ -423,7 +423,7 @@ function UserProfile() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#4B2E83]/70">שיעור ניסיון:</span>
                       <span className={`text-sm font-semibold ${localProfile?.has_used_trial_class ? 'text-red-600' : 'text-green-600'}`}>
-                        {localProfile?.has_used_trial_class ? 'נוצל בעבר' : 'לא נוצל עדיין'}
+                        {localProfile?.has_used_trial_class ? 'נוצל' : 'לא נוצל עדיין'}
                       </span>
                     </div>
                   </div>

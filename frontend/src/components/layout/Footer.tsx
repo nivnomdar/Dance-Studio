@@ -73,6 +73,7 @@ const Footer: React.FC = () => {
                   פייסבוק - Facebook
                 </div>
               </a>
+              {/* TODO: החלף במספר וואטסאפ אמיתי */}
               <a 
                 href="https://wa.me/972XXXXXXXXX" 
                 target="_blank" 

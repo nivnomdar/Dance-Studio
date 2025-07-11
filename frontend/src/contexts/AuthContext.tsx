@@ -50,6 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
+        // ניקוי פרופיל בזמן התנתקות
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
+        
+
+        
         // יצירת פרופיל ברקע אם המשתמש התחבר
         if (event === 'SIGNED_IN' && session?.user) {
           setTimeout(async () => {
@@ -135,8 +142,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  /**
+   * התנתקות מהמערכת
+   * מבצעת ניקוי מידי של ה-state ומנסה להתנתק מהשרת ברקע
+   */
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // ניקוי מידי של ה-state - המשתמש רואה התנתקות מיד
+      setProfile(null);
+      setUser(null);
+      setSession(null);
+      
+      // ניקוי כל המידע מה-localStorage ו-sessionStorage
+      try {
+        // ניקוי כל המידע הקשור ל-auth מ-localStorage
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
+            localStorage.removeItem(key);
+          }
+        });
+        
+        // ניקוי sessionStorage
+        sessionStorage.clear();
+      } catch (e) {
+        console.error('Could not remove auth from localStorage:', e);
+      }
+      
+      // ניסיון התנתקות מהשרת ברקע (לא חוסם את המשתמש)
+      supabase.auth.signOut().catch(e => {
+        // התנתקות ברקע נכשלה - זה בסדר כי כבר ניקינו את המידע
+        console.error('Background sign out failed:', e);
+      });
+      
+    } catch (error) {
+      console.error('Error in signOut:', error);
+      throw error;
+    }
   };
 
   // פונקציה לטעינת הפרופיל

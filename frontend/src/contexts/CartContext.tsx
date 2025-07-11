@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Product } from '../types/product';
 import { CartItem, CartContextType, CartProviderProps } from '../types/cart';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -14,23 +16,97 @@ export const useCart = () => {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
 
-  // Load cart from localStorage on mount
+  // Load cart from Supabase user metadata on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
+    const loadCart = async () => {
+      if (user) {
+        // נסה לטעון מהמשתמש המחובר
+        const userCart = user.user_metadata?.cart;
+        if (userCart) {
+          try {
+            setCartItems(JSON.parse(userCart));
+          } catch (error) {
+            console.error('Error loading cart from user metadata:', error);
+          }
+        }
+      } else {
+        // אם אין משתמש, נסה לטעון מ-session storage (זמני)
+        const sessionCart = sessionStorage.getItem('temp_cart');
+        if (sessionCart) {
+          try {
+            setCartItems(JSON.parse(sessionCart));
+          } catch (error) {
+            console.error('Error loading cart from session storage:', error);
+          }
+        }
       }
-    }
+    };
+
+    loadCart();
+  }, [user]);
+
+  // Save cart to Supabase user metadata whenever it changes
+  useEffect(() => {
+    const saveCart = async () => {
+      if (user) {
+        // שמירה ב-user metadata
+        try {
+          const { error } = await supabase.auth.updateUser({
+            data: { cart: JSON.stringify(cartItems) }
+          });
+          if (error) {
+            console.error('Error saving cart to user metadata:', error);
+          }
+        } catch (error) {
+          console.error('Error updating user metadata:', error);
+        }
+      } else {
+        // שמירה זמנית ב-session storage
+        sessionStorage.setItem('temp_cart', JSON.stringify(cartItems));
+      }
+    };
+
+    saveCart();
+  }, [cartItems, user]);
+
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+    // ניקוי מה-session storage
+    sessionStorage.removeItem('temp_cart');
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // האזנה לשינויים ב-auth state כדי לסנכרן את הסל
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        // ניקוי הסל בזמן התנתקות
+        clearCart();
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        // העברת סל מ-session storage ל-user metadata
+        const sessionCart = sessionStorage.getItem('temp_cart');
+        if (sessionCart) {
+          try {
+            const cartData = JSON.parse(sessionCart);
+            setCartItems(cartData);
+            
+            // שמירה ב-user metadata
+            await supabase.auth.updateUser({
+              data: { cart: sessionCart }
+            });
+            
+            // ניקוי מ-session storage
+            sessionStorage.removeItem('temp_cart');
+          } catch (error) {
+            console.error('Error transferring cart from session to user metadata:', error);
+          }
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [clearCart]);
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -75,10 +151,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           : item
       )
     );
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
   };
 
   const getCartTotal = () => {

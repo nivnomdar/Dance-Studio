@@ -210,8 +210,8 @@ const CartPage = () => {
                   <button
                     className="w-full bg-[#EC4899] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#EC4899]/80 transition-colors duration-200"
                     onClick={() => {
-                      // TODO: ניווט לדף התשלום
-                      // Proceeding to checkout...
+                      // TODO: יש להוסיף דף תשלום ולהוסיף ניווט אליו
+                      console.log('Proceeding to checkout...');
                     }}
                   >
                     המשך לרכישה

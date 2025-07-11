@@ -20,9 +20,10 @@ try {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    storageKey: 'avigail-dance-studio-auth',
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+    persistSession: true, // שמירת session ב-localStorage
+    storageKey: 'avigail-dance-studio-auth', // מפתח ייחודי לאפליקציה
+    autoRefreshToken: true, // חידוש אוטומטי של token
+    detectSessionInUrl: true, // זיהוי session מה-URL
+    flowType: 'pkce' // סוג הזרימה - PKCE (Proof Key for Code Exchange)
   }
 }) 
