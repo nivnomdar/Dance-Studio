@@ -10,6 +10,143 @@ import { supabase } from '../lib/supabase';
 import { getAvailableDatesMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
 import { getColorScheme } from '../utils/colorUtils';
 import type { UserProfile } from '../types/auth';
+import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
+
+// Class Detail Skeleton Components
+const ClassDetailHeaderSkeleton = () => (
+  <div className="text-center mb-8 lg:mb-12">
+    {/* Back button */}
+    <div className="flex items-center justify-center mb-4 lg:mb-6">
+      <SkeletonIcon className="ml-2" />
+      <SkeletonBox className="h-4 w-24" />
+    </div>
+    
+    {/* Title */}
+    <SkeletonBox className="h-12 mb-6 w-3/4 mx-auto" />
+    
+    {/* Divider */}
+    <SkeletonBox className="w-24 h-1 mx-auto mb-8" />
+    
+    {/* Description */}
+    <div className="space-y-2 max-w-3xl mx-auto">
+      <SkeletonBox className="h-4" />
+      <SkeletonBox className="h-4 w-5/6" />
+    </div>
+  </div>
+);
+
+const ClassDetailInfoSkeleton = () => (
+  <div className="space-y-6 lg:space-y-8">
+    {/* Hero Image */}
+    <SkeletonBox className="h-80 rounded-2xl hidden lg:block" />
+
+    {/* Class Information */}
+    <div className="bg-white rounded-2xl p-8 shadow-lg">
+      <SkeletonBox className="h-8 mb-6 w-1/3" />
+      <div className="space-y-6">
+        <SkeletonText lines={3} />
+        
+        {/* Details Grid */}
+        <div className="grid grid-cols-2 gap-4 lg:gap-6">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-start">
+              <SkeletonBox className="w-6 h-6 ml-3 mt-1" />
+              <div className="flex-1">
+                <SkeletonBox className="h-4 mb-2 w-3/4" />
+                <SkeletonBox className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* What's Included */}
+        <div className="bg-gray-50 rounded-xl p-6">
+          <SkeletonBox className="h-6 mb-4 w-1/2" />
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="flex items-center">
+                <SkeletonBox className="w-2 h-2 rounded-full ml-3" />
+                <SkeletonBox className="h-3 w-3/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const RegistrationFormSkeleton = () => (
+  <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
+    <SkeletonBox className="h-8 mb-6 w-2/3" />
+    
+    {/* Date Selection */}
+    <div className="mb-6">
+      <SkeletonBox className="h-4 mb-3 w-1/2" />
+      <div className="grid grid-cols-3 gap-2 lg:gap-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SkeletonBox key={index} className="h-16 rounded-xl" />
+        ))}
+      </div>
+    </div>
+
+    {/* Time Selection */}
+    <div className="mb-6">
+      <SkeletonBox className="h-4 mb-3 w-1/3" />
+      <div className="grid grid-cols-3 gap-2 lg:gap-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <SkeletonBox key={index} className="h-12 rounded-xl" />
+        ))}
+      </div>
+    </div>
+
+    {/* Form Fields */}
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div key={index}>
+            <SkeletonBox className="h-4 mb-3 w-1/2" />
+            <SkeletonInput />
+          </div>
+        ))}
+      </div>
+      
+      <div>
+        <SkeletonBox className="h-4 mb-3 w-1/3" />
+        <SkeletonInput />
+      </div>
+      
+      <div>
+        <SkeletonBox className="h-4 mb-3 w-1/4" />
+        <SkeletonInput />
+      </div>
+    </div>
+
+    {/* Price Summary */}
+    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+      <div className="flex justify-between items-center">
+        <SkeletonBox className="h-5 w-1/3" />
+        <SkeletonBox className="h-6 w-1/4" />
+      </div>
+    </div>
+
+    {/* Submit Button */}
+    <SkeletonButton className="h-14 w-full" />
+  </div>
+);
+
+const ClassDetailSkeleton = () => (
+  <div className="min-h-screen bg-[#FDF9F6] py-8 lg:py-16">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <ClassDetailHeaderSkeleton />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <ClassDetailInfoSkeleton />
+        <RegistrationFormSkeleton />
+      </div>
+    </div>
+  </div>
+);
 
 interface ClassDetailPageProps {
   // אם לא מעבירים class, הקומפוננטה תטען אותו לפי slug
@@ -252,26 +389,12 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
 
   // הצג מסך טעינה רק אם טוענים את השיעור עצמו, לא את ה-auth
   if (loading || (user && authLoading)) {
-    return (
-      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-          <p className="text-[#2B2B2B] font-agrandir-regular">טוען שיעור...</p>
-        </div>
-      </div>
-    );
+    return <ClassDetailSkeleton />;
   }
 
   // אם זה שיעור ניסיון והמשתמש מחובר אבל אין פרופיל - חכה לטעינת הפרופיל
   if (classData?.slug === 'trial-class' && user && !localProfile && !contextProfile && !authLoading) {
-    return (
-      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-          <p className="text-[#2B2B2B] font-agrandir-regular">בודק סטטוס שיעור ניסיון...</p>
-        </div>
-      </div>
-    );
+    return <ClassDetailSkeleton />;
   }
 
   if (error || !classData) {

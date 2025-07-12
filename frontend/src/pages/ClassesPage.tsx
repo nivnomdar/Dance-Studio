@@ -6,6 +6,61 @@ import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
+import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
+
+// Class Card Skeleton Components
+const ClassCardImageSkeleton = () => (
+  <div className="relative h-40 lg:h-48 hidden lg:block">
+    <SkeletonBox className="w-full h-full rounded-t-2xl" />
+    <div className="absolute bottom-3 right-3">
+      <SkeletonBox className="w-16 h-6 rounded-full" />
+    </div>
+  </div>
+);
+
+const ClassCardContentSkeleton = () => (
+  <div className="p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-4">
+    {/* Title */}
+    <SkeletonBox className="h-6 mb-3" />
+    
+    {/* Description */}
+    <div className="h-16 lg:h-20 mb-4">
+      <SkeletonText lines={3} />
+    </div>
+    
+    {/* Details */}
+    <div className="space-y-2 mb-6 h-12 lg:h-14">
+      <div className="flex items-center">
+        <SkeletonIcon className="ml-2" />
+        <SkeletonBox className="h-3 w-20" />
+      </div>
+      <div className="flex items-center">
+        <SkeletonIcon className="ml-2" />
+        <SkeletonBox className="h-3 w-16" />
+      </div>
+    </div>
+    
+    {/* Button */}
+    <div className="lg:mt-auto">
+      <SkeletonBox className="w-full h-8 rounded-xl" />
+    </div>
+  </div>
+);
+
+const ClassCardSkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-xl h-full lg:flex lg:flex-col">
+    <ClassCardImageSkeleton />
+    <ClassCardContentSkeleton />
+  </div>
+);
+
+const ClassesSkeletonGrid = () => (
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+    {Array.from({ length: 8 }).map((_, index) => (
+      <ClassCardSkeleton key={index} />
+    ))}
+  </div>
+);
 
 function ClassesPage() {
   const { profile: contextProfile, user, session, loading: authLoading } = useAuth();
@@ -268,10 +323,22 @@ function ClassesPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-          <p className="text-[#2B2B2B] font-agrandir-regular">טוען שיעורים...</p>
+      <div className="min-h-screen bg-[#FDF9F6] py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
+              שיעורים
+            </h1>
+            <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
+            <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
+              בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
+              הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
+            </p>
+          </div>
+
+          {/* Skeleton Loading */}
+          <ClassesSkeletonGrid />
         </div>
       </div>
     );
@@ -396,24 +463,7 @@ function ClassesPage() {
           </div>
         )}
 
-        {/* Login Prompt for Non-Authenticated Users */}
-        {!user && (
-          <div className="mt-20 bg-gradient-to-r from-blue-400 to-blue-500 rounded-2xl p-12 text-center shadow-xl">
-            <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">
-              התחברי כדי לבדוק סטטוס שיעור ניסיון
-            </h2>
-            <p className="text-white/90 text-xl mb-8 font-agrandir-regular max-w-2xl mx-auto">
-              התחברי למערכת כדי לבדוק אם כבר השתמשת בשיעור ניסיון ולקבל המלצות מותאמות אישית
-            </p>
-            <Link
-              to="/profile"
-              className="inline-flex items-center justify-center bg-white text-blue-600 px-8 py-4 rounded-xl hover:bg-white/90 transition-colors duration-300 font-medium text-lg"
-            >
-              התחברי עכשיו
-              <FaArrowLeft className="w-5 h-5 mr-2" />
-            </Link>
-          </div>
-        )}
+
       </div>
     </div>
   );
