@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaArrowLeft } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
@@ -14,46 +14,129 @@ function ClassesPage() {
   const [error, setError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  
+  // Refs for API call management
+  const classesFetchedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const mountCountRef = useRef(0);
 
+  // Get the correct profile (local or context)
+  const profile = localProfile || contextProfile;
 
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setLoading(true);
-        const data = await classesService.getAllClasses();
-        setClasses(data);
-      } catch (err) {
+  // Create a stable fetch function using useCallback
+  const fetchClasses = useCallback(async () => {
+    if (classesFetchedRef.current) {
+      console.log('Classes fetch already in progress, skipping...');
+      return;
+    }
+
+    try {
+      classesFetchedRef.current = true;
+      setLoading(true);
+      setError(null);
+      
+      // Cancel any previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+      
+      console.log('Fetching classes...');
+      
+      // In development mode, add a longer delay to account for Strict Mode double mounting
+      const isDevelopment = import.meta.env.DEV;
+      const delay = isDevelopment ? 500 : 200;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      const data = await classesService.getAllClasses();
+      
+      // Check if request was aborted
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('Classes fetch was aborted');
+        return;
+      }
+      
+      setClasses(data);
+      console.log('Classes fetched successfully');
+      
+    } catch (err) {
+      console.error('Error fetching classes:', err);
+      
+      // Don't set error if request was aborted
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('Classes fetch was aborted, not setting error');
+        return;
+      }
+      
+      // Check if it's a rate limit error
+      if (err instanceof Error && err.message.includes('429')) {
+        setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
+      } else if (err instanceof Error && err.message.includes('Failed to fetch')) {
+        setError('השרת לא זמין. אנא ודא שהשרת פועל ונסה שוב.');
+      } else {
         setError(err instanceof Error ? err.message : 'Failed to fetch classes');
-      } finally {
+      }
+      
+      // Reset the ref on error so user can retry
+      classesFetchedRef.current = false;
+    } finally {
+      if (!abortControllerRef.current?.signal.aborted) {
         setLoading(false);
       }
-    };
-
-    fetchClasses();
+    }
   }, []);
 
-  // טעינת פרופיל - כמו ב-UserProfile
+  // Load classes on mount
   useEffect(() => {
-    // איפוס מצב הטעינה כאשר המשתמש משתנה
-    setIsLoadingProfile(false);
+    mountCountRef.current += 1;
+    console.log(`ClassesPage mounted (mount #${mountCountRef.current}), fetching classes...`);
     
-    // רק אם יש משתמש ולא בטעינה
+    // In development mode, only fetch on the second mount (after Strict Mode cleanup)
+    const isDevelopment = import.meta.env.DEV;
+    if (isDevelopment && mountCountRef.current === 1) {
+      console.log('Development mode: skipping first mount due to Strict Mode');
+      return;
+    }
+    
+    fetchClasses();
+
+    // Cleanup function
+    return () => {
+      console.log('ClassesPage cleanup - aborting any pending requests');
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      // Don't reset classesFetchedRef on cleanup in development mode
+      if (!isDevelopment) {
+        classesFetchedRef.current = false;
+      }
+    };
+  }, [fetchClasses]);
+
+  // Load profile if not available in context
+  useEffect(() => {
     if (!user || authLoading) {
       return;
     }
     
-    // אם יש פרופיל מה-context, נשתמש בו
+    // Use context profile if available
     if (contextProfile) {
       setLocalProfile(contextProfile);
       return;
     }
     
-    // אם אין פרופיל מה-context, נטען ישירות
+    // Don't load if already loading
+    if (isLoadingProfile) {
+      return;
+    }
+    
+    // Load profile directly from Supabase
     const loadProfileWithFetch = async () => {
       try {
         setIsLoadingProfile(true);
         
-        // קריאה עם fetch
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -70,7 +153,7 @@ function ClassesPage() {
         const profileDataArray = await response.json();
         
         if (profileDataArray.length === 0) {
-          // פרופיל לא קיים, נצור אחד חדש
+          // Create new profile if doesn't exist
           const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
@@ -130,30 +213,21 @@ function ClassesPage() {
     };
     
     loadProfileWithFetch();
-  }, [user?.id, authLoading, contextProfile, session]);
+  }, [user?.id, authLoading, contextProfile, session, isLoadingProfile]);
 
-  // useEffect נוסף לטיפול בפרופיל שנטען מאוחר יותר
+  // Update local profile when context profile becomes available
   useEffect(() => {
     if (contextProfile && !localProfile) {
       setLocalProfile(contextProfile);
     }
   }, [contextProfile, localProfile]);
 
-  // Helper function to get route based on slug
-  const getClassRoute = (slug: string) => {
-    return `/class/${slug}`;
-  };
+  // Helper functions
+  const getClassRoute = (slug: string) => `/class/${slug}`;
 
-  // Helper function to get trial class status badge
   const getTrialClassStatusBadge = (classItem: Class) => {
     if (classItem.slug !== 'trial-class') return null;
 
-    // קבל את הפרופיל הנכון (local או context)
-    const profile = localProfile || contextProfile;
-
-
-
-    // אם יש profile - הצג סטטוס
     if (profile) {
       const hasUsedTrial = profile.has_used_trial_class;
       
@@ -173,7 +247,7 @@ function ClassesPage() {
       );
     }
 
-    // אם אין פרופיל או משתמש לא מחובר
+    // Error state for non-logged in users
     return (
       <div className="bg-gradient-to-r from-gray-400 to-gray-500 text-white px-5 py-2.5 text-sm font-bold shadow-2xl border-3 border-white rounded-xl transform hover:scale-110 transition-all duration-200">
         <div className="flex items-center gap-1">
@@ -184,8 +258,14 @@ function ClassesPage() {
     );
   };
 
+  const handleRetry = () => {
+    console.log('Retrying classes fetch...');
+    classesFetchedRef.current = false;
+    setError(null);
+    fetchClasses();
+  };
 
-
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
@@ -197,6 +277,7 @@ function ClassesPage() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
@@ -204,7 +285,7 @@ function ClassesPage() {
           <p className="text-red-600 font-agrandir-regular mb-4">שגיאה בטעינת השיעורים</p>
           <p className="text-[#2B2B2B] font-agrandir-regular">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={handleRetry} 
             className="mt-4 bg-[#EC4899] text-white px-4 py-2 rounded-lg hover:bg-[#EC4899]/90 transition-colors"
           >
             נסה שוב
@@ -214,12 +295,10 @@ function ClassesPage() {
     );
   }
 
-  // קבל את הפרופיל הנכון (local או context)
-  const profile = localProfile || contextProfile;
-
   return (
     <div className="min-h-screen bg-[#FDF9F6] py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
             שיעורים
@@ -231,6 +310,7 @@ function ClassesPage() {
           </p>
         </div>
 
+        {/* Classes Grid */}
         {classes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#2B2B2B] font-agrandir-regular text-lg">אין שיעורים זמינים כרגע</p>
@@ -241,38 +321,42 @@ function ClassesPage() {
               const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
               const isTrialClass = classItem.slug === 'trial-class';
-              
-
+              const hasUsedTrial = isTrialClass && profile?.has_used_trial_class;
               
               return (
                 <div 
                   key={classItem.id} 
                   className={`bg-white rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 h-full lg:flex lg:flex-col relative ${
-                    isTrialClass && profile?.has_used_trial_class ? 'lg:opacity-50 opacity-40 grayscale' : ''
+                    hasUsedTrial ? 'lg:opacity-50 opacity-40 grayscale' : ''
                   }`}
                 >
+                  {/* Desktop Image */}
                   <div className="relative h-40 lg:h-48 hidden lg:block">
                     <img
                       src={classItem.image_url || '/carousel/image1.png'}
                       alt={classItem.name}
                       className="w-full h-full object-cover rounded-t-2xl"
                     />
-
                     <div className="absolute bottom-3 right-3">
                       <span className={`${colorScheme.bgColor} text-white px-3 py-1 rounded-full text-xs font-medium`}>
                         {classItem.price} ש"ח
                       </span>
                     </div>
                   </div>
+
+                  {/* Content */}
                   <div className="p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-4">
                     <h3 className={`text-lg lg:text-xl font-bold ${colorScheme.textColor} mb-3 font-agrandir-grand`}>
                       {classItem.name}
                     </h3>
+                    
                     <div className="h-16 lg:h-20 mb-4">
                       <p className="text-[#2B2B2B] font-agrandir-regular leading-relaxed text-xs lg:text-sm line-clamp-3">
                         {classItem.description}
                       </p>
                     </div>
+                    
+                    {/* Class Details */}
                     <div className="space-y-2 mb-6 h-12 lg:h-14">
                       {classItem.duration && (
                         <div className={`flex items-center ${colorScheme.textColor} text-xs lg:text-sm`}>
@@ -288,15 +372,14 @@ function ClassesPage() {
                       )}
                     </div>
                     
+                    {/* Action Button */}
                     <div className="lg:mt-auto">
-                      {isTrialClass && profile?.has_used_trial_class ? (
-                        // כפתור לא לחיץ עם עיצוב כהה יותר
+                      {hasUsedTrial ? (
                         <div className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs lg:text-sm cursor-not-allowed opacity-90">
                           נוצל
                           <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
                         </div>
                       ) : (
-                        // כפתור רגיל לחיץ
                         <Link
                           to={route}
                           className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-xs lg:text-sm`}
@@ -313,7 +396,7 @@ function ClassesPage() {
           </div>
         )}
 
-        {/* הצג הודעה למשתמש לא מחובר */}
+        {/* Login Prompt for Non-Authenticated Users */}
         {!user && (
           <div className="mt-20 bg-gradient-to-r from-blue-400 to-blue-500 rounded-2xl p-12 text-center shadow-xl">
             <h2 className="text-3xl font-bold text-white mb-6 font-agrandir-grand">

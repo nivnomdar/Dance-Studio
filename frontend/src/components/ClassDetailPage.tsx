@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getAvailableDatesMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
 import { getColorScheme } from '../utils/colorUtils';
+import type { UserProfile } from '../types/auth';
 
 interface ClassDetailPageProps {
   // אם לא מעבירים class, הקומפוננטה תטען אותו לפי slug
@@ -17,10 +18,11 @@ interface ClassDetailPageProps {
 
 function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
-  const { user, loading: authLoading, session, profile, loadProfile } = useAuth();
+  const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
   const [classData, setClassData] = useState<Class | null>(initialClass || null);
   const [loading, setLoading] = useState(!initialClass);
   const [error, setError] = useState<string | null>(null);
+  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -32,6 +34,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   });
   const [message, setMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // קבל את הפרופיל הנכון (local או context)
+  const profile = localProfile || contextProfile;
 
   // קבלת תאריכים זמינים לכפתורים
   const availableDates = getAvailableDatesForButtons(classData?.schedule);
@@ -75,6 +80,44 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       fetchClass();
     }
   }, [slug, initialClass]);
+
+  // טעינת פרופיל אם לא קיים - כמו ב-ClassesPage
+  useEffect(() => {
+    if (!user || authLoading || classData?.slug !== 'trial-class') {
+      return;
+    }
+    
+    if (localProfile || contextProfile) {
+      return;
+    }
+    
+    const loadProfileWithFetch = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const profileDataArray = await response.json();
+        
+        if (profileDataArray.length > 0) {
+          const profileData = profileDataArray[0];
+          setLocalProfile(profileData);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    
+    loadProfileWithFetch();
+  }, [user?.id, authLoading, localProfile, contextProfile, session, classData?.slug]);
 
   // טעינת מקומות זמינים כשנבחר תאריך
   useEffect(() => {
@@ -219,10 +262,16 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     );
   }
 
-  // אם זה שיעור ניסיון והמשתמש מחובר אבל אין פרופיל - חזור לדף השיעורים
-  if (classData?.slug === 'trial-class' && user && !profile) {
-    window.location.href = '/classes';
-    return null;
+  // אם זה שיעור ניסיון והמשתמש מחובר אבל אין פרופיל - חכה לטעינת הפרופיל
+  if (classData?.slug === 'trial-class' && user && !localProfile && !contextProfile && !authLoading) {
+    return (
+      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
+          <p className="text-[#2B2B2B] font-agrandir-regular">בודק סטטוס שיעור ניסיון...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !classData) {
