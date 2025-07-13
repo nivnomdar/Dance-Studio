@@ -142,24 +142,33 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       throw new AppError('Class not found or inactive', 404);
     }
 
-    // Check if user already has a registration for this class
+    // Check if user already has an active registration for this class
+    logger.info(`Checking for existing registration - user_id: ${req.user!.id}, class_id: ${class_id}`);
+    
     const { data: existingRegistration, error: checkError } = await supabase
       .from('registrations')
       .select('*')
       .eq('user_id', req.user!.id)
       .eq('class_id', class_id)
+      .eq('status', 'active')
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
+      logger.error('Error checking existing registration:', checkError);
       throw new AppError('Failed to check existing registration', 500);
     }
 
     if (existingRegistration) {
+      logger.info(`Found existing active registration: ${existingRegistration.id} with status: ${existingRegistration.status}`);
       throw new AppError('Already registered for this class', 400);
+    } else {
+      logger.info('No existing active registration found');
     }
 
     // Check if this is a trial class and user has already used it
     if (classData.slug === 'trial-class') {
+      logger.info(`Trial class registration attempt - user_id: ${req.user!.id}`);
+      
       const { data: userProfile, error: profileError } = await supabase
         .from('profiles')
         .select('has_used_trial_class')
@@ -167,11 +176,17 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .single();
 
       if (profileError) {
+        logger.error('Error checking trial class status:', profileError);
         throw new AppError('Failed to check trial class status', 500);
       }
 
+      logger.info(`User profile trial class status: has_used_trial_class = ${userProfile?.has_used_trial_class}`);
+
       if (userProfile?.has_used_trial_class) {
+        logger.info(`User ${req.user!.id} already used trial class, registration blocked`);
         throw new AppError('Already used trial class. Cannot register for another trial class.', 400);
+      } else {
+        logger.info(`User ${req.user!.id} can register for trial class`);
       }
     }
 
@@ -374,6 +389,20 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
 
     // If this is a trial class being cancelled, update the user's profile
     if (registrationData.class.slug === 'trial-class') {
+      logger.info(`Trial class cancellation detected for user ${registrationData.user_id}`);
+      
+      const { data: profileBefore, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('has_used_trial_class')
+        .eq('id', registrationData.user_id)
+        .single();
+      
+      if (profileCheckError) {
+        logger.error('Failed to check profile before update:', profileCheckError);
+      } else {
+        logger.info(`Profile before update - has_used_trial_class: ${profileBefore?.has_used_trial_class}`);
+      }
+      
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ has_used_trial_class: false })
@@ -384,6 +413,19 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
         // Don't fail the cancellation, just log the error
       } else {
         logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
+        
+        // Verify the update
+        const { data: profileAfter, error: profileAfterError } = await supabase
+          .from('profiles')
+          .select('has_used_trial_class')
+          .eq('id', registrationData.user_id)
+          .single();
+        
+        if (profileAfterError) {
+          logger.error('Failed to verify profile update:', profileAfterError);
+        } else {
+          logger.info(`Profile after update - has_used_trial_class: ${profileAfter?.has_used_trial_class}`);
+        }
       }
     }
 
