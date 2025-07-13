@@ -8,13 +8,14 @@ import type { Class } from '../../types/class';
 interface MyClassesTabProps {
   userId: string;
   session: any;
+  onClassesCountUpdate?: () => void;
 }
 
 interface RegistrationWithClass extends Registration {
   class: Class;
 }
 
-const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session }) => {
+const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesCountUpdate }) => {
   const [registrations, setRegistrations] = useState<RegistrationWithClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -280,6 +281,11 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session }) => {
           ? { ...r, status: 'cancelled' }
           : r
       ));
+      
+      // עדכן את ספירת השיעורים
+      if (onClassesCountUpdate) {
+        onClassesCountUpdate();
+      }
       
       // הצג הודעת הצלחה
       let successMsg = `ההרשמה ל"${selectedRegistration.class.name}" בוטלה בהצלחה!`;

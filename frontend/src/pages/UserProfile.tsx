@@ -24,6 +24,7 @@ function UserProfile() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
+  const [classesCount, setClassesCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -190,12 +191,70 @@ function UserProfile() {
     }
   }, [contextProfile, isLoadingProfile, user]);
 
+  // useEffect לטעינת ספירת השיעורים
+  useEffect(() => {
+    if (user && session && !authLoading) {
+      fetchClassesCount();
+    }
+  }, [user?.id, session, authLoading]);
+
+  // useEffect לעדכון הספירה כאשר הדף נטען מחדש
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && session && !authLoading) {
+        fetchClassesCount();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user?.id, session, authLoading]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+  };
+
+  // פונקציה לספירת השיעורים של המשתמש
+  const fetchClassesCount = async () => {
+    if (!user || !session) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        }
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch registrations for count');
+        return;
+      }
+      
+      const registrations = await response.json();
+      
+      // ספירת הרשמות פעילות ועבר (לא בוטלות)
+      const validRegistrations = registrations.filter((registration: any) => {
+        // בדיקה שההרשמה לא בוטלה
+        if (registration.status === 'cancelled') return false;
+        
+        // בדיקה אם זה שיעור עבר או עתידי
+        const registrationDate = new Date(registration.selected_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // כולל שיעורים עתידיים ושיעורים שהסתיימו (עבר)
+        return true;
+      });
+      
+      setClassesCount(validRegistrations.length);
+    } catch (error) {
+      console.error('Error fetching classes count:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -380,7 +439,7 @@ function UserProfile() {
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="text-center p-4 bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 rounded-2xl relative group">
-                    <div className="text-2xl font-bold text-[#EC4899]">0</div>
+                    <div className="text-2xl font-bold text-[#EC4899]">{classesCount}</div>
                     <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">השיעורים שלי</div>
                     <button
                       onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
@@ -460,6 +519,7 @@ function UserProfile() {
               onSubmit={handleSubmit}
               onToggleEdit={() => setIsEditing(!isEditing)}
               session={session}
+              onClassesCountUpdate={fetchClassesCount}
             />
           </div>
         </div>

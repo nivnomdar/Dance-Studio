@@ -23,6 +23,7 @@ interface ProfileTabsProps {
   onSubmit: (e: React.FormEvent) => void;
   onToggleEdit: () => void;
   session: any;
+  onClassesCountUpdate?: () => void;
 }
 
 type TabType = 'personal' | 'classes' | 'orders';
@@ -36,9 +37,18 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   onInputChange,
   onSubmit,
   onToggleEdit,
-  session
+  session,
+  onClassesCountUpdate
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal');
+
+  // עדכן את ספירת השיעורים כאשר עוברים לטאב השיעורים
+  const handleTabChange = (tabId: TabType) => {
+    setActiveTab(tabId);
+    if (tabId === 'classes' && onClassesCountUpdate) {
+      onClassesCountUpdate();
+    }
+  };
 
   const tabs = [
     {
@@ -81,6 +91,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
           <MyClassesTab
             userId={user?.id || ''}
             session={session}
+            onClassesCountUpdate={onClassesCountUpdate}
           />
         );
       case 'orders':
@@ -108,7 +119,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 ${
                     isActive
                       ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white shadow-md'
