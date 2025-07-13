@@ -20,12 +20,7 @@ function Navbar() {
   // שימוש בפרופיל מהטעינה המקומית קודם, אחרת מה-AuthContext
   const currentProfile = localProfile || profile;
 
-  // לוגים לדיבוג (אפשר להסיר אחרי שמוודאים שהכל עובד)
-  useEffect(() => {
-    console.log('Navbar: currentProfile changed to:', currentProfile);
-    console.log('Navbar: currentProfile?.role:', currentProfile?.role);
-    console.log('Navbar: currentProfile?.role === "admin":', currentProfile?.role === 'admin');
-  }, [currentProfile]);
+  // לוגים לדיבוג - הוסרו כי הכל עובד
 
   // האזנה לשינויים בסטטוס ההתחברות רק לפופאפ
   useEffect(() => {

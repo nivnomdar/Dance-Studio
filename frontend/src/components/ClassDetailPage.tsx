@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { registrationsService } from '../lib/registrations';
 import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
+import { usePopup } from '../contexts/PopupContext';
 import { supabase } from '../lib/supabase';
 import { getAvailableDatesMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
 import { getColorScheme } from '../utils/colorUtils';
@@ -155,6 +156,8 @@ interface ClassDetailPageProps {
 
 function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { showPopup } = usePopup();
   const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
   const [classData, setClassData] = useState<Class | null>(initialClass || null);
   const [loading, setLoading] = useState(!initialClass);
@@ -169,7 +172,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     last_name: '',
     phone: ''
   });
-  const [message, setMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // קבל את הפרופיל הנכון (local או context)
@@ -273,12 +275,16 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     
     // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו
     if (classData.slug === 'trial-class' && profile?.has_used_trial_class) {
-      setMessage({ type: 'error', text: 'כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.' });
+      showPopup({
+        title: 'שיעור ניסיון כבר נוצל',
+        message: 'כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.',
+        type: 'warning',
+        duration: 5000
+      });
       return;
     }
     
     setIsSubmitting(true);
-    setMessage({ type: null, text: '' });
     
     try {
       const registrationData = {
@@ -291,25 +297,52 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         selected_time: selectedTime
       };
       
-      // שליחה לשרת
-      const result = await registrationsService.createRegistration(registrationData);
+      console.log('ClassDetailPage: Sending registration data:', registrationData);
+      console.log('ClassDetailPage: API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+      console.log('ClassDetailPage: All env vars:', import.meta.env);
+      console.log('ClassDetailPage: Session exists:', !!session);
+      console.log('ClassDetailPage: Session access_token:', session?.access_token ? 'exists' : 'missing');
       
-      // אם זה שיעור ניסיון, עדכן את הפרופיל
+      // שליחה לשרת
+      const result = await registrationsService.createRegistration(registrationData, session?.access_token);
+      console.log('ClassDetailPage: Registration result:', result);
+      
+      // אם זה שיעור ניסיון, עדכן את הפרופיל בצורה אסינכרונית
       if (classData.slug === 'trial-class') {
-        await updateProfileTrialClass();
+        updateProfileTrialClass().catch(error => {
+          console.error('Error updating trial class status:', error);
+        });
       }
       
-      // הצגת הודעת הצלחה
-      setMessage({ type: 'success', text: 'ההרשמה בוצעה בהצלחה!' });
+      // הצגת פופ-אפ אישור
+      showPopup({
+        title: 'ההרשמה בוצעה בהצלחה! 🎉',
+        message: `ההרשמה שלך ל${classData.name} נשמרה בהצלחה. פרטי ההזמנה שלך יהיו זמינים בדף הפרופיל האישי שלך.`,
+        type: 'success',
+        duration: 5000 // 5 שניות
+      });
       
       // איפוס הטופס
       setFormData({ first_name: '', last_name: '', phone: '' });
       setSelectedDate('');
       setSelectedTime('');
       
+      // ניווט ל-homepage אחרי שהפופ-אפ מוצג
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+      
+      // איפוס מצב הטעינה
+      setIsSubmitting(false);
+      
     } catch (error) {
-      setMessage({ type: 'error', text: 'שגיאה בהרשמה. נסי שוב.' });
-    } finally {
+      console.error('ClassDetailPage: Registration error:', error);
+      showPopup({
+        title: 'שגיאה בהרשמה',
+        message: 'אירעה שגיאה בעת ביצוע ההרשמה. אנא נסי שוב.',
+        type: 'error',
+        duration: 5000
+      });
       setIsSubmitting(false);
     }
   };
@@ -541,22 +574,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   הרשמה ל{classData.name}
                 </h2>
                 
-                {/* הודעות הצלחה/שגיאה */}
-                {message.type && (
-                  <div className={`p-4 rounded-xl border-2 ${
-                    message.type === 'success' 
-                      ? 'bg-green-50 border-green-200 text-green-800' 
-                      : 'bg-red-50 border-red-200 text-red-800'
-                  }`}>
-                    <div className="flex items-center">
-                      <div className={`w-5 h-5 rounded-full mr-3 ${
-                        message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                      <span className="font-bold">{message.text}</span>
-                    </div>
-                  </div>
-                )}
-                
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Date Selection */}
                     <div>
@@ -770,7 +787,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                     {isSubmitting ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></div>
-                        שולחת...
+                        מבצע זימון שיעור...
                       </div>
                     ) : !selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
                       const spotsKey = `${selectedDate}-${selectedTime}`;

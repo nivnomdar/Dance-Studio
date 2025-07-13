@@ -33,9 +33,9 @@ export const registrationsService = {
   },
 
   // Create new registration
-  async createRegistration(data: CreateRegistrationRequest): Promise<RegistrationWithDetails> {
+  async createRegistration(data: CreateRegistrationRequest, accessToken?: string): Promise<RegistrationWithDetails> {
     try {
-      const result = await apiService.registrations.create(data);
+      const result = await apiService.registrations.create(data, accessToken);
       return result;
     } catch (error) {
       throw new Error(`Failed to create registration: ${error instanceof Error ? error.message : 'Unknown error'}`);
