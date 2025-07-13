@@ -30,9 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
           
           if (!error && profileData) {
+            console.log('AuthContext - Profile loaded successfully:', profileData);
             setProfile(profileData);
           } else if (error) {
             console.error('Error loading profile on session init:', error);
+            console.error('Error details:', error.message, error.code);
             // אם הפרופיל לא קיים, נצור אותו
             if (error.code === 'PGRST116') {
               await createProfileForUser(session.user);

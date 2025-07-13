@@ -5,6 +5,7 @@ import { handleAuthStateChange } from '../../lib/auth';
 import { usePopup } from '../../contexts/PopupContext';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProfile } from '../../hooks/useProfile';
 import SecondaryNavbar from './SecondaryNavbar';
 
 function Navbar() {
@@ -13,7 +14,18 @@ function Navbar() {
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { cartCount, clearCart } = useCart();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut, session } = useAuth();
+  const { profile: localProfile } = useProfile();
+
+  // שימוש בפרופיל מהטעינה המקומית קודם, אחרת מה-AuthContext
+  const currentProfile = localProfile || profile;
+
+  // לוגים לדיבוג (אפשר להסיר אחרי שמוודאים שהכל עובד)
+  useEffect(() => {
+    console.log('Navbar: currentProfile changed to:', currentProfile);
+    console.log('Navbar: currentProfile?.role:', currentProfile?.role);
+    console.log('Navbar: currentProfile?.role === "admin":', currentProfile?.role === 'admin');
+  }, [currentProfile]);
 
   // האזנה לשינויים בסטטוס ההתחברות רק לפופאפ
   useEffect(() => {
@@ -163,6 +175,24 @@ function Navbar() {
                       >
                         פרופיל משתמש
                       </Link>
+                      {/* הצג הודעת טעינה אם הפרופיל לא נטען */}
+                      {user && !currentProfile && (
+                        <div className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6]">טוען פרופיל...</div>
+                      )}
+                      {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
+                      {(() => {
+                        console.log('Navbar Desktop: checking admin condition - currentProfile:', currentProfile);
+                        console.log('Navbar Desktop: checking admin condition - currentProfile?.role === "admin":', currentProfile?.role === 'admin');
+                        return currentProfile?.role === 'admin';
+                      })() && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        >
+                          דשבורד מנהלים
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
@@ -243,6 +273,24 @@ function Navbar() {
                       >
                         פרופיל משתמש
                       </Link>
+                      {/* הצג הודעת טעינה אם הפרופיל לא נטען */}
+                      {user && !currentProfile && (
+                        <div className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6]">טוען פרופיל...</div>
+                      )}
+                      {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
+                      {(() => {
+                        console.log('Navbar Mobile: checking admin condition - currentProfile:', currentProfile);
+                        console.log('Navbar Mobile: checking admin condition - currentProfile?.role === "admin":', currentProfile?.role === 'admin');
+                        return currentProfile?.role === 'admin';
+                      })() && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        >
+                          דשבורד מנהלים
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
