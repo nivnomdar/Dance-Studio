@@ -43,12 +43,22 @@ export const registrationsService = {
   },
 
   // Update registration status (admin only)
-  async updateRegistrationStatus(id: string, status: string): Promise<RegistrationWithDetails> {
+  async updateRegistrationStatus(id: string, status: string, accessToken?: string): Promise<RegistrationWithDetails> {
     try {
-      const data = await apiService.registrations.updateStatus(id, status);
+      const data = await apiService.registrations.updateStatus(id, status, accessToken);
       return data;
     } catch (error) {
       throw new Error(`Failed to update registration status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  // Cancel registration (user can cancel own)
+  async cancelRegistration(id: string, accessToken?: string): Promise<RegistrationWithDetails> {
+    try {
+      const data = await apiService.registrations.cancelRegistration(id, accessToken);
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to cancel registration: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 

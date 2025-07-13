@@ -129,13 +129,67 @@ export const apiService = {
       }
     },
 
-    async updateStatus(id: string, status: string): Promise<RegistrationWithDetails> {
-      const headers = await getAuthHeaders();
+    async updateStatus(id: string, status: string, accessToken?: string): Promise<RegistrationWithDetails> {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      } else {
+        const authHeaders = await getAuthHeaders();
+        Object.assign(headers, authHeaders);
+      }
+
+      console.log('API Service: updateStatus called with:', { id, status, headers });
+      console.log('API Service: Request URL:', `${API_BASE_URL}/registrations/${id}/status`);
+      console.log('API Service: Request body:', JSON.stringify({ status }));
+      
       const response = await fetch(`${API_BASE_URL}/registrations/${id}/status`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ status })
       });
+      
+      console.log('API Service: updateStatus response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Service: Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      return handleResponse<RegistrationWithDetails>(response);
+    },
+
+    async cancelRegistration(id: string, accessToken?: string): Promise<RegistrationWithDetails> {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      } else {
+        const authHeaders = await getAuthHeaders();
+        Object.assign(headers, authHeaders);
+      }
+
+      console.log('API Service: cancelRegistration called with:', { id, headers });
+      console.log('API Service: Request URL:', `${API_BASE_URL}/registrations/${id}/cancel`);
+      
+      const response = await fetch(`${API_BASE_URL}/registrations/${id}/cancel`, {
+        method: 'PUT',
+        headers
+      });
+      
+      console.log('API Service: cancelRegistration response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Service: Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
       return handleResponse<RegistrationWithDetails>(response);
     },
 

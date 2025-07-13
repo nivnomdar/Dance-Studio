@@ -101,7 +101,7 @@ export const getAvailableSpots = async (
       .eq('class_id', classId)
       .eq('selected_date', selectedDate)
       .eq('selected_time', selectedTime)
-      .eq('status', 'confirmed'); // רק רשומות מאושרות נחשבות
+      .eq('status', 'active'); // רק רשומות פעילות נחשבות
     
     if (error) {
       console.error('Error checking available spots:', error);

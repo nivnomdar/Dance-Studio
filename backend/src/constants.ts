@@ -6,7 +6,6 @@ export const ORDER_STATUS = {
 } as const;
 
 export const CLASS_REGISTRATION_STATUS = {
-  PENDING: 'pending',
-  CONFIRMED: 'confirmed',
+  ACTIVE: 'active',
   CANCELLED: 'cancelled'
 } as const; 

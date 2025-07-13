@@ -190,7 +190,7 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         selected_time,
         notes,
         payment_id,
-        status: 'pending'
+        status: 'active'
       }])
       .select(`
         *,
@@ -243,11 +243,26 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
     }
 
     // Validate status
-    const validStatuses = ['pending', 'confirmed', 'cancelled'];
+    const validStatuses = ['active', 'cancelled'];
     if (!validStatuses.includes(status)) {
-      throw new AppError('Invalid status. Must be one of: pending, confirmed, cancelled', 400);
+      throw new AppError('Invalid status. Must be one of: active, cancelled', 400);
     }
 
+    // Get the registration with class details to check if it's a trial class
+    const { data: registrationData, error: regError } = await supabase
+      .from('registrations')
+      .select(`
+        *,
+        class:classes(id, name, slug, price, duration, level, category)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (regError || !registrationData) {
+      throw new AppError('Registration not found', 404);
+    }
+
+    // Update registration status
     const { data, error } = await supabase
       .from('registrations')
       .update({ status })
@@ -265,6 +280,111 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
 
     if (!data) {
       throw new AppError('Registration not found', 404);
+    }
+
+    // If this is a trial class being cancelled, update the user's profile
+    if (registrationData.class.slug === 'trial-class' && status === 'cancelled') {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ has_used_trial_class: false })
+        .eq('id', registrationData.user_id);
+
+      if (updateError) {
+        logger.error('Failed to update trial class status in profile:', updateError);
+        // Don't fail the status update, just log the error
+      } else {
+        logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
+      }
+    }
+
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Cancel registration (user can cancel own, admin can cancel any)
+router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user is admin or owns the registration
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    // Get the registration with class details
+    let query = supabase
+      .from('registrations')
+      .select(`
+        *,
+        class:classes(id, name, slug, price, duration, level, category)
+      `)
+      .eq('id', id);
+
+    // If not admin, only allow cancellation of own registrations
+    if (profile.role !== 'admin') {
+      query = query.eq('user_id', req.user!.id);
+    }
+
+    const { data: registrationData, error: regError } = await query.single();
+
+    if (regError || !registrationData) {
+      throw new AppError('Registration not found', 404);
+    }
+
+    // Check if registration is already cancelled
+    if (registrationData.status === 'cancelled') {
+      throw new AppError('Registration is already cancelled', 400);
+    }
+
+    // Check if it's too late to cancel (48 hours before class)
+    const classDate = new Date(registrationData.selected_date);
+    const [hour, minute] = registrationData.selected_time.split(':');
+    classDate.setHours(Number(hour), Number(minute), 0, 0);
+    const now = new Date();
+    const diffMs = classDate.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < 48) {
+      throw new AppError('Cannot cancel registration less than 48 hours before class', 400);
+    }
+
+    // Update registration status to cancelled
+    const { data, error } = await supabase
+      .from('registrations')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .select(`
+        *,
+        class:classes(id, name, price, duration, level, category),
+        user:profiles(id, first_name, last_name, email)
+      `)
+      .single();
+
+    if (error) {
+      throw new AppError('Failed to cancel registration', 500);
+    }
+
+    // If this is a trial class being cancelled, update the user's profile
+    if (registrationData.class.slug === 'trial-class') {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ has_used_trial_class: false })
+        .eq('id', registrationData.user_id);
+
+      if (updateError) {
+        logger.error('Failed to update trial class status in profile:', updateError);
+        // Don't fail the cancellation, just log the error
+      } else {
+        logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
+      }
     }
 
     res.json(data);
