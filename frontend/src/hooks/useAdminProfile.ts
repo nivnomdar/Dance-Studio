@@ -5,14 +5,15 @@ interface UseAdminProfileReturn {
   isLoading: boolean;
   error: string | null;
   isAdmin: boolean;
+  refetch: () => void;
 }
 
-export function useAdminProfile(): UseAdminProfileReturn {
-  const { profile, isLoading, error } = useProfile();
+function useAdminProfile(): UseAdminProfileReturn {
+  const { profile, isLoading, error, refetch } = useProfile();
 
   // אם יש שגיאה בטעינת הפרופיל, החזר אותה
   if (error) {
-    return { profile, isLoading, error, isAdmin: false };
+    return { profile, isLoading, error, isAdmin: false, refetch };
   }
 
   // בדוק אם המשתמש הוא מנהל
@@ -22,6 +23,9 @@ export function useAdminProfile(): UseAdminProfileReturn {
     profile, 
     isLoading, 
     error: null, // לא מחזירים שגיאה על הרשאות - הקומפוננט הראשי יטפל בזה
-    isAdmin 
+    isAdmin,
+    refetch
   };
-} 
+}
+
+export default useAdminProfile; 

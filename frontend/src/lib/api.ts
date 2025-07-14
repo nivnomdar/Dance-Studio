@@ -201,5 +201,24 @@ export const apiService = {
       });
       return handleResponse<{ message: string }>(response);
     }
+  },
+
+  // Admin API
+  admin: {
+    async getOverview(): Promise<any> {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/classes/admin/overview`, {
+        headers
+      });
+      return handleResponse<any>(response);
+    },
+
+    async getCalendar(): Promise<any> {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/classes/admin/calendar`, {
+        headers
+      });
+      return handleResponse<any>(response);
+    }
   }
 }; 

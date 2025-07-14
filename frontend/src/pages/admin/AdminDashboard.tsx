@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAdminProfile } from '../../hooks/useAdminProfile';
-import AdminLayout from '../../components/admin/AdminLayout';
-import AdminLoadingState from '../../components/admin/AdminLoadingState';
-import AdminErrorState from '../../components/admin/AdminErrorState';
+import useAdminProfile from '../../hooks/useAdminProfile';
+import { AdminLayout, AdminLoadingState, AdminErrorState } from '../../components/admin';
+import { AdminDataProvider } from '../../contexts/AdminDataContext';
 import { ADMIN_TABS } from '../../constants/adminTabs';
 
 export default function AdminDashboard() {
@@ -38,7 +38,14 @@ export default function AdminDashboard() {
     return null;
   }
 
+  // Check if profile exists
+  if (!profile) {
+    return <AdminErrorState message="פרופיל לא נמצא" />;
+  }
+
   return (
-    <AdminLayout tabs={ADMIN_TABS} profile={profile} />
+    <AdminDataProvider>
+      <AdminLayout tabs={ADMIN_TABS as any} profile={profile} />
+    </AdminDataProvider>
   );
 } 
