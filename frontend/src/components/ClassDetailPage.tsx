@@ -8,10 +8,28 @@ import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
 import { usePopup } from '../contexts/PopupContext';
 import { supabase } from '../lib/supabase';
-import { getAvailableDatesMessage, getAvailableDatesForButtons, getAvailableTimesForDate, getAvailableSpots } from '../utils/dateUtils';
+import { 
+  getAvailableDatesMessage, 
+  getAvailableDatesForButtons, 
+  getAvailableTimesForDate, 
+  getAvailableSpots
+} from '../utils/dateUtils';
+
+import {
+  getAvailableDatesForButtonsFromSessions,
+  getAvailableTimesForDateFromSessions,
+  getAvailableSpotsFromSessions,
+  getAvailableDatesMessageFromSessions,
+  debugSessionsData,
+  testSessionsAPI
+} from '../utils/sessionsUtils';
+
+
 import { getColorScheme } from '../utils/colorUtils';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
+import { apiService } from '../lib/api';
+import { DEBOUNCE_DELAYS } from '../utils/constants';
 
 // Class Detail Skeleton Components
 const ClassDetailHeaderSkeleton = () => (
@@ -166,7 +184,10 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [availableSpots, setAvailableSpots] = useState<{ [key: string]: { available: number; message: string } }>({});
+  const [availableSpots, setAvailableSpots] = useState<{ [key: string]: { available: number; message: string; sessionId?: string; sessionClassId?: string } }>({});
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [datesMessage, setDatesMessage] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -177,15 +198,30 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   // קבל את הפרופיל הנכון (local או context)
   const profile = localProfile || contextProfile;
 
-  // קבלת תאריכים זמינים לכפתורים
-  const availableDates = getAvailableDatesForButtons(classData?.schedule);
+  // קבלת תאריכים זמינים לכפתורים - יטען מ-sessions
 
-  // פונקציה לבדיקת מקומות זמינים
+  // פונקציה לבדיקת מקומות זמינים - גרסה חדשה עם sessions
   const checkAvailableSpots = async (date: string, time: string) => {
     if (!classData) return;
     
     const key = `${date}-${time}`;
-    const spots = await getAvailableSpots(
+    
+    try {
+      const spots = await getAvailableSpotsFromSessions(
+        classData.id, 
+        date, 
+        time
+      );
+      
+      setAvailableSpots(prev => ({
+        ...prev,
+        [key]: spots
+      }));
+    } catch (error) {
+      console.error('Error checking spots from sessions, falling back to old method:', error);
+      
+      // Fallback לפונקציה הישנה
+      const fallbackSpots = await getAvailableSpots(
       classData.id, 
       date, 
       time, 
@@ -194,9 +230,80 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     
     setAvailableSpots(prev => ({
       ...prev,
-      [key]: spots
+        [key]: fallbackSpots
     }));
+    }
   };
+
+  // טעינת תאריכים ושעות זמינים מ-sessions
+  useEffect(() => {
+    if (!classData) {
+      return;
+    }
+
+    // Add debounce to prevent excessive API calls
+    const timeoutId = setTimeout(async () => {
+      try {
+        // טעינת תאריכים זמינים
+        const dates = await getAvailableDatesForButtonsFromSessions(classData.id);
+        
+        // אם אין sessions, השתמש בפונקציות הישנות
+        if (dates.length === 0) {
+          const fallbackDates = getAvailableDatesForButtons(classData.schedule);
+          setAvailableDates(fallbackDates);
+          setDatesMessage(getAvailableDatesMessage(classData.schedule));
+        } else {
+          setAvailableDates(dates);
+          const message = await getAvailableDatesMessageFromSessions(classData.id);
+          setDatesMessage(message);
+        }
+      } catch (error) {
+        console.error('Error loading sessions data:', error);
+        // Fallback לפונקציות הישנות
+        const fallbackDates = getAvailableDatesForButtons(classData.schedule);
+        setAvailableDates(fallbackDates);
+        setDatesMessage(getAvailableDatesMessage(classData.schedule));
+      }
+    }, DEBOUNCE_DELAYS.SESSIONS_DATA);
+
+    // Cleanup function to cancel the timeout if the effect runs again
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [classData]);
+
+  // טעינת שעות זמינות כשמשתנה התאריך
+  useEffect(() => {
+    if (!classData || !selectedDate) {
+      setAvailableTimes([]);
+      return;
+    }
+
+    // Add debounce to prevent excessive API calls
+    const timeoutId = setTimeout(async () => {
+      try {
+        const times = await getAvailableTimesForDateFromSessions(classData.id, selectedDate);
+        
+        // אם אין שעות מ-sessions, השתמש בפונקציה הישנה
+        if (times.length === 0) {
+          const fallbackTimes = getAvailableTimesForDate(selectedDate, classData.schedule);
+          setAvailableTimes(fallbackTimes);
+        } else {
+          setAvailableTimes(times);
+        }
+      } catch (error) {
+        console.error('Error loading times for date:', error);
+        // Fallback לפונקציה הישנה
+        const fallbackTimes = getAvailableTimesForDate(selectedDate, classData.schedule);
+        setAvailableTimes(fallbackTimes);
+      }
+    }, DEBOUNCE_DELAYS.TIMES_LOADING);
+
+    // Cleanup function to cancel the timeout if the effect runs again
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [classData, selectedDate]);
 
   // טעינת נתוני השיעור אם לא הועברו
   useEffect(() => {
@@ -260,13 +367,20 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
 
   // טעינת מקומות זמינים כשנבחר תאריך
   useEffect(() => {
-    if (selectedDate && classData) {
-      const times = getAvailableTimesForDate(selectedDate, classData.schedule);
-      times.forEach(time => {
+    if (selectedDate && classData && availableTimes.length > 0) {
+      // Add debounce to prevent excessive API calls
+      const timeoutId = setTimeout(() => {
+        availableTimes.forEach(time => {
         checkAvailableSpots(selectedDate, time);
       });
+      }, DEBOUNCE_DELAYS.SPOTS_CHECKING);
+
+      // Cleanup function to cancel the timeout if the effect runs again
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
-  }, [selectedDate, classData]);
+  }, [selectedDate, classData, availableTimes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,8 +401,14 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     setIsSubmitting(true);
     
     try {
+      // קבלת session_id ו-session_class_id (אם קיימים)
+      const spotsKey = `${selectedDate}-${selectedTime}`;
+      const spotsInfo = availableSpots[spotsKey];
+      
       const registrationData = {
         class_id: classData.id,
+        ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
+        ...(spotsInfo?.sessionClassId && { session_class_id: spotsInfo.sessionClassId }),
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
@@ -630,7 +750,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                       })}
                     </div>
                     <p className="text-sm text-gray-500 mt-3 font-agrandir-regular">
-                      {getAvailableDatesMessage(classData?.schedule)}
+                      {datesMessage}
                         </p>
                     </div>
 
@@ -642,7 +762,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         בחרי שעה לשיעור *
                       </label>
                       <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                        {getAvailableTimesForDate(selectedDate, classData.schedule).map((time) => {
+                        {availableTimes.map((time) => {
                           const isSelected = selectedTime === time;
                           const spotsKey = `${selectedDate}-${time}`;
                           const spotsInfo = availableSpots[spotsKey];

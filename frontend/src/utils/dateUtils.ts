@@ -2,7 +2,7 @@
 
 import { ClassSchedule, DaySchedule } from '../types/class';
 
-
+console.log('📦 dateUtils.ts loaded');
 
 /**
  * קבלת הודעה על התאריכים הזמינים
@@ -28,8 +28,6 @@ export const getAvailableDatesMessage = (schedule?: ClassSchedule): string => {
   
   return `השיעורים מתקיימים בימים: ${availableDays.join(', ')}`;
 };
-
-
 
 /**
  * קבלת תאריכים זמינים לכפתורים
@@ -93,6 +91,23 @@ export const getAvailableSpots = async (
 ): Promise<{ available: number; message: string }> => {
   try {
     const { supabase } = await import('../lib/supabase');
+    
+    // בדיקה אם זה שיעור פרטי
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('slug, category')
+      .eq('id', classId)
+      .single();
+    
+    if (classError) {
+      console.error('Error fetching class data:', classError);
+      return { available: maxParticipants, message: '' };
+    }
+    
+    // אם זה שיעור פרטי, אין צורך לבדוק מקומות
+    if (classData.slug === 'private-lesson' || classData.category === 'private') {
+      return { available: 1, message: 'זמין' };
+    }
     
     // ספירת רשומות קיימות לשיעור זה בתאריך ושעה אלה
     const { count, error } = await supabase

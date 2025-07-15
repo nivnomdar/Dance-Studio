@@ -14,6 +14,7 @@ import shopRoutes from './routes/shop';
 import ordersRoutes from './routes/orders';
 import registrationsRoutes from './routes/registrations';
 import profilesRoutes from './routes/profiles';
+import sessionsRoutes from './routes/sessions';
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/registrations', registrationsRoutes);
 app.use('/api/profiles', profilesRoutes);
+app.use('/api/sessions', sessionsRoutes);
 
 // Error handling
 app.use(errorHandler);

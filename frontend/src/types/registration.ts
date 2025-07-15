@@ -35,6 +35,8 @@ export interface RegistrationWithDetails extends Registration {
 
 export interface CreateRegistrationRequest {
   class_id: string;
+  session_id?: string;
+  session_class_id?: string;
   first_name: string;
   last_name: string;
   phone: string;

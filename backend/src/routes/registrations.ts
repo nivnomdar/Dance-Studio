@@ -119,6 +119,8 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
   try {
     const {
       class_id,
+      session_id,
+      session_class_id,
       first_name,
       last_name,
       phone,
@@ -195,6 +197,8 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       .from('registrations')
       .insert([{
         class_id,
+        session_id,
+        session_class_id,
         user_id: req.user!.id,
         first_name,
         last_name,
