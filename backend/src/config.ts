@@ -16,7 +16,7 @@ export const config = {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
   },
   rateLimit: {
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
-    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
+    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60000, // 1 minute
+    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 300 // Increased from 100 to 300
   }
 }; 

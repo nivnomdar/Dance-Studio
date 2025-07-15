@@ -144,14 +144,16 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       throw new AppError('Class not found or inactive', 404);
     }
 
-    // Check if user already has an active registration for this class
-    logger.info(`Checking for existing registration - user_id: ${req.user!.id}, class_id: ${class_id}`);
+    // Check if user already has an active registration for this class on the same date and time
+    logger.info(`Checking for existing registration - user_id: ${req.user!.id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
     
     const { data: existingRegistration, error: checkError } = await supabase
       .from('registrations')
       .select('*')
       .eq('user_id', req.user!.id)
       .eq('class_id', class_id)
+      .eq('selected_date', selected_date)
+      .eq('selected_time', selected_time)
       .eq('status', 'active')
       .single();
 
@@ -161,10 +163,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     }
 
     if (existingRegistration) {
-      logger.info(`Found existing active registration: ${existingRegistration.id} with status: ${existingRegistration.status}`);
-      throw new AppError('Already registered for this class', 400);
+      logger.info(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
+      throw new AppError('Already registered for this class on this date and time', 400);
     } else {
-      logger.info('No existing active registration found');
+      logger.info('No existing active registration found for this date and time');
     }
 
     // Check if this is a trial class and user has already used it

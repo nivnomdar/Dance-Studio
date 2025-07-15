@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUsers, FaCheckCircle, FaTimesCircle, FaSpinner, FaInfoCircle, FaTimes, FaStar, FaUserFriends, FaGraduationCap } from 'react-icons/fa';
 import { registrationsService } from '../../lib/registrations';
 import { classesService } from '../../lib/classes';
+import { translateCategory } from '../../utils/categoryUtils';
 import type { Registration } from '../../types/registration';
 import type { Class } from '../../types/class';
 
@@ -27,10 +28,14 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   const [successMessage, setSuccessMessage] = useState('');
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
-    const fetchRegistrations = async () => {
+    const fetchRegistrations = async (retryCount = 0) => {
+      if (isFetching) return;
+      
       try {
+        setIsFetching(true);
         setLoading(true);
         setError(null);
         
@@ -43,22 +48,33 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         });
         
         if (!response.ok) {
+          if (response.status === 429 && retryCount < 3) {
+            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
+    
+            setError(`יותר מדי בקשות. מנסה שוב בעוד ${retryDelay/1000} שניות...`);
+            setTimeout(() => fetchRegistrations(retryCount + 1), retryDelay);
+            return;
+          }
+          if (response.status === 429) {
+            setError('יותר מדי בקשות, אנא נסי שוב בעוד כמה שניות');
+            return;
+          }
           throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         
         const userRegistrations = await response.json();
-        console.log('MyClassesTab: Raw registrations from API:', userRegistrations);
+  
         
         // קבלת פרטי השיעורים לכל הרשמה
         const registrationsWithClasses = await Promise.all(
           userRegistrations.map(async (registration: any) => {
             if (!registration.class_id) {
-              console.warn('Registration without class_id:', registration);
+      
               return null;
             }
             const classData = await classesService.getClassById(registration.class_id);
             if (!classData) {
-              console.warn('Class not found for registration:', registration.class_id);
+      
               return null;
             }
             return {
@@ -71,18 +87,28 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         // הסרת רשומות null
         const validRegistrations = registrationsWithClasses.filter(Boolean);
         
-        console.log('MyClassesTab: Valid registrations:', validRegistrations);
+
         setRegistrations(validRegistrations);
       } catch (err) {
         console.error('Error fetching registrations:', err);
         setError('שגיאה בטעינת ההרשמות שלך');
       } finally {
         setLoading(false);
+        setIsFetching(false);
       }
     };
 
     if (userId && session) {
-      fetchRegistrations();
+      // Add debouncing to prevent too many requests
+      const timeoutId = setTimeout(() => {
+        fetchRegistrations();
+      }, 2000); // 2 second debounce
+
+      // Cleanup function
+      return () => {
+        clearTimeout(timeoutId);
+        setIsFetching(false);
+      };
     }
   }, [userId, session]);
 
@@ -190,6 +216,8 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
     }
   };
 
+
+
   const openModal = (registration: RegistrationWithClass) => {
     setSelectedRegistration(registration);
     setShowModal(true);
@@ -260,16 +288,13 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       return;
     }
     
-    console.log('MyClassesTab: Starting cancellation for registration:', selectedRegistration.id);
+    
     
     try {
-      console.log('MyClassesTab: Calling cancelRegistration with:', {
-        id: selectedRegistration.id,
-        accessToken: session?.access_token ? 'exists' : 'missing'
-      });
+
       
       const result = await registrationsService.cancelRegistration(selectedRegistration.id, session?.access_token);
-      console.log('MyClassesTab: Update result:', result);
+
       
       setShowModal(false);
       setSelectedRegistration(null);
@@ -491,7 +516,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                   {/* Footer with category and click hint */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="text-sm text-[#4B2E83]/70 font-medium">
-                      {registration.class.category}
+                      {translateCategory(registration.class.category || '')}
                     </div>
                     <div className="flex items-center text-xs text-[#4B2E83]/50">
                       <FaInfoCircle className="w-3 h-3 ml-1" />
@@ -579,7 +604,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                     </div>
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-xl">
                       <span className="text-[#4B2E83]/70 font-medium">סוג השיעור:</span>
-                      <span className="font-semibold text-[#4B2E83]">{selectedRegistration.class.category}</span>
+                      <span className="font-semibold text-[#4B2E83]">{translateCategory(selectedRegistration.class.category || '')}</span>
                     </div>
                   </div>
                 </div>

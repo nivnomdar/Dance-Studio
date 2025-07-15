@@ -30,8 +30,10 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
   }
   
   // Validate phone format (basic validation)
-  if (phone.length < 9) {
-    throw new AppError('Phone number must be at least 9 digits', 400);
+  // Remove non-digit characters for validation
+  const phoneDigits = phone.replace(/\D/g, '');
+  if (phoneDigits.length < 8) {
+    throw new AppError('Phone number must be at least 8 digits', 400);
   }
   
   // Validate date format

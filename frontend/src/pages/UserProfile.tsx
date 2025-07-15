@@ -25,6 +25,7 @@ function UserProfile() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [classesCount, setClassesCount] = useState(0);
+  const [isFetchingCount, setIsFetchingCount] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -218,43 +219,66 @@ function UserProfile() {
     }));
   };
 
-  // פונקציה לספירת השיעורים של המשתמש
-  const fetchClassesCount = async () => {
-    if (!user || !session) return;
+  // פונקציה לספירת השיעורים של המשתמש עם debouncing ו-retry
+  const fetchClassesCount = async (retryCount = 0) => {
+    if (!user || !session || isFetchingCount) return;
     
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
+    setIsFetchingCount(true);
+    
+    // Add debouncing to prevent too many requests
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 429 && retryCount < 3) {
+    
+            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+            setTimeout(() => fetchClassesCount(retryCount + 1), retryDelay);
+            return;
+          }
+          if (response.status === 429) {
+    
+            return;
+          }
+          console.error('Failed to fetch registrations for count');
+          return;
         }
-      });
-      
-      if (!response.ok) {
-        console.error('Failed to fetch registrations for count');
-        return;
+        
+        const registrations = await response.json();
+        
+        // ספירת הרשמות פעילות ועבר (לא בוטלות)
+        const validRegistrations = registrations.filter((registration: any) => {
+          // בדיקה שההרשמה לא בוטלה
+          if (registration.status === 'cancelled') return false;
+          
+          // בדיקה אם זה שיעור עבר או עתידי
+          const registrationDate = new Date(registration.selected_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // כולל שיעורים עתידיים ושיעורים שהסתיימו (עבר)
+          return true;
+        });
+        
+        setClassesCount(validRegistrations.length);
+      } catch (error) {
+        console.error('Error fetching classes count:', error);
+      } finally {
+        setIsFetchingCount(false);
       }
-      
-      const registrations = await response.json();
-      
-      // ספירת הרשמות פעילות ועבר (לא בוטלות)
-      const validRegistrations = registrations.filter((registration: any) => {
-        // בדיקה שההרשמה לא בוטלה
-        if (registration.status === 'cancelled') return false;
-        
-        // בדיקה אם זה שיעור עבר או עתידי
-        const registrationDate = new Date(registration.selected_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // כולל שיעורים עתידיים ושיעורים שהסתיימו (עבר)
-        return true;
-      });
-      
-      setClassesCount(validRegistrations.length);
-    } catch (error) {
-      console.error('Error fetching classes count:', error);
-    }
+    }, 1000); // 1 second debounce
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      setIsFetchingCount(false);
+    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -185,6 +185,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableSpots, setAvailableSpots] = useState<{ [key: string]: { available: number; message: string; sessionId?: string; sessionClassId?: string } }>({});
+
+
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [datesMessage, setDatesMessage] = useState('');
@@ -194,6 +196,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     phone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   // קבל את הפרופיל הנכון (local או context)
   const profile = localProfile || contextProfile;
@@ -213,10 +217,14 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         time
       );
       
-      setAvailableSpots(prev => ({
-        ...prev,
-        [key]: spots
-      }));
+      setAvailableSpots(prev => {
+        const newState = {
+          ...prev,
+          [key]: spots
+        };
+  
+        return newState;
+      });
     } catch (error) {
       console.error('Error checking spots from sessions, falling back to old method:', error);
       
@@ -308,7 +316,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   // טעינת נתוני השיעור אם לא הועברו
   useEffect(() => {
     if (!initialClass && slug) {
-      const fetchClass = async () => {
+      const fetchClass = async (retryCount = 0) => {
         try {
           setLoading(true);
           const data = await classesService.getClassBySlug(slug);
@@ -317,8 +325,25 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
           } else {
             setError('השיעור לא נמצא');
           }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעור');
+        } catch (err: any) {
+          console.error('Error fetching class:', err);
+          
+          // Handle rate limiting with retry
+          if (err instanceof Error && (err.message.includes('429') || err.message.includes('Too Many Requests'))) {
+            if (retryCount < 2) { // Max 3 attempts (0, 1, 2)
+              const delay = Math.pow(2, retryCount + 1) * 1000; // 2s, 4s, 8s
+
+              
+              setTimeout(() => {
+                fetchClass(retryCount + 1);
+              }, delay);
+              return;
+            } else {
+              setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
+            }
+          } else {
+            setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעור');
+          }
         } finally {
           setLoading(false);
         }
@@ -382,19 +407,32 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     }
   }, [selectedDate, classData, availableTimes]);
 
+  // טעינת מקומות זמינים כשנבחרת שעה
+  useEffect(() => {
+    if (selectedDate && selectedTime && classData) {
+
+      checkAvailableSpots(selectedDate, selectedTime);
+    }
+  }, [selectedDate, selectedTime, classData]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!classData) return;
     
+    // Clear any previous errors
+    setRegistrationError(null);
+    
+    // Client-side validation
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 8) {
+      setRegistrationError('מספר הטלפון חייב להכיל לפחות 8 ספרות');
+      return;
+    }
+    
     // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו
     if (classData.slug === 'trial-class' && profile?.has_used_trial_class) {
-      showPopup({
-        title: 'שיעור ניסיון כבר נוצל',
-        message: 'כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.',
-        type: 'warning',
-        duration: 5000
-      });
+      setRegistrationError('כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.');
       return;
     }
     
@@ -403,7 +441,24 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     try {
       // קבלת session_id ו-session_class_id (אם קיימים)
       const spotsKey = `${selectedDate}-${selectedTime}`;
-      const spotsInfo = availableSpots[spotsKey];
+      let spotsInfo = availableSpots[spotsKey];
+      
+
+      
+      // אם אין spotsInfo, ננסה לקבל אותו שוב
+      if (!spotsInfo) {
+        try {
+          spotsInfo = await getAvailableSpotsFromSessions(classData.id, selectedDate, selectedTime);
+        } catch (spotsError) {
+          // Create a fallback spotsInfo with basic data
+          spotsInfo = { 
+            available: classData.max_participants || 10, 
+            message: 'זמין',
+            sessionId: undefined,
+            sessionClassId: undefined
+          };
+        }
+      }
       
       const registrationData = {
         class_id: classData.id,
@@ -417,15 +472,10 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         selected_time: selectedTime
       };
       
-      console.log('ClassDetailPage: Sending registration data:', registrationData);
-      console.log('ClassDetailPage: API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-      console.log('ClassDetailPage: All env vars:', import.meta.env);
-      console.log('ClassDetailPage: Session exists:', !!session);
-      console.log('ClassDetailPage: Session access_token:', session?.access_token ? 'exists' : 'missing');
+
       
       // שליחה לשרת
       const result = await registrationsService.createRegistration(registrationData, session?.access_token);
-      console.log('ClassDetailPage: Registration result:', result);
       
       // אם זה שיעור ניסיון, עדכן את הפרופיל בצורה אסינכרונית
       if (classData.slug === 'trial-class') {
@@ -434,35 +484,36 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         });
       }
       
-      // הצגת פופ-אפ אישור
-      showPopup({
-        title: 'ההרשמה בוצעה בהצלחה! 🎉',
-        message: `ההרשמה שלך ל${classData.name} נשמרה בהצלחה. פרטי ההזמנה שלך יהיו זמינים בדף הפרופיל האישי שלך.`,
-        type: 'success',
-        duration: 5000 // 5 שניות
-      });
+      // הצגת אישור הרשמה במרכז המסך
+      setShowRegistrationSuccess(true);
       
       // איפוס הטופס
       setFormData({ first_name: '', last_name: '', phone: '' });
       setSelectedDate('');
       setSelectedTime('');
       
-      // ניווט ל-homepage אחרי שהפופ-אפ מוצג
-      setTimeout(() => {
-        navigate('/');
-      }, 3000);
-      
       // איפוס מצב הטעינה
       setIsSubmitting(false);
       
     } catch (error) {
       console.error('ClassDetailPage: Registration error:', error);
-      showPopup({
-        title: 'שגיאה בהרשמה',
-        message: 'אירעה שגיאה בעת ביצוע ההרשמה. אנא נסי שוב.',
-        type: 'error',
-        duration: 5000
-      });
+      
+      // Parse error message
+      let errorMessage = 'אירעה שגיאה בעת ביצוע ההרשמה. אנא נסי שוב.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Already registered')) {
+          errorMessage = 'כבר נרשמת לשיעור זה בתאריך ובשעה שנבחרו. אנא בחרי תאריך או שעה אחרת.';
+        } else if (error.message.includes('Failed to create registration')) {
+          // Extract the actual error message from the backend
+          const match = error.message.match(/Failed to create registration: (.+)/);
+          if (match) {
+            errorMessage = match[1];
+          }
+        }
+      }
+      
+      setRegistrationError(errorMessage);
       setIsSubmitting(false);
     }
   };
@@ -694,6 +745,27 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                   הרשמה ל{classData.name}
                 </h2>
                 
+                {/* Error Display */}
+                {registrationError && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="mr-3">
+                        <h3 className="text-sm font-medium text-red-800">
+                          שגיאה בהרשמה
+                        </h3>
+                        <div className="mt-2 text-sm text-red-700">
+                          {registrationError}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Date Selection */}
                     <div>
@@ -778,8 +850,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                 }
                               }}
                               disabled={spotsInfo?.available === 0}
+                              title={spotsInfo?.message || ''}
                               className={`
-                                p-3 lg:p-4 rounded-xl border-2 transition-all duration-200 text-base lg:text-lg font-bold relative
+                                p-3 lg:p-4 py-4 lg:py-5 rounded-xl border-2 transition-all duration-200 text-base lg:text-lg font-bold relative
                                 ${isSelected 
                                   ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
                                   : spotsInfo?.available === 0
@@ -791,14 +864,19 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                                             <div className="text-center">
                                 <div>{time}</div>
                                 {spotsInfo?.message && (
-                                  <div className={`text-xs mt-1 font-bold ${
+                                  <div className={`text-xs lg:text-sm mt-1 font-bold leading-tight ${
                                     spotsInfo.available === 0 
                                       ? 'text-red-500' 
                                       : spotsInfo.available === 1 
                                         ? 'text-orange-500' 
                                         : 'text-green-500'
                                   }`}>
-                                    {spotsInfo.message}
+                                    <span className="hidden sm:inline">{spotsInfo.message}</span>
+                                    <span className="sm:hidden">
+                                      {spotsInfo.message.includes('מקומות זמינים') 
+                                        ? spotsInfo.message.replace(' מקומות זמינים', '') 
+                                        : spotsInfo.message}
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -856,10 +934,15 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                        placeholder="עדכני את מספר הטלפון שלך"
+                        placeholder="למשל: 050-1234567"
                         dir="rtl"
+                        pattern="[0-9\-\(\)\s]+"
+                        minLength={8}
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1 font-agrandir-regular">
+                        מספר טלפון עם לפחות 8 ספרות
+                      </p>
                     </div>
 
                     <div>
@@ -972,6 +1055,57 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
           </div>
         </div>
       </div>
+      
+      {/* Registration Success Modal */}
+      {showRegistrationSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all">
+            <div className="text-center">
+              {/* Success Icon */}
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 font-agrandir-grand">
+                ההרשמה בוצעה בהצלחה! 🎉
+              </h2>
+              
+              {/* Message */}
+              <p className="text-gray-600 mb-8 font-agrandir-regular leading-relaxed">
+                ההרשמה שלך ל{classData?.name} נשמרה בהצלחה. 
+                <br />
+                פרטי ההזמנה שלך יהיו זמינים בדף הפרופיל האישי שלך.
+              </p>
+              
+              {/* Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowRegistrationSuccess(false);
+                    navigate('/profile');
+                  }}
+                  className="w-full bg-[#EC4899] hover:bg-[#EC4899]/90 text-white py-3 px-6 rounded-xl font-bold transition-colors duration-200"
+                >
+                  עבור לפרופיל שלי
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowRegistrationSuccess(false);
+                    navigate('/');
+                  }}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  חזור לדף הבית
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

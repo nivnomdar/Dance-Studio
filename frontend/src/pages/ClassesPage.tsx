@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FaClock, FaUserGraduate, FaArrowLeft } from 'react-icons/fa';
+import { FaClock, FaUserGraduate, FaArrowLeft, FaRedo } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
+import { TIMEOUTS } from '../utils/constants';
+
+// Cache key for sessionStorage
+const CLASSES_CACHE_KEY = 'classes_cache';
+const CLASSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Class Card Skeleton Components
 const ClassCardImageSkeleton = () => (
@@ -69,105 +74,108 @@ function ClassesPage() {
   const [error, setError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Refs for API call management
-  const classesFetchedRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const mountCountRef = useRef(0);
+  // Refs to prevent duplicate calls
+  const hasFetchedRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   // Get the correct profile (local or context)
   const profile = localProfile || contextProfile;
 
+  // Helper function to get cached classes
+  const getCachedClasses = (): Class[] | null => {
+    try {
+      const cached = sessionStorage.getItem(CLASSES_CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CLASSES_CACHE_DURATION) {
+          return data;
+        }
+      }
+    } catch (error) {
+      // Ignore cache errors
+    }
+    return null;
+  };
+
+  // Helper function to cache classes
+  const cacheClasses = (data: Class[]) => {
+    try {
+      sessionStorage.setItem(CLASSES_CACHE_KEY, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      // Ignore cache errors
+    }
+  };
+
   // Create a stable fetch function using useCallback
-  const fetchClasses = useCallback(async () => {
-    if (classesFetchedRef.current) {
-      console.log('Classes fetch already in progress, skipping...');
+  const fetchClasses = useCallback(async (forceRefresh = false, retryAttempt = 0) => {
+    // Prevent multiple simultaneous calls
+    if (isFetchingRef.current) {
       return;
+    }
+
+    // Check cache first (unless forcing refresh)
+    if (!forceRefresh && !hasFetchedRef.current) {
+      const cachedClasses = getCachedClasses();
+      if (cachedClasses) {
+        setClasses(cachedClasses);
+        setLoading(false);
+        hasFetchedRef.current = true;
+        return;
+      }
     }
 
     try {
-      classesFetchedRef.current = true;
+      isFetchingRef.current = true;
       setLoading(true);
       setError(null);
       
-      // Cancel any previous request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      
-      // Create new abort controller
-      abortControllerRef.current = new AbortController();
-      
-      console.log('Fetching classes...');
-      
-      // In development mode, add a longer delay to account for Strict Mode double mounting
-      const isDevelopment = import.meta.env.DEV;
-      const delay = isDevelopment ? 500 : 200;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
       const data = await classesService.getAllClasses();
       
-      // Check if request was aborted
-      if (abortControllerRef.current?.signal.aborted) {
-        console.log('Classes fetch was aborted');
-        return;
-      }
-      
       setClasses(data);
-      console.log('Classes fetched successfully');
+      cacheClasses(data);
+      hasFetchedRef.current = true;
+      setRetryCount(0);
       
-    } catch (err) {
-      console.error('Error fetching classes:', err);
+    } catch (err: any) {
+
       
-      // Don't set error if request was aborted
-      if (abortControllerRef.current?.signal.aborted) {
-        console.log('Classes fetch was aborted, not setting error');
-        return;
-      }
-      
-      // Check if it's a rate limit error
-      if (err instanceof Error && err.message.includes('429')) {
-        setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
+      // Handle rate limiting with exponential backoff
+      if (err instanceof Error && (err.message.includes('429') || err.message.includes('Too Many Requests'))) {
+        if (retryAttempt < 3) {
+          const delay = Math.pow(2, retryAttempt + 1) * 1000; // 2s, 4s, 8s
+          setError(`יותר מדי בקשות. מנסה שוב בעוד ${delay/1000} שניות... (ניסיון ${retryAttempt + 1}/4)`);
+          
+          setTimeout(() => {
+            fetchClasses(false, retryAttempt + 1);
+          }, delay);
+          return;
+        } else {
+          setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
+          setRetryCount(retryAttempt);
+        }
       } else if (err instanceof Error && err.message.includes('Failed to fetch')) {
         setError('השרת לא זמין. אנא ודא שהשרת פועל ונסה שוב.');
+      } else if (err instanceof Error && err.message.includes('Request timeout')) {
+        setError('הבקשה ארכה זמן רב מדי. אנא נסי שוב.');
       } else {
-        setError(err instanceof Error ? err.message : 'Failed to fetch classes');
+        setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעורים');
       }
-      
-      // Reset the ref on error so user can retry
-      classesFetchedRef.current = false;
     } finally {
-      if (!abortControllerRef.current?.signal.aborted) {
-        setLoading(false);
-      }
+      setLoading(false);
+      isFetchingRef.current = false;
     }
   }, []);
 
-  // Load classes on mount
+  // Load classes on mount - only once
   useEffect(() => {
-    mountCountRef.current += 1;
-    console.log(`ClassesPage mounted (mount #${mountCountRef.current}), fetching classes...`);
-    
-    // In development mode, only fetch on the second mount (after Strict Mode cleanup)
-    const isDevelopment = import.meta.env.DEV;
-    if (isDevelopment && mountCountRef.current === 1) {
-      console.log('Development mode: skipping first mount due to Strict Mode');
-      return;
+    if (!hasFetchedRef.current) {
+      fetchClasses();
     }
-    
-    fetchClasses();
-
-    // Cleanup function
-    return () => {
-      console.log('ClassesPage cleanup - aborting any pending requests');
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      // Don't reset classesFetchedRef on cleanup in development mode
-      if (!isDevelopment) {
-        classesFetchedRef.current = false;
-      }
-    };
   }, [fetchClasses]);
 
   // Load profile if not available in context
@@ -262,7 +270,7 @@ function ClassesPage() {
         
         setIsLoadingProfile(false);
       } catch (error) {
-        console.error('Error loading profile:', error);
+
         setIsLoadingProfile(false);
       }
     };
@@ -314,10 +322,13 @@ function ClassesPage() {
   };
 
   const handleRetry = () => {
-    console.log('Retrying classes fetch...');
-    classesFetchedRef.current = false;
+    hasFetchedRef.current = false;
     setError(null);
-    fetchClasses();
+    fetchClasses(true); // Force refresh
+  };
+
+  const handleRefresh = () => {
+    fetchClasses(true); // Force refresh
   };
 
   // Loading state
@@ -344,19 +355,37 @@ function ClassesPage() {
     );
   }
 
-  // Error state
+  // Error state with improved UI
   if (error) {
     return (
       <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 font-agrandir-regular mb-4">שגיאה בטעינת השיעורים</p>
-          <p className="text-[#2B2B2B] font-agrandir-regular">{error}</p>
-          <button 
-            onClick={handleRetry} 
-            className="mt-4 bg-[#EC4899] text-white px-4 py-2 rounded-lg hover:bg-[#EC4899]/90 transition-colors"
-          >
-            נסה שוב
-          </button>
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 shadow-lg">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h1 className="text-2xl font-bold text-red-600 mb-4 font-agrandir-grand">
+              שגיאה בטעינת השיעורים
+            </h1>
+            <p className="text-red-700 mb-6 font-agrandir-regular">
+              {error}
+            </p>
+            <div className="space-y-3">
+              <button 
+                onClick={handleRetry} 
+                className="w-full bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium flex items-center justify-center gap-2"
+              >
+                <FaRedo className="w-4 h-4" />
+                נסה שוב
+              </button>
+              {retryCount > 0 && (
+                <button 
+                  onClick={handleRefresh} 
+                  className="w-full bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition-colors duration-200 font-medium"
+                >
+                  רענן נתונים
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -375,12 +404,27 @@ function ClassesPage() {
             בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
             הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
           </p>
+          
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            className="mt-6 bg-[#EC4899] hover:bg-[#EC4899]/90 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto"
+          >
+            <FaRedo className="w-4 h-4" />
+            רענן נתונים
+          </button>
         </div>
 
         {/* Classes Grid */}
         {classes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#2B2B2B] font-agrandir-regular text-lg">אין שיעורים זמינים כרגע</p>
+            <button
+              onClick={handleRefresh}
+              className="mt-4 bg-[#EC4899] hover:bg-[#EC4899]/90 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              רענן נתונים
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">

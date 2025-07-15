@@ -2,7 +2,7 @@
 
 import { ClassSchedule, DaySchedule } from '../types/class';
 
-console.log('📦 dateUtils.ts loaded');
+
 
 /**
  * קבלת הודעה על התאריכים הזמינים
@@ -130,9 +130,11 @@ export const getAvailableSpots = async (
     if (availableSpots <= 0) {
       message = 'מלא';
     } else if (availableSpots === 1) {
-      message = 'נותר מקום אחרון';
+      message = 'מקום אחרון זמין';
     } else if (availableSpots <= 3) {
-      message = `נותרו ${availableSpots} מקומות אחרונים`;
+      message = `${availableSpots} זמינים`;
+    } else {
+      message = 'זמין';
     }
     
     return { available: availableSpots, message };

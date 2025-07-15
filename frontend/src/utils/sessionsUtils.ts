@@ -1,12 +1,24 @@
-// Utility functions for handling sessions and session classes
-
 import { Session, SessionClass } from '../types/sessions';
-
-import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE } from './constants';
+import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
 
 // Cache for sessions data to prevent excessive API calls
 let sessionsCache: { data: any[]; timestamp: number } | null = null;
 let sessionClassesCache: { data: any[]; timestamp: number } | null = null;
+
+/**
+ * פונקציה משותפת ליצירת הודעות זמינות
+ */
+const generateAvailabilityMessage = (availableSpots: number): string => {
+  if (availableSpots <= 0) {
+    return 'מלא';
+  } else if (availableSpots === 1) {
+    return 'מקום אחרון זמין';
+  } else if (availableSpots <= 3) {
+    return `${availableSpots} זמינים`;
+  } else {
+    return 'זמין';
+  }
+};
 
 /**
  * פונקציה לניקוי פורמט השעות - מסירה שניות ומשאירה רק שעות ודקות
@@ -54,13 +66,15 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
         sessionIds.includes(session.id) && session.is_active === true
       );
       
+
+      
       return sessions || [];
     }
     
     // Get all sessions from API
     const sessionsResponse = await fetch(`${API_BASE_URL}/sessions`);
     if (!sessionsResponse.ok) {
-      console.error('Error fetching sessions from API:', sessionsResponse.status);
+
       return [];
     }
     const allSessions = await sessionsResponse.json();
@@ -71,7 +85,7 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
     // Get session classes from API
     const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
     if (!sessionClassesResponse.ok) {
-      console.error('Error fetching session classes from API:', sessionClassesResponse.status);
+
       return [];
     }
     const allSessionClasses = await sessionClassesResponse.json();
@@ -96,9 +110,11 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       sessionIds.includes(session.id) && session.is_active === true
     );
     
+
+    
     return sessions || [];
   } catch (error) {
-    console.error('Error fetching sessions for class:', error);
+
     return [];
   }
 };
@@ -130,9 +146,12 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
       
       const isAvailable = sessions.some(session => {
         const sessionActive = session.is_active;
-        const dayAvailable = session.weekdays.some(weekday => 
-          weekday.toLowerCase() === dayName.toLowerCase()
-        );
+        const dayAvailable = session.weekdays.some((weekday: any) => {
+          // weekday can be a string from JSONB array like "monday", "Tuesday"
+          const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+          const dayNameLower = dayName.toLowerCase();
+          return weekdayLower === dayNameLower;
+        });
         return sessionActive && dayAvailable;
       });
       
@@ -143,7 +162,7 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
     
     return dates;
   } catch (error) {
-    console.error('Error getting available dates from sessions:', error);
+
     return [];
   }
 };
@@ -171,15 +190,18 @@ export const getAvailableTimesForDateFromSessions = async (
     
     const availableSessions = sessions.filter(session => 
       session.is_active && 
-      session.weekdays.some(weekday => 
-        weekday.toLowerCase() === dayName.toLowerCase()
-      )
+      session.weekdays.some((weekday: any) => {
+        // weekday can be a string from JSONB array like "monday", "Tuesday"
+        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+        const dayNameLower = dayName.toLowerCase();
+        return weekdayLower === dayNameLower;
+      })
     );
     
     // החזר את השעות הזמינות עם פורמט נקי
     return availableSessions.map(session => formatTimeForDisplay(session.start_time));
   } catch (error) {
-    console.error('Error getting available times from sessions:', error);
+
     return [];
   }
 };
@@ -192,28 +214,48 @@ export const getAvailableSpotsFromSessions = async (
   selectedDate: string, 
   selectedTime: string
 ): Promise<{ available: number; message: string; sessionId?: string; sessionClassId?: string }> => {
-  try {
+      // Add timeout to prevent hanging
+    const timeoutPromise = createTimeoutPromise(TIMEOUTS.SPOTS_CHECK, 'Timeout: Function took too long to complete');
+  
+  const spotsPromise = (async () => {
+    try {
+  
+    
     // קבל את ה-sessions עבור השיעור
     const sessions = await getAvailableSessionsForClass(classId);
+
     
     if (sessions.length === 0) {
-      return { available: 0, message: 'לא נמצא session' };
+
+      return { available: 0, message: 'לא נמצא session זמין' };
     }
 
     // בדוק איזה יום זה
     const date = new Date(selectedDate);
     const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
-    
-    // מצא session שפעיל ביום הזה ובשעה הזו
     const dayName = DAY_NAMES_EN[dayOfWeek];
     
-    const matchingSession = sessions.find(session => 
-      session.is_active && 
-      session.weekdays.some(weekday => 
-        weekday.toLowerCase() === dayName.toLowerCase()
-      ) &&
-      formatTimeForDisplay(session.start_time) === selectedTime
-    );
+
+    
+    // מצא session שפעיל ביום הזה ובשעה הזו
+    const matchingSession = sessions.find(session => {
+      const isActive = session.is_active;
+      
+      // Fix weekday matching - handle JSONB array format
+      const hasMatchingDay = session.weekdays.some((weekday: any) => {
+        // weekday can be a string from JSONB array like "monday", "Tuesday"
+        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+        const dayNameLower = dayName.toLowerCase();
+
+        return weekdayLower === dayNameLower;
+      });
+      
+      const hasMatchingTime = formatTimeForDisplay(session.start_time) === selectedTime;
+      
+
+      
+      return isActive && hasMatchingDay && hasMatchingTime;
+    });
 
     if (!matchingSession) {
       return { available: 0, message: 'השיעור לא זמין ביום ובשעה אלה' };
@@ -222,55 +264,77 @@ export const getAvailableSpotsFromSessions = async (
     // קבל את ה-session class דרך ה-API
     const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
     if (!sessionClassesResponse.ok) {
-      console.error('Error fetching session classes:', sessionClassesResponse.status);
+
       return { available: 0, message: 'שגיאה בקבלת פרטי session' };
     }
     
     const allSessionClasses = await sessionClassesResponse.json();
+    
     const sessionClass = allSessionClasses.find((sc: any) => 
       sc.session_id === matchingSession.id && 
       sc.class_id === classId && 
       sc.is_active === true
     );
+    
+
 
     if (!sessionClass) {
       return { available: 0, message: 'השיעור לא זמין בsession זה' };
     }
 
-    // בדיקה אם זה שיעור פרטי
-    const { supabase } = await import('../lib/supabase');
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('slug, category')
-      .eq('id', classId)
-      .single();
-    
-    // אם זה שיעור פרטי, אין צורך לבדוק מקומות
-    if (!classError && (classData.slug === 'private-lesson' || classData.category === 'private')) {
-      return { available: 1, message: 'זמין', sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+    // בדיקה אם זה שיעור פרטי - נשתמש ב-API במקום Supabase ישירות
+    try {
+      const classResponse = await fetch(`${API_BASE_URL}/classes/${classId}`);
+      if (classResponse.ok) {
+        const classData = await classResponse.json();
+        
+        // אם זה שיעור פרטי, אין צורך לבדוק מקומות
+        if (classData.slug === 'private-lesson' || classData.category === 'private') {
+          return { available: 1, message: 'זמין', sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+        }
+      }
+    } catch (apiError) {
+      // Continue with normal flow if we can't check
     }
     
-    // ספור הרשמות קיימות לתאריך זה - נשתמש ב-API
-    // Since registrations endpoint requires auth, we'll use a fallback approach
-    // For now, we'll assume no registrations exist and return full capacity
-    // In a production environment, you'd want to create a public endpoint for this
-    const takenSpots = 0; // Fallback: assume no registrations exist
-    const availableSpots = matchingSession.max_capacity - takenSpots;
-    
-    let message = '';
-    if (availableSpots <= 0) {
-      message = 'מלא';
-    } else if (availableSpots === 1) {
-      message = 'נותר מקום אחרון';
-    } else if (availableSpots <= 3) {
-      message = `נותרו ${availableSpots} מקומות אחרונים`;
+    // ספור הרשמות קיימות לתאריך זה - נשתמש ב-API החדש
+    try {
+      const spotsResponse = await fetch(`${API_BASE_URL}/sessions/capacity/${classId}/${selectedDate}/${selectedTime}`);
+      
+      if (spotsResponse.ok) {
+        const spotsData = await spotsResponse.json();
+        
+        return { 
+          available: spotsData.available, 
+          message: spotsData.message, 
+          sessionId: spotsData.sessionId, 
+          sessionClassId: spotsData.sessionClassId 
+        };
+      } else {
+
+        // Fallback to max capacity if API fails
+        const availableSpots = matchingSession.max_capacity;
+        const message = generateAvailabilityMessage(availableSpots);
+        
+        return { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+      }
+    } catch (apiError) {
+
+      // Fallback to max capacity if API fails
+      const availableSpots = matchingSession.max_capacity;
+      const message = generateAvailabilityMessage(availableSpots);
+      
+      const result = { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+      return result;
     }
-    
-    return { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
-  } catch (error) {
-    console.error('Error checking available spots from sessions:', error);
-    return { available: 0, message: 'שגיאה בבדיקת מקומות זמינים' };
-  }
+    } catch (error) {
+
+      return { available: 0, message: 'שגיאה בבדיקת מקומות זמינים' };
+    }
+  })();
+  
+  // Race between timeout and spots promise
+  return Promise.race([spotsPromise, timeoutPromise]);
 };
 
 /**
@@ -288,9 +352,10 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
     const availableDays = new Set<string>();
     
     sessions.forEach(session => {
-      session.weekdays.forEach(weekday => {
-        // weekday is a string (e.g., "monday", "tuesday")
-        const dayIndex = DAY_NAMES_EN.indexOf(weekday.toLowerCase() as any);
+      session.weekdays.forEach((weekday: any) => {
+        // weekday can be a string from JSONB array like "monday", "Tuesday"
+        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+        const dayIndex = DAY_NAMES_EN.indexOf(weekdayLower as any);
         if (dayIndex !== -1) {
           availableDays.add(DAY_NAMES_HE[dayIndex]);
         }
@@ -299,7 +364,7 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
     
     return `השיעורים מתקיימים בימים: ${Array.from(availableDays).join(', ')}`;
   } catch (error) {
-    console.error('Error getting available dates message from sessions:', error);
+
     return 'כל התאריכים זמינים';
   }
 };
@@ -309,37 +374,16 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
  */
 export const debugSessionsData = async (classId: string) => {
   try {
-    console.log('🔍 DEBUG: Checking sessions data for class ID:', classId);
     const { supabase } = await import('../lib/supabase');
-    
-    // בדיקת session_classes
-    const { data: sessionClasses, error: scError } = await supabase
+    await supabase
       .from('session_classes')
       .select('*')
       .eq('class_id', classId);
-    
-    console.log('📊 Session classes for this class:', sessionClasses);
-    console.log('❌ Session classes error:', scError);
-    console.log('📊 Session classes length:', sessionClasses?.length);
-    
-    // בדיקת schedule_sessions
-    const { data: allSessions, error: sessionsError } = await supabase
+    await supabase
       .from('schedule_sessions')
       .select('*');
-    
-    console.log('📊 All schedule sessions:', allSessions);
-    console.log('❌ Schedule sessions error:', sessionsError);
-    
-    // בדיקה - ננסה לקרוא לפונקציה ישירות
-    console.log('🧪 Testing getAvailableDatesForButtonsFromSessions directly...');
-    const dates = await getAvailableDatesForButtonsFromSessions(classId);
-    console.log('📅 Dates from direct call:', dates);
-    console.log('📅 Dates length:', dates.length);
-    console.log('📅 Dates array:', dates);
-    
-  } catch (error) {
-    console.error('Error in debug function:', error);
-  }
+    await getAvailableDatesForButtonsFromSessions(classId);
+  } catch (error) {}
 };
 
 /**
@@ -347,26 +391,10 @@ export const debugSessionsData = async (classId: string) => {
  */
 export const testSessionsAPI = async () => {
   try {
-    console.log('🧪 Testing sessions API...');
-    
-    // בדיקת sessions
-    const sessionsResponse = await fetch(`${API_BASE_URL}/sessions`);
-    const sessionsData = await sessionsResponse.json();
-    console.log('📊 Sessions API response:', sessionsData);
-    
-    // בדיקת session classes
-    const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    const sessionClassesData = await sessionClassesResponse.json();
-    console.log('📊 Session classes API response:', sessionClassesData);
-    
-    // בדיקת classes
-    const classesResponse = await fetch(`${API_BASE_URL}/classes`);
-    const classesData = await classesResponse.json();
-    console.log('📊 Classes API response:', classesData);
-    
-  } catch (error) {
-    console.error('Error testing API:', error);
-  }
+    await fetch(`${API_BASE_URL}/sessions`);
+    await fetch(`${API_BASE_URL}/sessions/session-classes`);
+    await fetch(`${API_BASE_URL}/classes`);
+  } catch (error) {}
 };
 
 /**
@@ -374,34 +402,10 @@ export const testSessionsAPI = async () => {
  */
 export const testTablesAccess = async () => {
   try {
-    console.log('🧪 Testing tables access via API...');
-    
-    // בדיקה מהירה של session_classes דרך ה-API
-    console.log('🔍 Testing session_classes via API...');
-    const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    const sessionClassesData = sessionClassesResponse.ok ? await sessionClassesResponse.json() : null;
-    const sessionClassesError = sessionClassesResponse.ok ? null : `HTTP ${sessionClassesResponse.status}`;
-    
-    console.log('📊 session_classes test result:', sessionClassesData);
-    console.log('❌ session_classes test error:', sessionClassesError);
-    
-    // בדיקה מהירה של schedule_sessions דרך ה-API
-    console.log('🔍 Testing schedule_sessions via API...');
-    const sessionsResponse = await fetch(`${API_BASE_URL}/sessions`);
-    const sessionsData = sessionsResponse.ok ? await sessionsResponse.json() : null;
-    const sessionsError = sessionsResponse.ok ? null : `HTTP ${sessionsResponse.status}`;
-    
-    console.log('📊 schedule_sessions test result:', sessionsData);
-    console.log('❌ schedule_sessions test error:', sessionsError);
-    
-    return { 
-      scTest: sessionClassesData, 
-      scTestError: sessionClassesError, 
-      ssTest: sessionsData, 
-      ssTestError: sessionsError 
-    };
+    await fetch(`${API_BASE_URL}/sessions/session-classes`);
+    await fetch(`${API_BASE_URL}/sessions`);
+    return {};
   } catch (error) {
-    console.error('❌ Exception in testTablesAccess:', error);
     return { error };
   }
 }; 

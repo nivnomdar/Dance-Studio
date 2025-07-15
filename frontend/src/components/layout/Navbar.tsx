@@ -176,8 +176,7 @@ function Navbar() {
                       )}
                       {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
                       {(() => {
-                        console.log('Navbar Desktop: checking admin condition - currentProfile:', currentProfile);
-                        console.log('Navbar Desktop: checking admin condition - currentProfile?.role === "admin":', currentProfile?.role === 'admin');
+                        
                         return currentProfile?.role === 'admin';
                       })() && (
                         <Link
@@ -274,8 +273,7 @@ function Navbar() {
                       )}
                       {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
                       {(() => {
-                        console.log('Navbar Mobile: checking admin condition - currentProfile:', currentProfile);
-                        console.log('Navbar Mobile: checking admin condition - currentProfile?.role === "admin":', currentProfile?.role === 'admin');
+                        
                         return currentProfile?.role === 'admin';
                       })() && (
                         <Link
