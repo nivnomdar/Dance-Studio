@@ -53,15 +53,33 @@ const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
 /**
  * פונקציה לניקוי פורמט השעות - מסירה שניות ומשאירה רק שעות ודקות
  */
-const formatTimeForDisplay = (time: string): string => {
-  // אם השעה בפורמט HH:MM:SS, נחזיר רק HH:MM
-  if (time && time.includes(':')) {
-    const parts = time.split(':');
-    if (parts.length >= 2) {
-      return `${parts[0]}:${parts[1]}`;
-    }
+const formatTimeForDisplay = (session: any): string => {
+  // אם יש session עם start_time ו-end_time, נחזיר start_time עד end_time
+  if (session && session.start_time && session.end_time) {
+    const startTime = session.start_time.includes(':') ? 
+      session.start_time.split(':').slice(0, 2).join(':') : 
+      session.start_time;
+    
+    const endTime = session.end_time.includes(':') ? 
+      session.end_time.split(':').slice(0, 2).join(':') : 
+      session.end_time;
+    
+    return `${startTime} עד ${endTime}`;
   }
-  return time;
+  
+  // Fallback - אם יש רק start_time
+  if (session && session.start_time) {
+    const time = session.start_time;
+    if (time && time.includes(':')) {
+      const parts = time.split(':');
+      if (parts.length >= 2) {
+        return `${parts[0]}:${parts[1]}`;
+      }
+    }
+    return time;
+  }
+  
+  return '';
 };
 
 /**
@@ -320,7 +338,7 @@ export const getAvailableTimesForDateFromSessions = async (
     // החזר את השעות הזמינות עם פורמט נקי - מניעת כפילויות
     const timesSet = new Set<string>();
     availableSessions.forEach(session => {
-      timesSet.add(formatTimeForDisplay(session.start_time));
+      timesSet.add(formatTimeForDisplay(session));
     });
     
     // Convert Set back to array and sort by time
@@ -364,7 +382,8 @@ export const getAvailableSpotsFromSessions = async (
       // מצא session שפעיל ביום הזה ובשעה הזו
       const matchingSession = sessions.find(session => {
         const hasMatchingDay = isSessionActiveOnDay(session, dayName);
-        const hasMatchingTime = formatTimeForDisplay(session.start_time) === selectedTime;
+        const sessionTimeDisplay = formatTimeForDisplay(session);
+        const hasMatchingTime = sessionTimeDisplay === selectedTime;
         
         return hasMatchingDay && hasMatchingTime;
       });

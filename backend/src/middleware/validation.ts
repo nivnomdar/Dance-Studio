@@ -19,8 +19,19 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
   const { first_name, last_name, phone, email, selected_date, selected_time } = req.body;
 
+  // Debug log
+  console.log('Validation - received data:', {
+    first_name,
+    last_name,
+    phone,
+    email,
+    selected_date,
+    selected_time
+  });
+
   // Check required fields
   if (!first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
+    console.log('Validation failed - missing required fields');
     return res.status(400).json({
       error: 'כל השדות הם חובה: שם פרטי, שם משפחה, טלפון, אימייל, תאריך ושעה'
     });
@@ -44,7 +55,9 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
 
   // Validate time format (HH:MM)
   const timeRegex = /^\d{2}:\d{2}$/;
+  console.log('Validation - time format check:', selected_time, 'matches regex:', timeRegex.test(selected_time));
   if (!timeRegex.test(selected_time)) {
+    console.log('Validation failed - invalid time format');
     return res.status(400).json({
       error: 'פורמט שעה לא תקין. יש להשתמש בפורמט HH:MM'
     });

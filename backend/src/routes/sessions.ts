@@ -34,6 +34,7 @@ const getSessionClassesForClass = async (classId: string) => {
         max_capacity,
         weekdays,
         start_time,
+        end_time,
         is_active
       )
     `)
@@ -207,6 +208,7 @@ router.get('/:id/classes', async (req, res) => {
           price,
           duration,
           color_scheme,
+          instructor_name,
           location
         )
       `)
@@ -342,10 +344,20 @@ router.get('/capacity/batch/:classId/:date', async (req, res) => {
     // For each matching session, get the time and available spots
     const results = await Promise.all(matchingSessionClasses.map(async (sc) => {
       const session = getSessionFromSessionClass(sc);
-      const time = session.start_time.substring(0, 5); // Format as HH:MM
+      
+      // Check if session has valid start_time and end_time
+      if (!session || !session.start_time || !session.end_time) {
+        logger.warn(`Session ${session?.id || 'unknown'} missing start_time or end_time`);
+        return null;
+      }
+      
+      // Format time as start_time עד end_time
+      const startTime = session.start_time.substring(0, 5); // Format as HH:MM
+      const endTime = session.end_time.substring(0, 5); // Format as HH:MM
+      const time = `${startTime} עד ${endTime}`;
       
       // Count registrations for this session, date, and time
-      const takenSpots = await countRegistrations(session.id, date, time);
+      const takenSpots = await countRegistrations(session.id, date, startTime); // Use start_time for registration lookup
       const availableSpots = session.max_capacity - takenSpots;
       const message = generateAvailabilityMessage(availableSpots);
       
@@ -358,9 +370,9 @@ router.get('/capacity/batch/:classId/:date', async (req, res) => {
       };
     }));
 
-    // Sort by time ascending
-    results.sort((a, b) => a.time.localeCompare(b.time));
-    res.json(results);
+    // Filter out null results and sort by time ascending
+    const validResults = results.filter(result => result !== null).sort((a, b) => a!.time.localeCompare(b!.time));
+    res.json(validResults);
   } catch (error) {
     logger.error('Error in batch capacity route:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -387,13 +399,19 @@ router.get('/capacity/:classId/:date/:time', async (req, res) => {
     const matchingSessionClass = sessionClasses.find(sc => {
       const session = getSessionFromSessionClass(sc);
       
+      // Check if session has valid start_time and end_time
+      if (!session || !session.start_time || !session.end_time) {
+        return false;
+      }
+      
       // Check if session is active on this day and time
       const hasMatchingDay = isSessionActiveOnDay(session, dayName);
       
-      // Check if session is at this time
-      const sessionTime = session.start_time;
-      const formattedSessionTime = sessionTime.substring(0, 5); // Format as HH:MM
-      const hasMatchingTime = formattedSessionTime === time;
+      // Check if session matches the time format (start_time עד end_time)
+      const sessionStartTime = session.start_time.substring(0, 5); // Format as HH:MM
+      const sessionEndTime = session.end_time.substring(0, 5); // Format as HH:MM
+      const sessionTimeDisplay = `${sessionStartTime} עד ${sessionEndTime}`;
+      const hasMatchingTime = sessionTimeDisplay === time;
       
       return hasMatchingDay && hasMatchingTime;
     });

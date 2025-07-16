@@ -11,6 +11,7 @@ import SecondaryNavbar from './SecondaryNavbar';
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { cartCount, clearCart } = useCart();
@@ -97,22 +98,8 @@ function Navbar() {
       // ניקוי session storage
       sessionStorage.clear();
 
-      // הצגת פופ-אפ התנתקות מוצלחת
-      showPopup({
-        title: 'התנתקות מוצלחת',
-        message: 'התנתקת בהצלחה מהמערכת.',
-        type: 'success',
-        duration: 2000
-      });
-
-      // ניתוב לדף הבית ורענון
-      setTimeout(() => {
-        navigate('/', { replace: true });
-        // רענון הדף אחרי 2 שניות כדי לוודא שהכל מתנקה
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      }, 1500);
+      // הצגת modal התנתקות מוצלחת
+      setShowLogoutSuccess(true);
 
     } catch (error) {
       console.error('Logout error:', error);
@@ -392,6 +379,49 @@ function Navbar() {
           </Link>
         </div>
       </div>
+      
+      {/* Logout Success Modal */}
+      {showLogoutSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all">
+            <div className="text-center">
+              {/* Success Icon */}
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 font-agrandir-grand">
+                התנתקות מוצלחת! 👋
+              </h2>
+              
+              {/* Message */}
+              <p className="text-gray-600 mb-8 font-agrandir-regular leading-relaxed">
+                התנתקת בהצלחה מהמערכת.
+                <br />
+                תודה שהשתמשת בשירותים שלנו!
+              </p>
+              
+              {/* Button */}
+              <button
+                onClick={() => {
+                  setShowLogoutSuccess(false);
+                  navigate('/', { replace: true });
+                  // רענון הדף אחרי 2 שניות כדי לוודא שהכל מתנקה
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 2000);
+                }}
+                className="w-full bg-[#EC4899] hover:bg-[#EC4899]/90 text-white py-3 px-6 rounded-xl font-bold transition-colors duration-200"
+              >
+                חזור לדף הבית
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

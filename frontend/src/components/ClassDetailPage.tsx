@@ -106,7 +106,7 @@ const RegistrationFormSkeleton = () => (
       <SkeletonBox className="h-4 mb-3 w-1/3" />
       <div className="grid grid-cols-3 gap-2 lg:gap-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <SkeletonBox key={index} className="h-12 rounded-xl" />
+          <SkeletonBox key={index} className="h-16 rounded-xl" />
         ))}
       </div>
     </div>
@@ -503,6 +503,11 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         return;
       }
 
+      // Convert time format from "09:00 עד 10:00" to "09:00" for backend
+      const timeForBackend = selectedTime.includes('עד') ? 
+        selectedTime.split('עד')[0].trim() : 
+        selectedTime;
+      
       const registrationData = {
         class_id: classData.id,
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
@@ -512,8 +517,16 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         phone: formData.phone,
         email: user.email,
         selected_date: selectedDate,
-        selected_time: selectedTime
+        selected_time: timeForBackend
       };
+      
+      // Debug log
+      console.log('Registration data being sent:', registrationData);
+      console.log('Class data:', classData);
+      console.log('User email:', user.email);
+      console.log('Selected date:', selectedDate);
+      console.log('Selected time (original):', selectedTime);
+      console.log('Selected time (for backend):', timeForBackend);
       
       // שליחה לשרת
       const result = await registrationsService.createRegistration(registrationData, session?.access_token);
@@ -843,7 +856,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                       </label>
                       <div className="grid grid-cols-3 gap-2 lg:gap-3">
                         {loadingDates ? (
-                          <SkeletonBox className="h-16 rounded-xl" />
+                          Array.from({ length: 3 }).map((_, index) => (
+                            <SkeletonBox key={index} className="h-16 rounded-xl" />
+                          ))
                         ) : datesCache[classData.id] ? (
                           datesCache[classData.id].map((date) => {
                             const dateObj = new Date(date);
@@ -865,7 +880,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                   setLoadingSpots({});
                                 }}
                                 className={`
-                                  p-2 lg:p-3 py-4 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative
+                                  p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
                                   ${isSelected 
                                     ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
                                     : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
@@ -882,13 +897,22 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                     מחר
                                   </div>
                                 )}
-                                <div className="text-center">
-                                  <div>
-                                    {dateObj.toLocaleDateString('he-IL', { 
-                                      day: 'numeric', 
-                                      month: 'numeric', 
-                                      year: 'numeric' 
-                                    })} - {dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}
+                                <div className="text-center leading-tight">
+                                  <div className="text-xs lg:text-sm">
+                                    <div className="hidden sm:block">
+                                      {dateObj.toLocaleDateString('he-IL', { 
+                                        day: 'numeric', 
+                                        month: 'numeric', 
+                                        year: 'numeric' 
+                                      })} - {dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}
+                                    </div>
+                                    <div className="sm:hidden">
+                                      <div>{dateObj.toLocaleDateString('he-IL', { 
+                                        day: 'numeric', 
+                                        month: 'numeric' 
+                                      })}</div>
+                                      <div className="text-xs">{dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}</div>
+                                    </div>
                                   </div>
                                 </div>
                               </button>
@@ -913,7 +937,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                       <div className="grid grid-cols-3 gap-2 lg:gap-3">
                         {loadingTimes ? (
                           Array.from({ length: 3 }).map((_, index) => (
-                            <SkeletonBox key={index} className="h-12 rounded-xl" />
+                            <SkeletonBox key={index} className="h-16 rounded-xl" />
                           ))
                         ) : timesCache[classData.id + '_' + selectedDate] ? (
                           timesCache[classData.id + '_' + selectedDate].map((time) => {
@@ -933,7 +957,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                 disabled={spotsInfo?.available === 0}
                                 title={spotsInfo?.message || ''}
                                 className={`
-                                  p-3 lg:p-4 py-4 lg:py-4 rounded-xl border-2 transition-all duration-200 text-base lg:text-lg font-bold relative
+                                  p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
                                   ${isSelected 
                                     ? `${colors.bgColor} ${colors.hoverColor} text-white border-transparent shadow-lg` 
                                     : spotsInfo?.available === 0
@@ -964,8 +988,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                                   </div>
                                 )}
                                 
-                                <div className="text-center">
-                                  <div>{time}</div>
+                                <div className="text-center leading-tight">
+                                  <div className="text-xs lg:text-sm">{time}</div>
                                 </div>
                               </button>
                             );
@@ -994,7 +1018,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                           value={formData.first_name}
                           onChange={(e) => setFormData({...formData, first_name: e.target.value})}
                           className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                          placeholder="עדכני את שמך הפרטי"
+                          
                           dir="rtl"
                           required
                         />
@@ -1008,7 +1032,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                           value={formData.last_name}
                           onChange={(e) => setFormData({...formData, last_name: e.target.value})}
                           className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                          placeholder="עדכני את שם המשפחה"
+                          
                           dir="rtl"
                         required
                       />
@@ -1024,7 +1048,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
-                        placeholder="למשל: 050-1234567"
+                       
                         dir="rtl"
                         pattern="[0-9\-\(\)\s]+"
                         minLength={8}
