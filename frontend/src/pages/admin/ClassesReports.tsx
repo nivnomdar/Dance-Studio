@@ -4,6 +4,22 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdminData } from '../../contexts/AdminDataContext';
 import type { UserProfile } from '../../types/auth';
 
+interface ClassEditModalProps {
+  classData: any;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updatedClass: any) => void;
+  isLoading: boolean;
+}
+
+interface RegistrationEditModalProps {
+  registrationData: any;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (updatedRegistration: any) => void;
+  isLoading: boolean;
+}
+
 interface ClassesReportsProps {
   profile: UserProfile;
 }
@@ -37,6 +53,12 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'detailed'>('list');
   const [dateRange, setDateRange] = useState<string>('all');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [registrationEditModalOpen, setRegistrationEditModalOpen] = useState(false);
+  const [editingRegistration, setEditingRegistration] = useState<any>(null);
+  const [isSavingRegistration, setIsSavingRegistration] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -133,6 +155,121 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
   const totalRegistrations = processedClasses.reduce((sum, cls) => sum + cls.total_registrations, 0);
   const activeRegistrations = processedClasses.reduce((sum, cls) => sum + cls.active_registrations, 0);
 
+  // Handle class edit
+  const handleEditClass = (classData: any) => {
+    setEditingClass(classData);
+    setEditModalOpen(true);
+  };
+
+  // Handle save class (create or update)
+  const handleSaveClass = async (updatedClass: any) => {
+    if (!session) return;
+    const isNewClass = !updatedClass.id;
+    setIsSaving(true);
+    try {
+      const url = isNewClass 
+        ? `${import.meta.env.VITE_API_BASE_URL}/classes`
+        : `${import.meta.env.VITE_API_BASE_URL}/classes/${updatedClass.id}`;
+      const method = isNewClass ? 'POST' : 'PATCH';
+
+      // Filter out computed fields and only send actual database fields
+      const allowedFields = [
+        'name', 'slug', 'description', 'long_description', 'price', 'duration', 
+        'level', 'age_group', 'max_participants', 'location', 'included', 
+        'image_url', 'video_url', 'category', 'color_scheme', 'is_active', 
+        'start_time', 'end_time', 'available_dates', 'available_times'
+      ];
+      
+      const cleanData: any = {};
+      allowedFields.forEach(field => {
+        if (updatedClass[field] !== undefined) {
+          cleanData[field] = updatedClass[field];
+        }
+      });
+
+      // Always include required fields for PATCH
+      if (!isNewClass) {
+        const requiredFields = ['name', 'price', 'slug', 'description'];
+        requiredFields.forEach((field) => {
+          if (cleanData[field] === undefined && editingClass && editingClass[field] !== undefined) {
+            cleanData[field] = editingClass[field];
+          }
+        });
+      }
+
+      console.log('Sending to API:', { url, method, data: cleanData });
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(cleanData)
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to ${isNewClass ? 'create' : 'update'} class: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('Success response:', result);
+
+      // Refresh data
+      await fetchClasses();
+      setEditModalOpen(false);
+      setEditingClass(null);
+    } catch (error) {
+      console.error(`Error ${isNewClass ? 'creating' : 'updating'} class:`, error);
+      alert(`שגיאה ב${isNewClass ? 'יצירת' : 'עדכון'} השיעור`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+
+  // Handle registration edit
+  const handleEditRegistration = (registrationData: any) => {
+    setEditingRegistration(registrationData);
+    setRegistrationEditModalOpen(true);
+  };
+
+  // Handle save registration
+  const handleSaveRegistration = async (updatedRegistration: any) => {
+    if (!session) return;
+    
+    setIsSavingRegistration(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ status: updatedRegistration.status })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update registration');
+      }
+
+      // Refresh data
+      await fetchClasses();
+      setRegistrationEditModalOpen(false);
+      setEditingRegistration(null);
+    } catch (error) {
+      console.error('Error updating registration:', error);
+      alert('שגיאה בעדכון ההרשמה');
+    } finally {
+      setIsSavingRegistration(false);
+    }
+  };
+
   if (isLoading && data.classes.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6">
@@ -193,7 +330,13 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
               >
                 {isFetching ? 'מעדכן...' : 'רענן נתונים'}
               </button>
-              <button className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm">
+              <button 
+                onClick={() => handleEditClass({})}
+                className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+              >
+                הוסף שיעור חדש
+              </button>
+              <button className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm">
                 ייצא לאקסל
               </button>
             </div>
@@ -376,12 +519,20 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
-                          className="text-[#EC4899] hover:text-[#4B2E83] font-medium text-sm transition-colors"
-                        >
-                          {selectedClass === cls.id ? 'הסתר פרטים' : 'הצג פרטים'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
+                            className="text-[#EC4899] hover:text-[#4B2E83] font-medium text-sm transition-colors"
+                          >
+                            {selectedClass === cls.id ? 'הסתר פרטים' : 'הצג פרטים'}
+                          </button>
+                          <button
+                            onClick={() => handleEditClass(cls)}
+                            className="text-[#4B2E83] hover:text-[#EC4899] font-medium text-sm transition-colors"
+                          >
+                            ערוך
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -423,12 +574,20 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
                       </div>
                     </div>
                     
-                    <button
-                      onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
-                    >
-                      {selectedClass === cls.id ? 'הסתר פרטים' : 'הצג פרטים'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+                      >
+                        {selectedClass === cls.id ? 'הסתר פרטים' : 'הצג פרטים'}
+                      </button>
+                      <button
+                        onClick={() => handleEditClass(cls)}
+                        className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm"
+                      >
+                        ערוך
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -506,17 +665,25 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
                                   {new Date(reg.created_at).toLocaleDateString('he-IL')}
                                 </td>
                                 <td className="px-4 py-2">
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    reg.status === 'active' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : reg.status === 'pending'
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {reg.status === 'active' ? 'פעיל' : 
-                                     reg.status === 'pending' ? 'ממתין' : 
-                                     reg.status === 'cancelled' ? 'בוטל' : reg.status}
-                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      reg.status === 'active' 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : reg.status === 'pending'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {reg.status === 'active' ? 'פעיל' : 
+                                       reg.status === 'pending' ? 'ממתין' : 
+                                       reg.status === 'cancelled' ? 'בוטל' : reg.status}
+                                    </span>
+                                    <button
+                                      onClick={() => handleEditRegistration(reg)}
+                                      className="text-[#EC4899] hover:text-[#4B2E83] text-xs transition-colors"
+                                    >
+                                      ערוך
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -549,6 +716,324 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
             <p className="text-[#4B2E83]/70">נסה לשנות את פרמטרי החיפוש או הסינון</p>
           </div>
         )}
+
+        {/* Edit Class Modal */}
+        {editModalOpen && editingClass && (
+          <ClassEditModal
+            classData={editingClass}
+            isOpen={editModalOpen}
+            onClose={() => {
+              setEditModalOpen(false);
+              setEditingClass(null);
+            }}
+            onSave={handleSaveClass}
+            isLoading={isSaving}
+          />
+        )}
+
+        {/* Edit Registration Modal */}
+        {registrationEditModalOpen && editingRegistration && (
+          <RegistrationEditModal
+            registrationData={editingRegistration}
+            isOpen={registrationEditModalOpen}
+            onClose={() => {
+              setRegistrationEditModalOpen(false);
+              setEditingRegistration(null);
+            }}
+            onSave={handleSaveRegistration}
+            isLoading={isSavingRegistration}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Registration Edit Modal Component
+function RegistrationEditModal({ registrationData, isOpen, onClose, onSave, isLoading }: RegistrationEditModalProps) {
+  const [formData, setFormData] = useState({
+    status: registrationData.status || 'active'
+  });
+
+  useEffect(() => {
+    setFormData({
+      status: registrationData.status || 'active'
+    });
+  }, [registrationData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ ...registrationData, ...formData });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#4B2E83]">עריכת הרשמה</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+              פרטי המשתמש
+            </label>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-[#4B2E83]/70">
+                {registrationData.user ? 
+                  `${registrationData.user.first_name || ''} ${registrationData.user.last_name || ''}`.trim() || registrationData.user.email :
+                  `${registrationData.first_name || ''} ${registrationData.last_name || ''}`.trim() || registrationData.email || 'לא ידוע'
+                }
+              </p>
+              <p className="text-sm text-[#4B2E83]/70 mt-1">{registrationData.email}</p>
+              <p className="text-sm text-[#4B2E83]/70 mt-1">{registrationData.phone}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+              פרטי השיעור
+            </label>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-[#4B2E83]/70">
+                {registrationData.class?.name || registrationData.class_name || 'שיעור לא ידוע'}
+              </p>
+              <p className="text-sm text-[#4B2E83]/70 mt-1">
+                {new Date(registrationData.selected_date).toLocaleDateString('he-IL')}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+              סטטוס הרשמה *
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+            >
+              <option value="active">פעיל</option>
+              <option value="pending">ממתין</option>
+              <option value="cancelled">בוטל</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-[#EC4899] text-[#EC4899] rounded-lg font-medium hover:bg-[#EC4899] hover:text-white transition-all duration-300"
+            >
+              ביטול
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'שומר...' : 'שמור שינויים'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Class Edit Modal Component
+function ClassEditModal({ classData, isOpen, onClose, onSave, isLoading }: ClassEditModalProps) {
+  const [formData, setFormData] = useState({
+    name: classData.name || '',
+    description: classData.description || '',
+    price: classData.price || 0,
+    duration: classData.duration || 60,
+    level: classData.level || 'beginner',
+    category: classData.category || '',
+    is_active: classData.is_active || false,
+    slug: classData.slug || ''
+  });
+
+  useEffect(() => {
+    setFormData({
+      name: classData.name || '',
+      description: classData.description || '',
+      price: classData.price || 0,
+      duration: classData.duration || 60,
+      level: classData.level || 'beginner',
+      category: classData.category || '',
+      is_active: classData.is_active || false,
+      slug: classData.slug || ''
+    });
+  }, [classData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ ...classData, ...formData });
+  };
+
+  if (!isOpen) return null;
+
+  const isNewClass = !classData.id;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-[#4B2E83]">
+              {isNewClass ? 'הוספת שיעור חדש' : 'עריכת שיעור'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                שם השיעור *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+
+            {isNewClass && (
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  מזהה URL (slug) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  placeholder="לדוגמה: dance-class-1"
+                  className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                קטגוריה
+              </label>
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                מחיר (₪) *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                משך (דקות) *
+              </label>
+              <input
+                type="number"
+                required
+                min="15"
+                max="300"
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                רמה
+              </label>
+              <select
+                value={formData.level}
+                onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              >
+                <option value="beginner">מתחילים</option>
+                <option value="intermediate">בינוני</option>
+                <option value="advanced">מתקדם</option>
+                <option value="all">כל הרמות</option>
+              </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="h-4 w-4 text-[#EC4899] focus:ring-[#EC4899] border-gray-300 rounded"
+              />
+              <label htmlFor="is_active" className="mr-2 text-sm font-medium text-[#4B2E83]">
+                שיעור פעיל
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+              תיאור השיעור
+            </label>
+            <textarea
+              rows={4}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-[#EC4899] text-[#EC4899] rounded-lg font-medium hover:bg-[#EC4899] hover:text-white transition-all duration-300"
+            >
+              ביטול
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'שומר...' : 'שמור שינויים'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
 
@@ -7,6 +8,7 @@ interface AdminClassesProps {
 }
 
 export default function AdminClasses({ profile }: AdminClassesProps) {
+  const navigate = useNavigate();
   const { data, isLoading, error, fetchClasses, isFetching } = useAdminData();
 
   // טעינת נתונים רק אם אין נתונים או שהם ישנים
@@ -200,7 +202,7 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
         </button>
         
         <button 
-          onClick={() => window.open('/admin/classes-reports', '_blank')}
+          onClick={() => navigate('/admin/classes-reports')}
           className="p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/10 rounded-xl hover:from-[#EC4899]/10 hover:to-[#4B2E83]/10 transition-all duration-300 cursor-pointer"
         >
           <h4 className="font-semibold text-[#4B2E83] mb-2">דוחות שיעורים</h4>

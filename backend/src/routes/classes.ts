@@ -596,6 +596,47 @@ router.put('/:id', auth, validateClass, async (req: Request, res: Response, next
   }
 });
 
+// Patch class (admin only) - for partial updates
+router.patch('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    logger.info(`Patching class ${id} with data:`, req.body);
+    
+    // Validate required fields if they are being updated
+    const { name, price } = req.body;
+    if (name !== undefined && !name) {
+      throw new AppError('Name cannot be empty', 400);
+    }
+    if (price !== undefined && (typeof price !== 'number' || price <= 0)) {
+      throw new AppError('Price must be a positive number', 400);
+    }
+
+    logger.info(`Updating class ${id} in Supabase...`);
+    const { data, error } = await supabase
+      .from('classes')
+      .update(req.body)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error(`Supabase error updating class ${id}:`, error);
+      throw new AppError(`Failed to update class: ${error.message}`, 500);
+    }
+
+    if (!data) {
+      logger.error(`Class ${id} not found after update`);
+      throw new AppError('Class not found', 404);
+    }
+
+    logger.info(`Successfully updated class ${id}:`, data);
+    res.json(data);
+  } catch (error) {
+    logger.error(`Error in PATCH /classes/${req.params.id}:`, error);
+    next(error);
+  }
+});
+
 // Delete class (admin only)
 router.delete('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
