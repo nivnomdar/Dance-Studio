@@ -15,6 +15,7 @@ import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ClassesReportsWrapper from './pages/admin/ClassesReportsWrapper';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/profile" element={<UserProfile />} />
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
                   <Route path="/shop" element={<ShopPage />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />

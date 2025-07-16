@@ -125,14 +125,14 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
                   <div key={reg.id} className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 p-4 rounded-xl border border-[#4B2E83]/10">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold text-[#4B2E83]">{reg.classes?.name || reg.class_name || 'שיעור לא ידוע'}</h4>
+                        <h4 className="font-semibold text-[#4B2E83]">{reg.class?.name || reg.class_name || 'שיעור לא ידוע'}</h4>
                         <p className="text-sm text-[#4B2E83]/70 mt-1">
                           {new Date(reg.selected_date).toLocaleDateString('he-IL')}
                         </p>
                         <p className="text-sm text-[#4B2E83]/70">
-                          {reg.profiles ? 
-                            `${reg.profiles.first_name || ''} ${reg.profiles.last_name || ''}`.trim() || reg.profiles.email :
-                            reg.full_name || 'משתמש לא ידוע'
+                          {reg.user ? 
+                            `${reg.user.first_name || ''} ${reg.user.last_name || ''}`.trim() || reg.user.email :
+                            `${reg.first_name || ''} ${reg.last_name || ''}`.trim() || reg.email || 'משתמש לא ידוע'
                           }
                         </p>
                       </div>
@@ -199,7 +199,10 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
           <p className="text-sm text-[#4B2E83]/70">צפה וניהול הרשמות לשיעורים</p>
         </button>
         
-        <button className="p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/10 rounded-xl hover:from-[#EC4899]/10 hover:to-[#4B2E83]/10 transition-all duration-300">
+        <button 
+          onClick={() => window.open('/admin/classes-reports', '_blank')}
+          className="p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/10 rounded-xl hover:from-[#EC4899]/10 hover:to-[#4B2E83]/10 transition-all duration-300 cursor-pointer"
+        >
           <h4 className="font-semibold text-[#4B2E83] mb-2">דוחות שיעורים</h4>
           <p className="text-sm text-[#4B2E83]/70">צפה בדוחות וסטטיסטיקות</p>
         </button>

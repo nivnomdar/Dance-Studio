@@ -35,8 +35,8 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
       .from('registrations')
       .select(`
         *,
-        classes:class_id(name, slug, price, duration, level, category),
-        profiles:user_id(first_name, last_name, email)
+        class:classes(id, name, price, duration, level, category),
+        user:profiles(id, first_name, last_name, email)
       `)
       .order('selected_date', { ascending: true });
 
@@ -127,9 +127,9 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
               registrations: classRegistrations.map(reg => ({
                 id: reg.id,
                 fullName: reg.full_name,
-                userFullName: reg.profiles ? 
-                  `${reg.profiles.first_name || ''} ${reg.profiles.last_name || ''}`.trim() || reg.profiles.email :
-                  reg.full_name,
+                userFullName: reg.user ? 
+                  `${reg.user.first_name || ''} ${reg.user.last_name || ''}`.trim() || reg.user.email :
+                  `${reg.first_name || ''} ${reg.last_name || ''}`.trim() || reg.email,
                 email: reg.email,
                 phone: reg.phone,
                 experience: reg.experience,
@@ -174,8 +174,8 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
       .from('registrations')
       .select(`
         *,
-        classes:class_id(name, slug),
-        profiles:user_id(first_name, last_name, email)
+        class:classes(id, name, price, duration, level, category),
+        user:profiles(id, first_name, last_name, email)
       `)
       .order('created_at', { ascending: false }),
       
@@ -442,10 +442,10 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
     // Process registrations to include class and user names
     const processedRegistrations = registrations.map(reg => ({
       ...reg,
-      class_name: reg.classes?.name || 'שיעור לא ידוע',
-      user_name: reg.profiles ? 
-        `${reg.profiles.first_name || ''} ${reg.profiles.last_name || ''}`.trim() || reg.profiles.email :
-        reg.full_name || 'משתמש לא ידוע'
+      class_name: reg.class?.name || 'שיעור לא ידוע',
+      user_name: reg.user ? 
+        `${reg.user.first_name || ''} ${reg.user.last_name || ''}`.trim() || reg.user.email :
+        `${reg.first_name || ''} ${reg.last_name || ''}`.trim() || reg.email || 'משתמש לא ידוע'
     }));
 
     const overview = {

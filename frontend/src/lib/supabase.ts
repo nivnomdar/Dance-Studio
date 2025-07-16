@@ -24,6 +24,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storageKey: 'avigail-dance-studio-auth', // מפתח ייחודי לאפליקציה
     autoRefreshToken: true, // חידוש אוטומטי של token
     detectSessionInUrl: true, // זיהוי session מה-URL
-    flowType: 'pkce' // סוג הזרימה - PKCE (Proof Key for Code Exchange)
+    flowType: 'pkce', // סוג הזרימה - PKCE (Proof Key for Code Exchange)
+    debug: true // הוספת לוגים לדיבוג
   }
 }) 

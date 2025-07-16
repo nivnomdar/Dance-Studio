@@ -57,6 +57,8 @@ function Navbar() {
         }
       });
       
+      console.log('Navbar OAuth sign in result:', { data, error });
+      
       if (error) {
         showPopup({
           title: 'שגיאת התחברות',
@@ -80,14 +82,6 @@ function Navbar() {
       // סגירת התפריטים מיד
       setIsProfileMenuOpen(false);
       setIsMenuOpen(false);
-
-      // הצגת הודעת טעינה
-      showPopup({
-        title: 'מתנתק...',
-        message: 'מתנתק מהמערכת, אנא המתן.',
-        type: 'info',
-        duration: 2000
-      });
 
       // ניקוי הסל לפני ההתנתקות
       clearCart();
