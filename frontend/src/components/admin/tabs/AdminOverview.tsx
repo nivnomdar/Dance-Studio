@@ -216,7 +216,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                 <div>
                   <h4 className="font-semibold text-[#4B2E83]">{cls.name}</h4>
                   <p className="text-sm text-[#4B2E83]/70">
-                    {cls.schedule ? 'לוח זמנים שבועי' : 'לוח זמנים לא מוגדר'}
+                    {cls.session_classes && cls.session_classes.length > 0 ? 'לוח זמנים מוגדר' : 'לוח זמנים לא מוגדר'}
                   </p>
                 </div>
                 <div className="text-right">

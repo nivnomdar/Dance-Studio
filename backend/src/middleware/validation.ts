@@ -17,40 +17,39 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
 };
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
-  const { class_id, first_name, last_name, phone, email, selected_date, selected_time } = req.body;
-  
-  if (!class_id || !first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
-    throw new AppError('Missing required fields: class_id, first_name, last_name, phone, email, selected_date, and selected_time are required', 400);
+  const { first_name, last_name, phone, email, selected_date, selected_time } = req.body;
+
+  // Check required fields
+  if (!first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
+    return res.status(400).json({
+      error: 'כל השדות הם חובה: שם פרטי, שם משפחה, טלפון, אימייל, תאריך ושעה'
+    });
   }
-  
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    throw new AppError('Invalid email format', 400);
+    return res.status(400).json({
+      error: 'פורמט אימייל לא תקין'
+    });
   }
-  
-  // Validate phone format (basic validation)
-  // Remove non-digit characters for validation
-  const phoneDigits = phone.replace(/\D/g, '');
-  if (phoneDigits.length < 8) {
-    throw new AppError('Phone number must be at least 8 digits', 400);
-  }
-  
-  // Validate date format
+
+  // Validate date format (YYYY-MM-DD)
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(selected_date)) {
-    throw new AppError('Invalid date format. Use YYYY-MM-DD', 400);
+    return res.status(400).json({
+      error: 'פורמט תאריך לא תקין. יש להשתמש בפורמט YYYY-MM-DD'
+    });
   }
-  
-  // Validate that date is not in the past
-  const selectedDate = new Date(selected_date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  if (selectedDate < today) {
-    throw new AppError('Selected date cannot be in the past', 400);
+
+  // Validate time format (HH:MM)
+  const timeRegex = /^\d{2}:\d{2}$/;
+  if (!timeRegex.test(selected_time)) {
+    return res.status(400).json({
+      error: 'פורמט שעה לא תקין. יש להשתמש בפורמט HH:MM'
+    });
   }
-  
+
   next();
 };
 

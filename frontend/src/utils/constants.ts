@@ -4,7 +4,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Cache Configuration
-export const CACHE_DURATION = 30000; // 30 seconds
+export const CACHE_DURATION = 60000; // 60 seconds - increased to reduce API calls
 
 // Day names mapping
 export const DAY_NAMES_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -15,9 +15,9 @@ export const DEFAULT_CLASS_TIMES = ['18:00', '19:00', '20:00'];
 
 // Debounce delays for different operations
 export const DEBOUNCE_DELAYS = {
-  SESSIONS_DATA: 300, // 300ms for sessions data loading
-  TIMES_LOADING: 200, // 200ms for times loading
-  SPOTS_CHECKING: 150, // 150ms for spots checking
+  SESSIONS_DATA: 1000, // 1000ms for sessions data loading - increased to reduce API calls
+  TIMES_LOADING: 800, // 800ms for times loading - increased to reduce API calls
+  SPOTS_CHECKING: 1200, // 1200ms for spots checking - increased to reduce API calls
   PROFILE_LOADING: 500, // 500ms for profile loading
   REGISTRATION_SUBMIT: 1000 // 1000ms for registration submission
 };

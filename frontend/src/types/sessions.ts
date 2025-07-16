@@ -14,6 +14,7 @@ export interface Session {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  all_times?: string[]; // For merged sessions - all available times
 }
 
 export interface SessionClass {

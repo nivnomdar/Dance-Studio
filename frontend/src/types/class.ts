@@ -1,42 +1,6 @@
-// צבעים זמינים לשיעורים - פלטה מוגדרת מראש
-export type AvailableColorScheme = 
-  | 'pink' 
-  | 'purple' 
-  | 'emerald' 
-  | 'blue'
-  | 'red'
-  | 'orange'
-  | 'yellow'
-  | 'green'
-  | 'teal'
-  | 'cyan'
-  | 'indigo'
-  | 'violet'
-  | 'fuchsia'
-  | 'rose'
-  | 'slate'
-  | 'gray'
-  | 'zinc'
-  | 'neutral'
-  | 'stone'
-  | 'amber'
-  | 'lime';
+// Types for class-related data
 
-// מבנה לוח זמנים של שיעור
-export interface DaySchedule {
-  available: boolean;
-  times: string[];
-}
-
-export interface ClassSchedule {
-  monday: DaySchedule;
-  tuesday: DaySchedule;
-  wednesday: DaySchedule;
-  thursday: DaySchedule;
-  friday: DaySchedule;
-  saturday: DaySchedule;
-  sunday: DaySchedule;
-}
+export type AvailableColorScheme = 'pink' | 'purple' | 'emerald' | 'blue' | 'orange' | 'teal' | 'indigo' | 'rose';
 
 export interface Class {
   id: string;
@@ -58,7 +22,6 @@ export interface Class {
   is_active: boolean;
   start_time?: string;
   end_time?: string;
-  schedule?: ClassSchedule; // לוח זמנים מלא של השיעור - ימים זמינים ושעות לכל יום
   created_at: string;
   updated_at: string;
 } 

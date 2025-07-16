@@ -117,6 +117,8 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
 // Create new registration
 router.post('/', auth, validateRegistration, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.info('Registration request received:', req.body);
+    
     const {
       class_id,
       session_id,

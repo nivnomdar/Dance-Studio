@@ -91,14 +91,17 @@ function AboutPage() {
             >
               <FaFacebook className="w-7 h-7" />
             </a>
-            {/* TODO: החלף במספר וואטסאפ אמיתי */}
-            <a
-              href="https://wa.me/972XXXXXXXXX"
-              target="_blank"
+            {/* WhatsApp Button */}
+            <a 
+              href="https://wa.me/972501234567" 
+              target="_blank" 
               rel="noopener noreferrer"
-              className="w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
+              className="flex flex-col items-center p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:-rotate-2 relative"
             >
-              <FaWhatsapp className="w-7 h-7" />
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502.998l-2.497.832c-1.96.65-3.25 2.44-3.25 4.54v2a3 3 0 00.879 2.121c.387.25.81.379 1.23.379H19a2 2 0 002-2v-2.101a7 7 0 00-.08-.2L18.92 8.05a1 1 0 00-.502-.998l-2.497-.832A3 3 0 0014.72 4H11.44a1 1 0 01-.948-.684L9.4 1.684A3 3 0 007.905 1H4.72a2 2 0 01-2-2z" />
+              </svg>
+              <span className="text-white text-sm font-agrandir-regular mt-2">צור קשר</span>
             </a>
           </div>
         </div>

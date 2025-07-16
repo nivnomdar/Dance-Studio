@@ -1,23 +1,51 @@
 # Avigail Dance Studio
 
-פרויקט סטודיו ריקוד אביגיל - מערכת מלאה עם frontend ו-backend.
+פרויקט סטודיו ריקוד אביגיל - מערכת מלאה עם frontend ו-backend לניהול שיעורי ריקוד והרשמות.
 
-## מבנה הפרויקט
+## 🎯 תכונות עיקריות
+
+- ✅ **שיעורי ריקוד** - ניהול שיעורים עם תאריכים, שעות ומקומות זמינים
+- ✅ **מערכת הרשמה מתקדמת** - הרשמה לשיעורים עם בדיקת זמינות בזמן אמת
+- ✅ **ניהול פרופיל משתמש** - פרטים אישיים והיסטוריית הרשמות
+- ✅ **מערכת קניות** - חנות עם מוצרים והזמנות
+- ✅ **אימות משתמשים** - התחברות עם Google
+- ✅ **ממשק משתמש מודרני** - עיצוב יפה ותמיכה מלאה בעברית ו-RTL
+- ✅ **ניהול הרשמות** - סטטוסים שונים וניהול מתקדם
+- ✅ **אבטחה מלאה** - RLS, אימות ובדיקות תקינות
+- ✅ **ביצועים מיטביים** - caching, throttling ו-optimization
+
+## 🏗️ מבנה הפרויקט
 
 ```
 Avigail Dance Studio/
 ├── frontend/          # React + TypeScript + Vite
+│   ├── src/
+│   │   ├── components/    # רכיבי React
+│   │   ├── pages/         # דפי האפליקציה
+│   │   ├── contexts/      # React Contexts
+│   │   ├── hooks/         # Custom Hooks
+│   │   ├── lib/           # שירותי API
+│   │   ├── types/         # TypeScript Types
+│   │   └── utils/         # פונקציות עזר
+│   └── public/            # קבצים סטטיים
 ├── backend/           # Express + TypeScript
+│   ├── src/
+│   │   ├── routes/        # נתיבי API
+│   │   ├── middleware/    # Middleware
+│   │   ├── types/         # TypeScript Types
+│   │   └── utils/         # פונקציות עזר
+│   └── logs/              # קבצי לוג
 └── supabase/          # Database migrations
+    └── migrations/        # קבצי מיגרציה
 ```
 
-## דרישות מערכת
+## 📋 דרישות מערכת
 
-- Node.js (v18 או גבוה יותר)
-- npm או yarn
-- חשבון Supabase
+- **Node.js** (v18 או גבוה יותר)
+- **npm** או **yarn**
+- **חשבון Supabase**
 
-## התקנה והפעלה
+## 🚀 התקנה והפעלה
 
 ### 1. הגדרת Supabase
 
@@ -77,7 +105,7 @@ Avigail Dance Studio/
    npm run dev
    ```
 
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Classes
 - `GET /api/classes` - קבלת כל השיעורים הפעילים
@@ -87,6 +115,12 @@ Avigail Dance Studio/
 - `PUT /api/classes/:id` - עדכון שיעור (admin only)
 - `DELETE /api/classes/:id` - מחיקת שיעור (admin only)
 
+### Sessions
+- `GET /api/sessions` - קבלת כל ה-sessions
+- `GET /api/sessions/session-classes` - קבלת session classes
+- `GET /api/sessions/capacity/:classId/:date/:time` - בדיקת זמינות
+- `GET /api/sessions/batch-capacity/:classId/:date` - בדיקת זמינות batch
+
 ### Registrations
 - `GET /api/registrations` - קבלת כל ההרשמות (admin only)
 - `GET /api/registrations/my` - קבלת ההרשמות של המשתמש המחובר
@@ -95,9 +129,9 @@ Avigail Dance Studio/
 - `PUT /api/registrations/:id/status` - עדכון סטטוס הרשמה (admin only)
 - `DELETE /api/registrations/:id` - מחיקת הרשמה
 
-## מבנה נתונים
+### 📊 **מבנה בסיס הנתונים**
 
-### טבלת Classes
+#### **טבלת `classes`** - שיעורי ריקוד
 ```sql
 create table public.classes (
   id uuid primary key default gen_random_uuid(),
@@ -105,46 +139,84 @@ create table public.classes (
   slug text unique not null,
   description text,
   long_description text,
-  price numeric not null,
-  duration int,
+  price integer not null,
+  duration integer,
   level text,
   age_group text,
-  max_participants int,
+  max_participants integer,
   location text,
   included text,
   image_url text,
   video_url text,
   category text,
+  color_scheme text,
   is_active boolean default true,
-  start_time timestamptz,
-  end_time timestamptz,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  start_time time,
+  end_time time,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
 );
 ```
 
-### טבלת Registrations
+#### **טבלת `schedule_sessions`** - מפגשים מתוזמנים
+```sql
+create table public.schedule_sessions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text,
+  start_time time not null,
+  end_time time not null,
+  duration_minutes integer,
+  start_date date,
+  end_date date,
+  weekdays integer[] not null,
+  max_capacity integer not null,
+  min_capacity integer default 1,
+  location_id uuid,
+  room_name text,
+  address text,
+  is_active boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+```
+
+#### **טבלת `session_classes`** - קישור בין מפגשים לשיעורים
+```sql
+create table public.session_classes (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references public.classes(id) on delete cascade,
+  session_id uuid references public.schedule_sessions(id) on delete cascade,
+  price decimal(10,2),
+  is_active boolean default true,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+```
+
+#### **טבלת `registrations`** - הרשמות לשיעורים
 ```sql
 create table public.registrations (
   id uuid primary key default gen_random_uuid(),
-  class_id uuid not null references public.classes(id) on delete cascade,
-  user_id uuid not null references public.profiles(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
+  class_id uuid references public.classes(id) on delete cascade,
+  session_id uuid references public.schedule_sessions(id),
+  session_class_id uuid references public.session_classes(id),
   first_name text not null,
   last_name text not null,
   phone text not null,
   email text not null,
-  experience text,
   selected_date date not null,
   selected_time text not null,
+  experience text,
   notes text,
-  status text default 'pending' check (status in ('pending', 'confirmed', 'cancelled')),
-  payment_id text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  status text default 'active',
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
 );
 ```
 
-## פיתוח
+## 🛠️ פיתוח
 
 ### Backend
 ```bash
@@ -162,14 +234,38 @@ npm run build   # בניית הפרויקט
 npm run lint    # בדיקת קוד
 ```
 
-## תכונות עיקריות
+## 🎨 תכונות עיצוב
 
-- ✅ שיעורי ריקוד עם נתונים מה-DB
-- ✅ מערכת הרשמה לשיעורים עם פרטים מלאים
-- ✅ ניהול פרופיל משתמש
-- ✅ מערכת קניות
-- ✅ אימות משתמשים עם Google
-- ✅ ממשק משתמש מודרני ויפה
-- ✅ תמיכה בעברית ו-RTL
-- ✅ ניהול הרשמות עם סטטוסים
-- ✅ אבטחה מלאה עם RLS 
+- **עיצוב רספונסיבי** - עובד על כל המכשירים
+- **תמיכה בעברית** - טקסטים וניווט מימין לשמאל
+- **צבעים דינמיים** - כל שיעור עם צבע ייחודי
+- **אנימציות חלקות** - חווית משתמש מעולה
+- **Loading states** - אינדיקטורים ברורים לטעינה
+
+## 🔒 אבטחה
+
+- **Row Level Security (RLS)** - הגנה על נתונים ברמת השורה
+- **אימות משתמשים** - Google OAuth
+- **בדיקות תקינות** - וולידציה מלאה של נתונים
+- **Rate Limiting** - הגנה מפני בקשות מוגזמות
+- **CORS** - הגדרות אבטחה נכונות
+
+## 📱 תמיכה במכשירים
+
+- ✅ **Desktop** - Chrome, Firefox, Safari, Edge
+- ✅ **Tablet** - iPad, Android tablets
+- ✅ **Mobile** - iPhone, Android phones
+
+## 🚀 Deploy
+
+הפרויקט מוכן ל-deploy על:
+- **Frontend**: Vercel, Netlify, GitHub Pages
+- **Backend**: Railway, Heroku, DigitalOcean
+- **Database**: Supabase (מומלץ)
+
+## 📞 תמיכה
+
+לשאלות ותמיכה:
+- **Email**: info@avigaildance.com
+- **WhatsApp**: 050-1234567
+- **Phone**: 050-1234567 

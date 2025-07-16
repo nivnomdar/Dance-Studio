@@ -1,9 +1,25 @@
 import { Session, SessionClass } from '../types/sessions';
 import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
+import { apiService } from '../lib/api';
+
+// Enhanced cache with class-specific caching
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
 
 // Cache for sessions data to prevent excessive API calls
-let sessionsCache: { data: any[]; timestamp: number } | null = null;
-let sessionClassesCache: { data: any[]; timestamp: number } | null = null;
+let sessionsCache: CacheEntry | null = null;
+let sessionClassesCache: CacheEntry | null = null;
+let classSessionsCache: Map<string, CacheEntry> = new Map();
+let classDatesCache: Map<string, CacheEntry> = new Map();
+let classTimesCache: Map<string, CacheEntry> = new Map();
+
+// Request throttling
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests
+let isRequestInProgress = false;
+let requestQueue: Array<() => void> = [];
 
 /**
  * פונקציה משותפת ליצירת הודעות זמינות
@@ -21,6 +37,20 @@ const generateAvailabilityMessage = (availableSpots: number): string => {
 };
 
 /**
+ * פונקציה משותפת לבדיקה אם session פעיל ביום מסוים
+ */
+const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
+  if (!session || !session.is_active) return false;
+  
+  return session.weekdays.some((weekday: any) => {
+    // weekday can be a string from JSONB array like "monday", "Tuesday"
+    const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+    const dayNameLower = dayName.toLowerCase();
+    return weekdayLower === dayNameLower;
+  });
+};
+
+/**
  * פונקציה לניקוי פורמט השעות - מסירה שניות ומשאירה רק שעות ודקות
  */
 const formatTimeForDisplay = (time: string): string => {
@@ -35,19 +65,100 @@ const formatTimeForDisplay = (time: string): string => {
 };
 
 /**
- * קבלת sessions זמינים לפי class ID
+ * פונקציה לבדיקת תוקף cache
+ */
+const isCacheValid = (cache: CacheEntry | null): boolean => {
+  if (!cache) return false;
+  return (Date.now() - cache.timestamp) < CACHE_DURATION;
+};
+
+/**
+ * פונקציה לניקוי cache ישן
+ */
+const cleanupExpiredCache = () => {
+  const now = Date.now();
+  
+  // Clean up class-specific caches
+  for (const [key, cache] of classSessionsCache.entries()) {
+    if (now - cache.timestamp > CACHE_DURATION) {
+      classSessionsCache.delete(key);
+    }
+  }
+  
+  for (const [key, cache] of classDatesCache.entries()) {
+    if (now - cache.timestamp > CACHE_DURATION) {
+      classDatesCache.delete(key);
+    }
+  }
+  
+  for (const [key, cache] of classTimesCache.entries()) {
+    if (now - cache.timestamp > CACHE_DURATION) {
+      classTimesCache.delete(key);
+    }
+  }
+};
+
+/**
+ * פונקציה לניהול בקשות API עם throttling
+ */
+const throttledFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+  return new Promise((resolve, reject) => {
+    const executeRequest = async () => {
+      try {
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastRequestTime;
+        
+        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+          // Wait before making the request
+          await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest));
+        }
+        
+        lastRequestTime = Date.now();
+        const response = await fetch(url, options);
+        resolve(response);
+      } catch (error) {
+        reject(error);
+      } finally {
+        isRequestInProgress = false;
+        
+        // Process next request in queue
+        if (requestQueue.length > 0) {
+          const nextRequest = requestQueue.shift();
+          if (nextRequest) {
+            nextRequest();
+          }
+        }
+      }
+    };
+    
+    if (isRequestInProgress) {
+      // Queue the request
+      requestQueue.push(executeRequest);
+    } else {
+      isRequestInProgress = true;
+      executeRequest();
+    }
+  });
+};
+
+/**
+ * קבלת sessions זמינים לפי class ID עם cache משופר ו-throttling
  */
 export const getAvailableSessionsForClass = async (classId: string): Promise<Session[]> => {
   try {
-    const now = Date.now();
+    // Clean up expired cache first
+    cleanupExpiredCache();
     
-    // Check if we have valid cached data
-    if (sessionsCache && sessionClassesCache && 
-        (now - sessionsCache.timestamp) < CACHE_DURATION && 
-        (now - sessionClassesCache.timestamp) < CACHE_DURATION) {
-      
-      const allSessions = sessionsCache.data;
-      const allSessionClasses = sessionClassesCache.data;
+    // Check class-specific cache first
+    const classCache = classSessionsCache.get(classId);
+    if (isCacheValid(classCache || null)) {
+      return classCache!.data;
+    }
+    
+    // Check global cache
+    if (isCacheValid(sessionsCache) && isCacheValid(sessionClassesCache)) {
+      const allSessions = sessionsCache!.data;
+      const allSessionClasses = sessionClassesCache!.data;
       
       // Filter session classes for this specific class
       const sessionClasses = allSessionClasses.filter((sc: any) => 
@@ -55,6 +166,8 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       );
       
       if (sessionClasses.length === 0) {
+        // Cache empty result
+        classSessionsCache.set(classId, { data: [], timestamp: Date.now() });
         return [];
       }
       
@@ -66,31 +179,29 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
         sessionIds.includes(session.id) && session.is_active === true
       );
       
-
+      // Cache the result
+      classSessionsCache.set(classId, { data: sessions, timestamp: Date.now() });
       
       return sessions || [];
     }
     
-    // Get all sessions from API
-    const sessionsResponse = await fetch(`${API_BASE_URL}/sessions`);
-    if (!sessionsResponse.ok) {
-
+    // Fetch fresh data from API with throttling
+    const [sessionsResponse, sessionClassesResponse] = await Promise.all([
+      throttledFetch(`${API_BASE_URL}/sessions`),
+      throttledFetch(`${API_BASE_URL}/sessions/session-classes`)
+    ]);
+    
+    if (!sessionsResponse.ok || !sessionClassesResponse.ok) {
+      console.error('Failed to fetch sessions data from API');
       return [];
     }
+    
     const allSessions = await sessionsResponse.json();
-    
-    // Cache the sessions data
-    sessionsCache = { data: allSessions, timestamp: now };
-    
-    // Get session classes from API
-    const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    if (!sessionClassesResponse.ok) {
-
-      return [];
-    }
     const allSessionClasses = await sessionClassesResponse.json();
     
-    // Cache the session classes data
+    // Update global cache
+    const now = Date.now();
+    sessionsCache = { data: allSessions, timestamp: now };
     sessionClassesCache = { data: allSessionClasses, timestamp: now };
     
     // Filter session classes for this specific class
@@ -99,6 +210,8 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
     );
     
     if (sessionClasses.length === 0) {
+      // Cache empty result
+      classSessionsCache.set(classId, { data: [], timestamp: now });
       return [];
     }
     
@@ -110,28 +223,37 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       sessionIds.includes(session.id) && session.is_active === true
     );
     
-
+    // Cache the result
+    classSessionsCache.set(classId, { data: sessions, timestamp: now });
     
     return sessions || [];
   } catch (error) {
-
+    console.error('Error in getAvailableSessionsForClass:', error);
     return [];
   }
 };
 
 /**
- * קבלת תאריכים זמינים לכפתורים - גרסה חדשה עם sessions
+ * קבלת תאריכים זמינים לכפתורים - גרסה חדשה עם sessions ו-cache משופר
  */
 export const getAvailableDatesForButtonsFromSessions = async (classId: string): Promise<string[]> => {
   try {
+    // Check cache first
+    const cacheKey = `${classId}_dates`;
+    const cached = classDatesCache.get(cacheKey);
+    if (isCacheValid(cached || null)) {
+      return cached!.data;
+    }
+    
     const sessions = await getAvailableSessionsForClass(classId);
     
     if (sessions.length === 0) {
+      classDatesCache.set(cacheKey, { data: [], timestamp: Date.now() });
       return [];
     }
 
     // עבור recurring sessions, ניצור תאריכים לפי ה-weekdays
-    const dates: string[] = [];
+    const datesSet = new Set<string>(); // Use Set to prevent duplicates
     const today = new Date();
     
     // ניצור תאריכים לשבוע הבא
@@ -144,40 +266,45 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
       // בדוק אם ה-session פעיל ביום הזה
       const dayName = DAY_NAMES_EN[dayOfWeek];
       
-      const isAvailable = sessions.some(session => {
-        const sessionActive = session.is_active;
-        const dayAvailable = session.weekdays.some((weekday: any) => {
-          // weekday can be a string from JSONB array like "monday", "Tuesday"
-          const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-          const dayNameLower = dayName.toLowerCase();
-          return weekdayLower === dayNameLower;
-        });
-        return sessionActive && dayAvailable;
-      });
+      const isAvailable = sessions.some(session => isSessionActiveOnDay(session, dayName));
       
       if (isAvailable) {
-        dates.push(date.toISOString().split('T')[0]);
+        datesSet.add(date.toISOString().split('T')[0]); // Use Set.add() to prevent duplicates
       }
     }
     
+    // Convert Set back to array and sort by date
+    const dates = Array.from(datesSet).sort();
+    
+    // Cache the result
+    classDatesCache.set(cacheKey, { data: dates, timestamp: Date.now() });
+    
     return dates;
   } catch (error) {
-
+    console.error('Error in getAvailableDatesForButtonsFromSessions:', error);
     return [];
   }
 };
 
 /**
- * קבלת שעות זמינות לפי תאריך - גרסה חדשה עם sessions
+ * קבלת שעות זמינות לפי תאריך - גרסה חדשה עם sessions ו-cache משופר
  */
 export const getAvailableTimesForDateFromSessions = async (
   classId: string, 
   selectedDate: string
 ): Promise<string[]> => {
   try {
+    // Check cache first
+    const cacheKey = `${classId}_${selectedDate}_times`;
+    const cached = classTimesCache.get(cacheKey);
+    if (isCacheValid(cached || null)) {
+      return cached!.data;
+    }
+    
     const sessions = await getAvailableSessionsForClass(classId);
     
     if (sessions.length === 0) {
+      classTimesCache.set(cacheKey, { data: [], timestamp: Date.now() });
       return [];
     }
 
@@ -188,153 +315,166 @@ export const getAvailableTimesForDateFromSessions = async (
     // מצא sessions שפעילים ביום הזה
     const dayName = DAY_NAMES_EN[dayOfWeek];
     
-    const availableSessions = sessions.filter(session => 
-      session.is_active && 
-      session.weekdays.some((weekday: any) => {
-        // weekday can be a string from JSONB array like "monday", "Tuesday"
-        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-        const dayNameLower = dayName.toLowerCase();
-        return weekdayLower === dayNameLower;
-      })
-    );
+    const availableSessions = sessions.filter(session => isSessionActiveOnDay(session, dayName));
     
-    // החזר את השעות הזמינות עם פורמט נקי
-    return availableSessions.map(session => formatTimeForDisplay(session.start_time));
+    // החזר את השעות הזמינות עם פורמט נקי - מניעת כפילויות
+    const timesSet = new Set<string>();
+    availableSessions.forEach(session => {
+      timesSet.add(formatTimeForDisplay(session.start_time));
+    });
+    
+    // Convert Set back to array and sort by time
+    const times = Array.from(timesSet).sort();
+    
+    // Cache the result
+    classTimesCache.set(cacheKey, { data: times, timestamp: Date.now() });
+    
+    return times;
   } catch (error) {
-
+    console.error('Error in getAvailableTimesForDateFromSessions:', error);
     return [];
   }
 };
 
 /**
- * בדיקת מקומות זמינים לשיעור בתאריך ושעה מסוימים - גרסה חדשה עם sessions
+ * בדיקת מקומות זמינים לשיעור בתאריך ושעה מסוימים - גרסה חדשה עם sessions ו-debouncing
  */
 export const getAvailableSpotsFromSessions = async (
   classId: string, 
   selectedDate: string, 
   selectedTime: string
 ): Promise<{ available: number; message: string; sessionId?: string; sessionClassId?: string }> => {
-      // Add timeout to prevent hanging
-    const timeoutPromise = createTimeoutPromise(TIMEOUTS.SPOTS_CHECK, 'Timeout: Function took too long to complete');
+  // Add timeout to prevent hanging
+  const timeoutPromise = createTimeoutPromise(TIMEOUTS.SPOTS_CHECK, 'Timeout: Function took too long to complete');
   
   const spotsPromise = (async () => {
     try {
-  
-    
-    // קבל את ה-sessions עבור השיעור
-    const sessions = await getAvailableSessionsForClass(classId);
+      // קבל את ה-sessions עבור השיעור
+      const sessions = await getAvailableSessionsForClass(classId);
 
-    
-    if (sessions.length === 0) {
-
-      return { available: 0, message: 'לא נמצא session זמין' };
-    }
-
-    // בדוק איזה יום זה
-    const date = new Date(selectedDate);
-    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
-    const dayName = DAY_NAMES_EN[dayOfWeek];
-    
-
-    
-    // מצא session שפעיל ביום הזה ובשעה הזו
-    const matchingSession = sessions.find(session => {
-      const isActive = session.is_active;
-      
-      // Fix weekday matching - handle JSONB array format
-      const hasMatchingDay = session.weekdays.some((weekday: any) => {
-        // weekday can be a string from JSONB array like "monday", "Tuesday"
-        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-        const dayNameLower = dayName.toLowerCase();
-
-        return weekdayLower === dayNameLower;
-      });
-      
-      const hasMatchingTime = formatTimeForDisplay(session.start_time) === selectedTime;
-      
-
-      
-      return isActive && hasMatchingDay && hasMatchingTime;
-    });
-
-    if (!matchingSession) {
-      return { available: 0, message: 'השיעור לא זמין ביום ובשעה אלה' };
-    }
-
-    // קבל את ה-session class דרך ה-API
-    const sessionClassesResponse = await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    if (!sessionClassesResponse.ok) {
-
-      return { available: 0, message: 'שגיאה בקבלת פרטי session' };
-    }
-    
-    const allSessionClasses = await sessionClassesResponse.json();
-    
-    const sessionClass = allSessionClasses.find((sc: any) => 
-      sc.session_id === matchingSession.id && 
-      sc.class_id === classId && 
-      sc.is_active === true
-    );
-    
-
-
-    if (!sessionClass) {
-      return { available: 0, message: 'השיעור לא זמין בsession זה' };
-    }
-
-    // בדיקה אם זה שיעור פרטי - נשתמש ב-API במקום Supabase ישירות
-    try {
-      const classResponse = await fetch(`${API_BASE_URL}/classes/${classId}`);
-      if (classResponse.ok) {
-        const classData = await classResponse.json();
-        
-        // אם זה שיעור פרטי, אין צורך לבדוק מקומות
-        if (classData.slug === 'private-lesson' || classData.category === 'private') {
-          return { available: 1, message: 'זמין', sessionId: matchingSession.id, sessionClassId: sessionClass.id };
-        }
+      if (sessions.length === 0) {
+        return { available: 0, message: 'לא נמצא session זמין' };
       }
-    } catch (apiError) {
-      // Continue with normal flow if we can't check
-    }
-    
-    // ספור הרשמות קיימות לתאריך זה - נשתמש ב-API החדש
-    try {
-      const spotsResponse = await fetch(`${API_BASE_URL}/sessions/capacity/${classId}/${selectedDate}/${selectedTime}`);
-      
-      if (spotsResponse.ok) {
-        const spotsData = await spotsResponse.json();
-        
-        return { 
-          available: spotsData.available, 
-          message: spotsData.message, 
-          sessionId: spotsData.sessionId, 
-          sessionClassId: spotsData.sessionClassId 
-        };
-      } else {
 
+      // בדוק איזה יום זה
+      const date = new Date(selectedDate);
+      const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+      const dayName = DAY_NAMES_EN[dayOfWeek];
+      
+      // מצא session שפעיל ביום הזה ובשעה הזו
+      const matchingSession = sessions.find(session => {
+        const hasMatchingDay = isSessionActiveOnDay(session, dayName);
+        const hasMatchingTime = formatTimeForDisplay(session.start_time) === selectedTime;
+        
+        return hasMatchingDay && hasMatchingTime;
+      });
+
+      if (!matchingSession) {
+        return { available: 0, message: 'השיעור לא זמין ביום ובשעה אלה' };
+      }
+
+      // Use cached session classes if available
+      let allSessionClasses;
+      if (isCacheValid(sessionClassesCache)) {
+        allSessionClasses = sessionClassesCache!.data;
+      } else {
+        const sessionClassesResponse = await throttledFetch(`${API_BASE_URL}/sessions/session-classes`);
+        if (!sessionClassesResponse.ok) {
+          return { available: 0, message: 'שגיאה בקבלת פרטי session' };
+        }
+        allSessionClasses = await sessionClassesResponse.json();
+        sessionClassesCache = { data: allSessionClasses, timestamp: Date.now() };
+      }
+      
+      const sessionClass = allSessionClasses.find((sc: any) => 
+        sc.session_id === matchingSession.id && 
+        sc.class_id === classId && 
+        sc.is_active === true
+      );
+
+      if (!sessionClass) {
+        return { available: 0, message: 'השיעור לא זמין בsession זה' };
+      }
+
+      // בדיקה אם זה שיעור פרטי - נשתמש ב-API במקום Supabase ישירות
+      try {
+        const classResponse = await throttledFetch(`${API_BASE_URL}/classes/${classId}`);
+        if (classResponse.ok) {
+          const classData = await classResponse.json();
+          
+          // אם זה שיעור פרטי, אין צורך לבדוק מקומות
+          if (classData.slug === 'private-lesson' || classData.category === 'private') {
+            return { available: 1, message: 'זמין', sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+          }
+        }
+      } catch (apiError) {
+        // Continue with normal flow if we can't check
+      }
+      
+      // ספור הרשמות קיימות לתאריך זה - נשתמש ב-API החדש
+      try {
+        const spotsResponse = await throttledFetch(`${API_BASE_URL}/sessions/capacity/${classId}/${selectedDate}/${selectedTime}`);
+        
+        if (spotsResponse.ok) {
+          const spotsData = await spotsResponse.json();
+          
+          return { 
+            available: spotsData.available, 
+            message: spotsData.message, 
+            sessionId: spotsData.sessionId, 
+            sessionClassId: spotsData.sessionClassId 
+          };
+        } else {
+          // Fallback to max capacity if API fails
+          const availableSpots = matchingSession.max_capacity;
+          const message = generateAvailabilityMessage(availableSpots);
+          
+          return { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+        }
+      } catch (apiError) {
         // Fallback to max capacity if API fails
         const availableSpots = matchingSession.max_capacity;
         const message = generateAvailabilityMessage(availableSpots);
         
-        return { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+        const result = { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+        return result;
       }
-    } catch (apiError) {
-
-      // Fallback to max capacity if API fails
-      const availableSpots = matchingSession.max_capacity;
-      const message = generateAvailabilityMessage(availableSpots);
-      
-      const result = { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
-      return result;
-    }
     } catch (error) {
-
       return { available: 0, message: 'שגיאה בבדיקת מקומות זמינים' };
     }
   })();
   
   // Race between timeout and spots promise
   return Promise.race([spotsPromise, timeoutPromise]);
+};
+
+/**
+ * קבלת כל הזמינות לכל השעות של שיעור בתאריך מסוים - גרסה חדשה עם batch API
+ */
+export const getAvailableSpotsBatchFromSessions = async (
+  classId: string, 
+  selectedDate: string
+): Promise<{ [time: string]: { available: number; message: string; sessionId?: string; sessionClassId?: string } }> => {
+  try {
+    const spotsData = await apiService.sessions.getBatchCapacity(classId, selectedDate);
+    
+    // Convert array to object with time as key
+    const spotsObject: { [time: string]: { available: number; message: string; sessionId?: string; sessionClassId?: string } } = {};
+    
+    spotsData.forEach((spot: any) => {
+      spotsObject[spot.time] = {
+        available: spot.available,
+        message: spot.message,
+        sessionId: spot.sessionId,
+        sessionClassId: spot.sessionClassId
+      };
+    });
+    
+    return spotsObject;
+  } catch (error) {
+    console.error('Error in getAvailableSpotsBatchFromSessions:', error);
+    throw error;
+  }
 };
 
 /**
@@ -364,48 +504,22 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
     
     return `השיעורים מתקיימים בימים: ${Array.from(availableDays).join(', ')}`;
   } catch (error) {
-
     return 'כל התאריכים זמינים';
   }
 };
 
 /**
- * פונקציה לדיבוג - בדיקת נתונים בטבלאות
+ * פונקציה לניקוי cache - לשימוש בעת צורך
  */
-export const debugSessionsData = async (classId: string) => {
-  try {
-    const { supabase } = await import('../lib/supabase');
-    await supabase
-      .from('session_classes')
-      .select('*')
-      .eq('class_id', classId);
-    await supabase
-      .from('schedule_sessions')
-      .select('*');
-    await getAvailableDatesForButtonsFromSessions(classId);
-  } catch (error) {}
+export const clearSessionsCache = () => {
+  sessionsCache = null;
+  sessionClassesCache = null;
+  classSessionsCache.clear();
+  classDatesCache.clear();
+  classTimesCache.clear();
+  
+  // Reset throttling state
+  lastRequestTime = 0;
+  isRequestInProgress = false;
+  requestQueue = [];
 };
-
-/**
- * פונקציה לבדיקת נתונים דרך ה-API
- */
-export const testSessionsAPI = async () => {
-  try {
-    await fetch(`${API_BASE_URL}/sessions`);
-    await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    await fetch(`${API_BASE_URL}/classes`);
-  } catch (error) {}
-};
-
-/**
- * פונקציה לבדיקה מהירה של הטבלאות
- */
-export const testTablesAccess = async () => {
-  try {
-    await fetch(`${API_BASE_URL}/sessions/session-classes`);
-    await fetch(`${API_BASE_URL}/sessions`);
-    return {};
-  } catch (error) {
-    return { error };
-  }
-}; 

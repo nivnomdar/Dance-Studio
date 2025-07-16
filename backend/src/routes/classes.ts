@@ -5,6 +5,13 @@ import { logger } from '../utils/logger';
 import { validateClass } from '../middleware/validation';
 import { auth } from '../middleware/auth';
 
+/**
+ * פונקציה משותפת לקבלת session מתוך session class
+ */
+const getSessionFromSessionClass = (sc: any) => {
+  return Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+};
+
 const router = Router();
 
 // Get admin calendar data (admin only)
@@ -70,9 +77,17 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
         
         // Find classes scheduled for this day
         const dayClasses = classes?.filter(cls => {
-          if (!cls.schedule) return false;
-          const schedule = typeof cls.schedule === 'string' ? JSON.parse(cls.schedule) : cls.schedule;
-          return schedule[dayName]?.available === true && schedule[dayName]?.times?.length > 0;
+          // Check if class has active sessions for this day
+          const hasActiveSessions = cls.session_classes?.some((sc: any) => {
+            const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+            if (!session || !session.is_active) return false;
+            
+            // Check if session is active on this day
+            const sessionWeekdays = session.weekdays || [];
+            return sessionWeekdays.includes(currentDate.getDay());
+          });
+          
+          return cls.is_active && hasActiveSessions;
         }) || [];
 
         // Find registrations for this date
@@ -84,8 +99,20 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
           date: dateKey,
           dayName: dayName,
           classes: dayClasses.map(cls => {
-            const schedule = typeof cls.schedule === 'string' ? JSON.parse(cls.schedule) : cls.schedule;
-            const times = schedule[dayName]?.times || [];
+            // Get times from sessions for this day
+            const sessionTimes = cls.session_classes
+              ?.filter((sc: any) => {
+                const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+                if (!session || !session.is_active) return false;
+                const sessionWeekdays = session.weekdays || [];
+                return sessionWeekdays.includes(currentDate.getDay());
+              })
+              ?.map((sc: any) => {
+                const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+                return session.start_time.substring(0, 5); // Format as HH:MM
+              })
+              ?.filter((time: string, index: number, arr: string[]) => arr.indexOf(time) === index) || []; // Remove duplicates
+            
             const classRegistrations = dayRegistrations.filter(reg => reg.class_id === cls.id);
             
             return {
@@ -96,7 +123,7 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
               duration: cls.duration,
               level: cls.level,
               category: cls.category,
-              times: times,
+              times: sessionTimes,
               registrations: classRegistrations.map(reg => ({
                 id: reg.id,
                 fullName: reg.full_name,
@@ -205,18 +232,32 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
     const todayName = dayNames[today.getDay()];
     const tomorrowName = dayNames[tomorrow.getDay()];
     
-    // Classes happening today (based on weekly schedule)
+    // Classes happening today (based on sessions)
     const classesToday = classes.filter(cls => {
-      if (!cls.is_active || !cls.schedule) return false;
-      const schedule = typeof cls.schedule === 'string' ? JSON.parse(cls.schedule) : cls.schedule;
-      return schedule[todayName]?.available === true && schedule[todayName]?.times?.length > 0;
+      if (!cls.is_active) return false;
+      
+      // Check if class has active sessions for today
+      return cls.session_classes?.some((sc: any) => {
+        const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+        if (!session || !session.is_active) return false;
+        
+        const sessionWeekdays = session.weekdays || [];
+        return sessionWeekdays.includes(today.getDay());
+      }) || false;
     }).length;
     
-    // Classes happening tomorrow (based on weekly schedule)
+    // Classes happening tomorrow (based on sessions)
     const classesTomorrow = classes.filter(cls => {
-      if (!cls.is_active || !cls.schedule) return false;
-      const schedule = typeof cls.schedule === 'string' ? JSON.parse(cls.schedule) : cls.schedule;
-      return schedule[tomorrowName]?.available === true && schedule[tomorrowName]?.times?.length > 0;
+      if (!cls.is_active) return false;
+      
+      // Check if class has active sessions for tomorrow
+      return cls.session_classes?.some((sc: any) => {
+        const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+        if (!session || !session.is_active) return false;
+        
+        const sessionWeekdays = session.weekdays || [];
+        return sessionWeekdays.includes(tomorrow.getDay());
+      }) || false;
     }).length;
     
     // Calculate registrations by time period
@@ -230,27 +271,173 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
       return regDate > oneWeekAgo;
     }).length;
     
-    // Low capacity classes (less than 50% full) - show all active classes with low registration
-    const lowCapacityClasses = classes
-      .filter(cls => cls.is_active)
-      .map(cls => {
-        const classRegistrations = registrations.filter(reg => 
-          reg.class_id === cls.id && reg.status !== 'cancelled'
-        );
-        const capacity = cls.max_participants || 10; // Use max_participants from database
-        const fillRate = capacity > 0 ? (classRegistrations.length / capacity) * 100 : 0;
-        return {
-          id: cls.id,
-          name: cls.name,
-          schedule: cls.schedule,
-          registrations_count: classRegistrations.length,
-          max_capacity: capacity,
-          fill_rate: fillRate
-        };
-      })
-      .filter(cls => cls.fill_rate < 50)
-      .sort((a, b) => a.fill_rate - b.fill_rate) // Sort by lowest fill rate first
-      .slice(0, 3); // Top 3 low capacity classes
+    // Low capacity classes - show all active classes with their session capacity information
+    const lowCapacityClasses = await Promise.all(
+      classes
+        .filter(cls => cls.is_active)
+        .map(async (cls) => {
+          // Get all session classes for this class
+          const { data: sessionClasses, error: scError } = await supabase
+            .from('session_classes')
+            .select(`
+              id,
+              session_id,
+              schedule_sessions (
+                id,
+                name,
+                max_capacity,
+                weekdays,
+                start_time,
+                is_active
+              )
+            `)
+            .eq('class_id', cls.id)
+            .eq('is_active', true);
+
+          if (scError) {
+            logger.error(`Error fetching session classes for class ${cls.id}:`, scError);
+            return null;
+          }
+
+          // Calculate total capacity and registrations across all sessions
+          let totalCapacity = 0;
+          let totalRegistrations = 0;
+          let sessionInfo = [];
+
+          for (const sessionClass of sessionClasses || []) {
+            const session = Array.isArray(sessionClass.schedule_sessions) 
+              ? sessionClass.schedule_sessions[0] 
+              : sessionClass.schedule_sessions;
+
+            if (session && session.is_active) {
+              totalCapacity += session.max_capacity || 0;
+
+              // Count registrations for this session
+              const { count: regCount, error: countError } = await supabase
+                .from('registrations')
+                .select('*', { count: 'exact', head: true })
+                .eq('session_id', session.id)
+                .eq('status', 'active');
+
+              if (!countError) {
+                const sessionRegistrations = regCount || 0;
+                totalRegistrations += sessionRegistrations;
+
+                sessionInfo.push({
+                  session_name: session.name,
+                  max_capacity: session.max_capacity,
+                  registrations: sessionRegistrations,
+                  weekdays: session.weekdays,
+                  start_time: session.start_time
+                });
+              }
+            }
+          }
+
+          const fillRate = totalCapacity > 0 ? (totalRegistrations / totalCapacity) * 100 : 0;
+
+          return {
+            id: cls.id,
+            name: cls.name,
+            total_capacity: totalCapacity,
+            total_registrations: totalRegistrations,
+            fill_rate: fillRate,
+            sessions: sessionInfo,
+            needs_attention: fillRate < 50 || totalCapacity === 0
+          };
+        })
+    );
+
+    // Filter out null results and sort by fill rate
+    const validLowCapacityClasses = lowCapacityClasses
+      .filter(cls => cls !== null)
+      .sort((a, b) => (a?.fill_rate || 0) - (b?.fill_rate || 0))
+      .slice(0, 5); // Top 5 classes that need attention
+
+    // Get all classes with capacity information for complete overview
+    const allClassesWithCapacity = await Promise.all(
+      classes
+        .filter(cls => cls.is_active)
+        .map(async (cls) => {
+          // Get all session classes for this class
+          const { data: sessionClasses, error: scError } = await supabase
+            .from('session_classes')
+            .select(`
+              id,
+              session_id,
+              schedule_sessions (
+                id,
+                name,
+                max_capacity,
+                weekdays,
+                start_time,
+                is_active
+              )
+            `)
+            .eq('class_id', cls.id)
+            .eq('is_active', true);
+
+          if (scError) {
+            logger.error(`Error fetching session classes for class ${cls.id}:`, scError);
+            return {
+              id: cls.id,
+              name: cls.name,
+              total_capacity: 0,
+              total_registrations: 0,
+              fill_rate: 0,
+              sessions: [],
+              needs_attention: true
+            };
+          }
+
+          // Calculate total capacity and registrations across all sessions
+          let totalCapacity = 0;
+          let totalRegistrations = 0;
+          let sessionInfo = [];
+
+          for (const sessionClass of sessionClasses || []) {
+            const session = Array.isArray(sessionClass.schedule_sessions) 
+              ? sessionClass.schedule_sessions[0] 
+              : sessionClass.schedule_sessions;
+
+            if (session && session.is_active) {
+              totalCapacity += session.max_capacity || 0;
+
+              // Count registrations for this session
+              const { count: regCount, error: countError } = await supabase
+                .from('registrations')
+                .select('*', { count: 'exact', head: true })
+                .eq('session_id', session.id)
+                .eq('status', 'active');
+
+              if (!countError) {
+                const sessionRegistrations = regCount || 0;
+                totalRegistrations += sessionRegistrations;
+
+                sessionInfo.push({
+                  session_name: session.name,
+                  max_capacity: session.max_capacity,
+                  registrations: sessionRegistrations,
+                  weekdays: session.weekdays,
+                  start_time: session.start_time
+                });
+              }
+            }
+          }
+
+          const fillRate = totalCapacity > 0 ? (totalRegistrations / totalCapacity) * 100 : 0;
+
+          return {
+            id: cls.id,
+            name: cls.name,
+            total_capacity: totalCapacity,
+            total_registrations: totalRegistrations,
+            fill_rate: fillRate,
+            sessions: sessionInfo,
+            needs_attention: fillRate < 50 || totalCapacity === 0
+          };
+        })
+    );
 
     // Process registrations to include class and user names
     const processedRegistrations = registrations.map(reg => ({
@@ -274,7 +461,8 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
         registrationsToday,
         registrationsThisWeek
       },
-      lowCapacityClasses,
+      lowCapacityClasses: validLowCapacityClasses,
+      allClasses: allClassesWithCapacity,
       recentRegistrations: processedRegistrations.slice(0, 10) // Last 10 registrations
     };
 
@@ -342,6 +530,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/slug/:slug', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { slug } = req.params;
+    
     const { data, error } = await supabase
       .from('classes')
       .select('*')

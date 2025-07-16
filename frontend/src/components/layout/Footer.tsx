@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
               </a>
               {/* TODO: החלף במספר וואטסאפ אמיתי */}
               <a 
-                href="https://wa.me/972XXXXXXXXX" 
+                href="https://wa.me/972501234567" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="group relative p-2.5 rounded-full bg-[#25D366] hover:bg-[#22C55E] transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-green-500/25"

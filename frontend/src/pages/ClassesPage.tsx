@@ -404,27 +404,12 @@ function ClassesPage() {
             בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
             הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
           </p>
-          
-          {/* Refresh button */}
-          <button
-            onClick={handleRefresh}
-            className="mt-6 bg-[#EC4899] hover:bg-[#EC4899]/90 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 mx-auto"
-          >
-            <FaRedo className="w-4 h-4" />
-            רענן נתונים
-          </button>
         </div>
 
         {/* Classes Grid */}
         {classes.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-[#2B2B2B] font-agrandir-regular text-lg">אין שיעורים זמינים כרגע</p>
-            <button
-              onClick={handleRefresh}
-              className="mt-4 bg-[#EC4899] hover:bg-[#EC4899]/90 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-            >
-              רענן נתונים
-            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">

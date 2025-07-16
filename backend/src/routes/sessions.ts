@@ -19,6 +19,83 @@ const generateAvailabilityMessage = (availableSpots: number): string => {
   }
 };
 
+/**
+ * פונקציה משותפת לקבלת session classes עבור class
+ */
+const getSessionClassesForClass = async (classId: string) => {
+  const { data: sessionClasses, error: scError } = await supabase
+    .from('session_classes')
+    .select(`
+      id,
+      session_id,
+      schedule_sessions (
+        id,
+        name,
+        max_capacity,
+        weekdays,
+        start_time,
+        is_active
+      )
+    `)
+    .eq('class_id', classId)
+    .eq('is_active', true);
+
+  if (scError) {
+    throw new Error(`Failed to fetch session classes: ${scError.message}`);
+  }
+
+  return sessionClasses || [];
+};
+
+/**
+ * פונקציה משותפת לקבלת שם היום מהתאריך
+ */
+const getDayNameFromDate = (date: string): string => {
+  const dateObj = new Date(date);
+  const dayOfWeek = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return dayNames[dayOfWeek];
+};
+
+/**
+ * פונקציה משותפת לבדיקה אם session פעיל ביום מסוים
+ */
+const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
+  if (!session || !session.is_active) return false;
+  
+  return session.weekdays.some((weekday: any) => {
+    const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
+    const dayNameLower = dayName.toLowerCase();
+    return weekdayLower === dayNameLower;
+  });
+};
+
+/**
+ * פונקציה משותפת לקבלת session מתוך session class
+ */
+const getSessionFromSessionClass = (sc: any) => {
+  return Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
+};
+
+/**
+ * פונקציה משותפת לספירת רישומים
+ */
+const countRegistrations = async (sessionId: string, date: string, time: string) => {
+  const { count, error: countError } = await supabase
+    .from('registrations')
+    .select('*', { count: 'exact', head: true })
+    .eq('session_id', sessionId)
+    .eq('selected_date', date)
+    .eq('selected_time', time)
+    .eq('status', 'active');
+
+  if (countError) {
+    throw new Error(`Failed to count registrations: ${countError.message}`);
+  }
+
+  return count || 0;
+};
+
 // Get all sessions
 router.get('/', async (req, res) => {
   try {
@@ -239,6 +316,57 @@ router.get('/spots/:sessionId/:date/:time', async (req, res) => {
   }
 });
 
+// Batch: Get all spots for all times of a class on a given date
+router.get('/capacity/batch/:classId/:date', async (req, res) => {
+  try {
+    const { classId, date } = req.params;
+    
+    logger.info(`Checking capacity for class batch on ${classId} at ${date}`);
+    
+    // Get all session classes for this class
+    const sessionClasses = await getSessionClassesForClass(classId);
+
+    if (sessionClasses.length === 0) {
+      return res.json([]);
+    }
+
+    // Find all sessions for this date
+    const dayName = getDayNameFromDate(date);
+
+    // Filter all matching sessionClasses for this day
+    const matchingSessionClasses = sessionClasses.filter(sc => {
+      const session = getSessionFromSessionClass(sc);
+      return isSessionActiveOnDay(session, dayName);
+    });
+
+    // For each matching session, get the time and available spots
+    const results = await Promise.all(matchingSessionClasses.map(async (sc) => {
+      const session = getSessionFromSessionClass(sc);
+      const time = session.start_time.substring(0, 5); // Format as HH:MM
+      
+      // Count registrations for this session, date, and time
+      const takenSpots = await countRegistrations(session.id, date, time);
+      const availableSpots = session.max_capacity - takenSpots;
+      const message = generateAvailabilityMessage(availableSpots);
+      
+      return {
+        time,
+        available: availableSpots,
+        message,
+        sessionId: session.id,
+        sessionClassId: sc.id
+      };
+    }));
+
+    // Sort by time ascending
+    results.sort((a, b) => a.time.localeCompare(b.time));
+    res.json(results);
+  } catch (error) {
+    logger.error('Error in batch capacity route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get session details with capacity for a specific class, date, and time
 router.get('/capacity/:classId/:date/:time', async (req, res) => {
   try {
@@ -247,50 +375,20 @@ router.get('/capacity/:classId/:date/:time', async (req, res) => {
     logger.info(`Checking capacity for class ${classId} on ${date} at ${time}`);
     
     // Get the session that matches this class, date, and time
-    const { data: sessionClasses, error: scError } = await supabase
-      .from('session_classes')
-      .select(`
-        id,
-        session_id,
-        schedule_sessions (
-          id,
-          name,
-          max_capacity,
-          weekdays,
-          start_time,
-          is_active
-        )
-      `)
-      .eq('class_id', classId)
-      .eq('is_active', true);
+    const sessionClasses = await getSessionClassesForClass(classId);
 
-    if (scError) {
-      logger.error('Error fetching session classes:', scError);
-      return res.status(500).json({ error: 'Failed to fetch session classes' });
-    }
-
-    if (!sessionClasses || sessionClasses.length === 0) {
+    if (sessionClasses.length === 0) {
       return res.status(404).json({ error: 'No sessions found for this class' });
     }
 
     // Find the matching session for this date and time
-    const dateObj = new Date(date);
-    const dayOfWeek = dateObj.getDay(); // 0=Sunday, 1=Monday, etc.
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayName = dayNames[dayOfWeek];
+    const dayName = getDayNameFromDate(date);
 
     const matchingSessionClass = sessionClasses.find(sc => {
-      // schedule_sessions is an array, so we need to access the first element
-      const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
-      if (!session || !session.is_active) return false;
+      const session = getSessionFromSessionClass(sc);
       
-      // Check if session is active on this day
-      // weekdays is an array of strings like ["monday", "Tuesday"]
-      const hasMatchingDay = session.weekdays.some((weekday: any) => {
-        const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-        const dayNameLower = dayName.toLowerCase();
-        return weekdayLower === dayNameLower;
-      });
+      // Check if session is active on this day and time
+      const hasMatchingDay = isSessionActiveOnDay(session, dayName);
       
       // Check if session is at this time
       const sessionTime = session.start_time;
@@ -304,26 +402,10 @@ router.get('/capacity/:classId/:date/:time', async (req, res) => {
       return res.status(404).json({ error: 'No matching session found for this date and time' });
     }
 
-    // schedule_sessions is an array, so we need to access the first element
-    const session = Array.isArray(matchingSessionClass.schedule_sessions) 
-      ? matchingSessionClass.schedule_sessions[0] 
-      : matchingSessionClass.schedule_sessions;
+    const session = getSessionFromSessionClass(matchingSessionClass);
     
     // Count registrations for this session, date, and time
-    const { count, error: countError } = await supabase
-      .from('registrations')
-      .select('*', { count: 'exact', head: true })
-      .eq('session_id', session.id)
-      .eq('selected_date', date)
-      .eq('selected_time', time)
-      .eq('status', 'active');
-
-    if (countError) {
-      logger.error('Error counting registrations:', countError);
-      return res.status(500).json({ error: 'Failed to count registrations' });
-    }
-
-    const takenSpots = count || 0;
+    const takenSpots = await countRegistrations(session.id, date, time);
     const availableSpots = session.max_capacity - takenSpots;
     
     const message = generateAvailabilityMessage(availableSpots);
