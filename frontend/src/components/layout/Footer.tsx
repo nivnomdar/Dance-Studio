@@ -4,6 +4,7 @@ import { FaWaze } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Footer: React.FC = () => {
+  // console.log('Footer render at:', new Date().toISOString()); // Debug log
   const { profile } = useAuth();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');

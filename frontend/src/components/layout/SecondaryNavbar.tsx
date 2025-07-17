@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 function SecondaryNavbar() {
+  // console.log('SecondaryNavbar render at:', new Date().toISOString()); // Debug log
   return (
     <div className="hidden md:block fixed top-12 left-0 right-0 bg-[#EC4899] shadow-lg z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

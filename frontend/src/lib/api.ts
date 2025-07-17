@@ -107,7 +107,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     
     try {
       const errorData = await response.json();
-      console.log('API Error Response:', errorData);
+              // console.log('API Error Response:', errorData);
       errorMessage = errorData.message || errorData.error || errorMessage;
     } catch (e) {
       // If we can't parse JSON, use the status text
@@ -194,8 +194,8 @@ export const apiService = {
       }
       
       // Debug log
-      console.log('API create registration - data:', data);
-      console.log('API create registration - headers:', headers);
+          // console.log('API create registration - data:', data);
+    // console.log('API create registration - headers:', headers);
       
       return fetchWithRetryAndQueue<RegistrationWithDetails>(() => 
         fetch(`${API_BASE_URL}/registrations`, {

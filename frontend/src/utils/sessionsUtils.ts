@@ -17,9 +17,11 @@ let classTimesCache: Map<string, CacheEntry> = new Map();
 
 // Request throttling
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests
+const MIN_REQUEST_INTERVAL = 8000; // 8 seconds between requests
 let isRequestInProgress = false;
 let requestQueue: Array<() => void> = [];
+let consecutiveErrors = 0;
+const MAX_CONSECUTIVE_ERRORS = 3;
 
 /**
  * פונקציה משותפת ליצירת הודעות זמינות
@@ -117,7 +119,7 @@ const cleanupExpiredCache = () => {
 };
 
 /**
- * פונקציה לניהול בקשות API עם throttling
+ * פונקציה לניהול בקשות API עם throttling משופר
  */
 const throttledFetch = async (url: string, options?: RequestInit): Promise<Response> => {
   return new Promise((resolve, reject) => {
@@ -126,15 +128,35 @@ const throttledFetch = async (url: string, options?: RequestInit): Promise<Respo
         const now = Date.now();
         const timeSinceLastRequest = now - lastRequestTime;
         
-        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+        // Increase delay if we've had consecutive errors
+        const dynamicDelay = consecutiveErrors > 0 ? MIN_REQUEST_INTERVAL * (consecutiveErrors + 1) : MIN_REQUEST_INTERVAL;
+        
+        if (timeSinceLastRequest < dynamicDelay) {
           // Wait before making the request
-          await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest));
+          await new Promise(resolve => setTimeout(resolve, dynamicDelay - timeSinceLastRequest));
         }
         
         lastRequestTime = Date.now();
         const response = await fetch(url, options);
+        
+        // Reset consecutive errors on success
+        if (response.ok) {
+          consecutiveErrors = 0;
+        } else if (response.status === 429) {
+          consecutiveErrors++;
+          console.warn(`Rate limited (429). Consecutive errors: ${consecutiveErrors}`);
+          
+          // If too many consecutive errors, wait longer
+          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            consecutiveErrors = 0; // Reset after long wait
+          }
+        }
+        
         resolve(response);
       } catch (error) {
+        consecutiveErrors++;
+        console.error('Request error:', error);
         reject(error);
       } finally {
         isRequestInProgress = false;

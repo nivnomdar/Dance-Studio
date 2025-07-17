@@ -21,7 +21,7 @@ export const GoogleLogin = () => {
         }
       })
       
-      console.log('OAuth sign in result:', { data, error });
+      // console.log('OAuth sign in result:', { data, error });
       
       if (error) throw error
       

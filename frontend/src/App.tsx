@@ -16,8 +16,10 @@ import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ClassesReportsWrapper from './pages/admin/ClassesReportsWrapper';
+// import { ThrottleMonitor } from './components/ThrottleMonitor';
 
 function App() {
+  // console.log('App component render at:', new Date().toISOString()); // Debug log
   return (
     <AuthProvider>
       <PopupProvider>
@@ -42,6 +44,7 @@ function App() {
               </main>
               <Footer />
             </div>
+            {/* <ThrottleMonitor isVisible={import.meta.env.DEV} /> */}
           </Router>
         </CartProvider>
       </PopupProvider>

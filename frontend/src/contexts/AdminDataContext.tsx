@@ -5,6 +5,8 @@ interface AdminData {
   overview: any;
   classes: any[];
   registrations: any[];
+  sessions: any[];
+  session_classes: any[];
   products: any[];
   orders: any[];
   messages: any[];
@@ -45,6 +47,8 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     overview: null,
     classes: [],
     registrations: [],
+    sessions: [],
+    session_classes: [],
     products: [],
     orders: [],
     messages: [],
@@ -114,7 +118,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     setError(null);
 
     try {
-      const [classesResponse, registrationsResponse] = await Promise.all([
+      const [classesResponse, registrationsResponse, sessionsResponse, sessionClassesResponse] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_BASE_URL}/classes`, {
           headers: {
             'Content-Type': 'application/json',
@@ -126,16 +130,32 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
           }
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/sessions`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        }),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/sessions/session-classes`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          }
         })
       ]);
 
       const classes = classesResponse.ok ? await classesResponse.json() : [];
       const registrations = registrationsResponse.ok ? await registrationsResponse.json() : [];
+      const sessions = sessionsResponse.ok ? await sessionsResponse.json() : [];
+      const session_classes = sessionClassesResponse.ok ? await sessionClassesResponse.json() : [];
 
       setData(prev => ({
         ...prev,
         classes,
         registrations,
+        sessions,
+        session_classes,
         lastFetchTime: Date.now()
       }));
     } catch (error) {
@@ -278,6 +298,8 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       overview: null,
       classes: [],
       registrations: [],
+      sessions: [],
+      session_classes: [],
       products: [],
       orders: [],
       messages: [],

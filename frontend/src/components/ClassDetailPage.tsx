@@ -22,6 +22,7 @@ import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
 import { apiService } from '../lib/api';
 import { DEBOUNCE_DELAYS } from '../utils/constants';
+import { throttledApiFetch } from '../utils/api';
 
 // Class Detail Skeleton Components
 const ClassDetailHeaderSkeleton = () => (
@@ -225,6 +226,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     setLoadingDates(true);
     const fetchDates = async () => {
       try {
+        // Add delay before fetching dates
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const dates = await getAvailableDatesForButtonsFromSessions(classId);
         const message = await getAvailableDatesMessageFromSessions(classId);
         setDatesCache(prev => ({ ...prev, [classId]: dates }));
@@ -244,7 +247,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         setLoadingDates(false);
       }
     };
-    fetchDates();
+    // Add delay before starting to fetch dates
+    const timeout = setTimeout(fetchDates, 2000);
+    return () => clearTimeout(timeout);
   }, [classData, usingFallbackMode, datesCache]);
 
   // Fetch available times (with cache)
@@ -272,8 +277,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         setLoadingTimes(false);
       }
     };
-    // Debounce
-    const timeout = setTimeout(fetchTimes, 150);
+    // Debounce with longer delay
+    const timeout = setTimeout(fetchTimes, 1000);
     return () => clearTimeout(timeout);
   }, [classData, selectedDate, usingFallbackMode, timesCache]);
 
@@ -286,15 +291,20 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     
     setLoadingSpots(prev => ({ ...prev, [key]: true }));
     
-    const fetchAllSpots = async () => {
+    const fetchAllSpots = async (retryCount = 0) => {
       try {
         let spotsData;
         if (usingFallbackMode) {
           // Fallback: fetch spots individually for each time
           const times = timesCache[key] || [];
           const spotsPromises = times.map(async (time) => {
-            const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
-            return { time, ...spots };
+            try {
+              const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
+              return { time, ...spots };
+            } catch (spotsError) {
+              console.error('Error fetching spots for time:', time, spotsError);
+              return { time, available: classData.max_participants || 10, message: 'זמין' };
+            }
           });
           const spotsArray = await Promise.all(spotsPromises);
           spotsData = spotsArray.reduce((acc, spot) => {
@@ -308,16 +318,33 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         
         setSpotsCache(prev => ({ ...prev, [key]: spotsData }));
       } catch (error: any) {
-        if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+        console.error('Error in fetchAllSpots:', error);
+        
+        // Handle rate limiting
+        if (error?.message?.includes('429') || error?.message?.includes('Too Many Requests')) {
+          if (retryCount < 2) {
+            // Retry after delay
+            // console.log(`Retrying fetchAllSpots (attempt ${retryCount + 1})`);
+            setTimeout(() => fetchAllSpots(retryCount + 1), 5000 * (retryCount + 1));
+            return;
+          }
+          
+          // Switch to fallback mode after max retries
           clearSessionsCache();
           setUsingFallbackMode(true);
           setSpotsCache({});
           setLoadingSpots({});
+          
           // Retry with fallback mode
           const times = timesCache[key] || [];
           const spotsPromises = times.map(async (time) => {
-            const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
-            return { time, ...spots };
+            try {
+              const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
+              return { time, ...spots };
+            } catch (spotsError) {
+              console.error('Error fetching spots for time:', time, spotsError);
+              return { time, available: classData.max_participants || 10, message: 'זמין' };
+            }
           });
           const spotsArray = await Promise.all(spotsPromises);
           const spotsData = spotsArray.reduce((acc, spot) => {
@@ -339,8 +366,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       }
     };
     
-    // No debounce for batch API - load immediately
-    fetchAllSpots();
+    // Add longer delay before first request to prevent rapid requests
+    const timeout = setTimeout(() => fetchAllSpots(), 2000);
+    return () => clearTimeout(timeout);
   }, [classData, selectedDate, usingFallbackMode, spotsCache, timesCache]);
 
   // Load profile for trial class
@@ -368,7 +396,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     if (!user || authLoading) return;
     const loadRegistrations = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
+        const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
           headers: {
             'Authorization': `Bearer ${session?.access_token}`,
             'Content-Type': 'application/json'
@@ -382,7 +410,10 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         console.error('Error loading registrations:', error);
       }
     };
-    loadRegistrations();
+    
+    // Add longer delay to prevent immediate requests on mount
+    const timeout = setTimeout(loadRegistrations, 3000);
+    return () => clearTimeout(timeout);
   }, [user?.id, authLoading, session]);
 
   // Check available spots when time is selected
@@ -521,12 +552,12 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       };
       
       // Debug log
-      console.log('Registration data being sent:', registrationData);
-      console.log('Class data:', classData);
-      console.log('User email:', user.email);
-      console.log('Selected date:', selectedDate);
-      console.log('Selected time (original):', selectedTime);
-      console.log('Selected time (for backend):', timeForBackend);
+          // console.log('Registration data being sent:', registrationData);
+    // console.log('Class data:', classData);
+    // console.log('User email:', user.email);
+    // console.log('Selected date:', selectedDate);
+    // console.log('Selected time (original):', selectedTime);
+    // console.log('Selected time (for backend):', timeForBackend);
       
       // שליחה לשרת
       const result = await registrationsService.createRegistration(registrationData, session?.access_token);
@@ -544,7 +575,7 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       // רענון רשימת ההרשמות
       const loadRegistrations = async () => {
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
+          const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
             headers: {
               'Authorization': `Bearer ${session?.access_token}`,
               'Content-Type': 'application/json'
@@ -558,7 +589,9 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
           console.error('Error refreshing registrations:', error);
         }
       };
-      loadRegistrations();
+      
+      // Add delay before refreshing registrations
+      setTimeout(loadRegistrations, 2000);
       
       // איפוס הטופס
       setFormData({ first_name: '', last_name: '', phone: '' });

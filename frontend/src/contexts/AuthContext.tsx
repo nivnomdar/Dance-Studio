@@ -1,261 +1,429 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { AuthContextType, UserProfile } from '../types/auth';
+import { 
+  AuthContextType, 
+  UserProfile, 
+  SafeUser, 
+  SafeSession, 
+  SafeUserMetadata,
+  AuthState,
+  AuthEvent 
+} from '../types/auth';
+import {
+  createSafeUser,
+  createSafeSession,
+  getSafeUserMetadata,
+  getSafeFullName,
+  getSafeAvatarUrl,
+  getSafeEmail,
+  validateUserForOperation,
+  handleAuthError
+} from '../utils/authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Utility functions are now imported from authUtils
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  // console.log('AuthProvider render at:', new Date().toISOString(), 'render count:', Math.random()); // Debug log
+  
+  const [user, setUser] = useState<SafeUser | null>(null);
+  const [session, setSession] = useState<SafeSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null); // שימוש בטיפוס הקיים
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>(AuthState.LOADING);
+  const lastProfileUpdateRef = useRef<number>(0);
+  const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Store functions in refs to prevent re-renders
+  const loadProfileSafelyRef = useRef<((userId: string) => Promise<UserProfile | null>) | null>(null);
+  const createProfileForUserRef = useRef<((safeUser: SafeUser) => Promise<UserProfile | null>) | null>(null);
+  const updateProfileLoginTimeRef = useRef<((userId: string) => Promise<void>) | null>(null);
 
+  // Computed properties
+  const isAuthenticated = Boolean(user && session);
+  const isAdmin = profile?.role === 'admin';
+  
+  // console.log('Computed properties at:', new Date().toISOString(), { isAuthenticated, isAdmin, user: user?.id, session: !!session, profile: profile?.id });
+
+  // Debug: Track state changes
   useEffect(() => {
-    // קבלת session נוכחי
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      // טעינת הפרופיל אם יש משתמש
-      if (session?.user) {
-        try {
-          setProfileLoading(true);
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!error && profileData) {
-    
-            setProfile(profileData);
-          } else if (error) {
-            console.error('Error loading profile on session init:', error);
-            console.error('Error details:', error.message, error.code);
-            // אם הפרופיל לא קיים, נצור אותו
-            if (error.code === 'PGRST116') {
-              await createProfileForUser(session.user);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading profile on session init:', error);
-        } finally {
-          setProfileLoading(false);
-        }
+    // console.log('Auth state changed at:', new Date().toISOString(), { 
+    //   user: user?.id, 
+    //   session: !!session, 
+    //   profile: profile?.id,
+    //   authState 
+    // });
+  }, [user?.id, session, profile?.id, authState]);
+
+  // Safe profile creation function
+  const createProfileForUser = useCallback(async (safeUser: SafeUser): Promise<UserProfile | null> => {
+    // console.log('createProfileForUser function called at:', new Date().toISOString(), 'for user:', safeUser?.id); // Debug log
+    if (!validateUserForOperation(safeUser, 'create profile')) {
+      return null;
+    }
+
+    try {
+      const fullName = getSafeFullName(safeUser);
+      const nameParts = fullName.split(' ').filter(Boolean);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      const email = getSafeEmail(safeUser);
+      const avatarUrl = getSafeAvatarUrl(safeUser);
+
+      if (!email) {
+        console.error('Cannot create profile: user email is missing');
+        return null;
       }
-      
-      setLoading(false);
-    };
 
-    // פונקציה ליצירת פרופיל למשתמש
-    const createProfileForUser = async (user: User) => {
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: safeUser.id,
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'user',
+            avatar_url: avatarUrl,
+            created_at: new Date().toISOString(),
+            is_active: true,
+            terms_accepted: false,
+            marketing_consent: false,
+            last_login_at: new Date().toISOString(),
+            language: 'he',
+            has_used_trial_class: false
+          }
+        ])
+        .select()
+        .single();
+
+      if (createError) {
+        handleAuthError(createError, 'create profile');
+        return null;
+      }
+
+      return newProfile;
+    } catch (error) {
+      handleAuthError(error, 'createProfileForUser');
+      return null;
+    }
+  }, []);
+
+  // Store function in ref immediately
+  createProfileForUserRef.current = createProfileForUser;
+
+  // Safe profile loading function
+  const loadProfileSafely = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    // console.log('loadProfileSafely function called at:', new Date().toISOString(), 'for user:', userId); // Debug log
+    if (!userId) {
+      console.error('Cannot load profile: user ID is missing');
+      return null;
+    }
+
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading profile:', error);
+        
+        // If profile doesn't exist, create it
+        if (error.code === 'PGRST116') {
+          // Get current user from state instead of dependency
+          const currentUser = user;
+          if (currentUser && createProfileForUserRef.current) {
+            return await createProfileForUserRef.current(currentUser);
+          }
+        }
+        return null;
+      }
+
+      return profileData;
+    } catch (error) {
+      console.error('Error in loadProfileSafely at:', new Date().toISOString(), error);
+      return null;
+    }
+  }, []); // Remove dependencies to prevent infinite re-renders
+
+  // Store function in ref immediately
+  loadProfileSafelyRef.current = loadProfileSafely;
+
+  // Safe profile update function
+  const updateProfileLoginTime = useCallback(async (userId: string): Promise<void> => {
+    // console.log('updateProfileLoginTime function called at:', new Date().toISOString(), 'for user:', userId); // Debug log
+    if (!userId) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating last login at:', new Date().toISOString(), error);
+      }
+    } catch (error) {
+      console.error('Error in updateProfileLoginTime at:', new Date().toISOString(), error);
+    }
+  }, []); // No dependencies needed
+
+  // Store function in ref immediately
+  updateProfileLoginTimeRef.current = updateProfileLoginTime;
+
+  // Update all refs when functions are created - REMOVED TO PREVENT RE-RENDERS
+  // useEffect(() => {
+  //   console.log('Updating all function refs at:', new Date().toISOString()); // Debug log
+  //   createProfileForUserRef.current = createProfileForUser;
+  //   loadProfileSafelyRef.current = loadProfileSafely;
+  //   updateProfileLoginTimeRef.current = updateProfileLoginTime;
+  // }, [createProfileForUser, loadProfileSafely, updateProfileLoginTime]);
+
+  // Handle profile operations with rate limiting
+  const handleProfileOperations = useCallback(async (safeUser: SafeUser, event: AuthEvent) => {
+    // console.log('handleProfileOperations function called at:', new Date().toISOString(), 'for user:', safeUser?.id, 'event:', event); // Debug log
+    if (!safeUser?.id) {
+      console.error('Cannot handle profile operations: user ID is missing');
+      return;
+    }
+
+    // Rate limiting check
+    const now = Date.now();
+    if (now - lastProfileUpdateRef.current < 10000) {
+      // console.log('Skipping profile update - too recent at:', new Date().toISOString());
+      return;
+    }
+    lastProfileUpdateRef.current = now;
+
+    // Clear existing timeout
+    if (profileUpdateTimeoutRef.current) {
+      clearTimeout(profileUpdateTimeoutRef.current);
+    }
+
+    // Delay profile operations to prevent rate limiting
+    profileUpdateTimeoutRef.current = setTimeout(async () => {
       try {
-        const fullName = user.user_metadata?.full_name || '';
-        const nameParts = fullName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        const { data: newProfile, error: createError } = await supabase
+        // Test connection first
+        const { error: testError } = await supabase
           .from('profiles')
-          .insert([
-            {
-              id: user.id,
-              email: user.email,
-              first_name: firstName,
-              last_name: lastName,
-              role: 'user',
-              avatar_url: user.user_metadata?.avatar_url || null,
-              created_at: new Date().toISOString(),
-              is_active: true,
-              terms_accepted: false,
-              marketing_consent: false,
-              last_login_at: new Date().toISOString(),
-              language: 'he',
-              has_used_trial_class: false
-            }
-          ])
-          .select()
-          .single();
+          .select('count')
+          .limit(1);
 
-        if (createError) {
-          console.error('Error creating profile:', createError);
+        if (testError) {
+          console.error('Connection test failed:', testError);
+          return;
+        }
+
+        // Load or create profile
+        const existingProfile = await loadProfileSafelyRef.current?.(safeUser.id);
+
+        if (!existingProfile) {
+          // Create new profile
+          const newProfile = await createProfileForUserRef.current?.(safeUser);
+          if (newProfile) {
+            setProfile(newProfile);
+          }
         } else {
-          setProfile(newProfile);
+          // Update existing profile login time
+          await updateProfileLoginTimeRef.current?.(safeUser.id);
+          setProfile(existingProfile);
         }
       } catch (error) {
-        console.error('Error in createProfileForUser:', error);
+        console.error('Error handling profile operations:', error);
+      }
+    }, 5000);
+  }, []); // Remove dependencies to prevent infinite re-renders
+
+  // Initialize auth state
+  useEffect(() => {
+    // console.log('Initializing auth at:', new Date().toISOString()); // Debug log
+    const initializeAuth = async () => {
+      try {
+        setLoading(true);
+        setAuthState(AuthState.LOADING);
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setAuthState(AuthState.ERROR);
+          return;
+        }
+
+        const safeSession = createSafeSession(session);
+        const safeUser = safeSession?.user || null;
+
+        setSession(safeSession);
+        setUser(safeUser);
+
+        if (safeUser) {
+          setAuthState(AuthState.AUTHENTICATED);
+          // Load profile
+          const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+          setProfile(profileData || null);
+        } else {
+          setAuthState(AuthState.UNAUTHENTICATED);
+        }
+        // console.log('Auth initialization completed at:', new Date().toISOString()); // Debug log
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        setAuthState(AuthState.ERROR);
+      } finally {
+        setLoading(false);
       }
     };
 
-    getSession();
+    initializeAuth();
+    
+    return () => {
+      // console.log('Cleaning up auth initialization at:', new Date().toISOString()); // Debug log
+    };
+  }, []); // Only run once on mount
 
-    // האזנה לשינויים ב-auth
+  // Handle auth state changes
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      async (event: AuthEvent, session: Session | null) => {
+        // console.log('Auth state change event at:', new Date().toISOString(), event, session?.user?.email);
         
-        // ניקוי פרופיל בזמן התנתקות
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setProfileLoading(false);
-        }
+        const safeSession = createSafeSession(session);
+        const safeUser = safeSession?.user || null;
+
+        setSession(safeSession);
+        setUser(safeUser);
         
-        // יצירת פרופיל ברקע אם המשתמש התחבר
-        if (event === 'SIGNED_IN' && session?.user) {
-          setTimeout(async () => {
-            try {
-              // בדיקה פשוטה של החיבור ל-Supabase
-              try {
-                const { data: testData, error: testError } = await supabase
-                  .from('profiles')
-                  .select('count')
-                  .limit(1);
-                
-                if (testError) {
-                  console.error('Connection test failed:', testError);
-                  return;
-                }
-              } catch (error) {
-                console.error('Connection test threw exception:', error);
-                return;
-              }
-              
-              const { data: existingProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+        // console.log('Setting auth state at:', new Date().toISOString(), { event, hasUser: !!safeUser, hasSession: !!safeSession });
 
-              if (!existingProfile) {
-                const fullName = session.user.user_metadata?.full_name || '';
-                const nameParts = fullName.split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ') || '';
-
-                const { data: newProfile, error: createError } = await supabase
-                  .from('profiles')
-                  .insert([
-                    {
-                      id: session.user.id,
-                      email: session.user.email,
-                      first_name: firstName,
-                      last_name: lastName,
-                      role: 'user',
-                      avatar_url: session.user.user_metadata?.avatar_url || null,
-                      created_at: new Date().toISOString(),
-                      is_active: true,
-                      terms_accepted: false,
-                      marketing_consent: false,
-                      last_login_at: new Date().toISOString(),
-                      language: 'he',
-                      // הוספת השדה החדש
-                      has_used_trial_class: false
-                    }
-                  ])
-                  .select()
-                  .single();
-
-                if (createError) {
-                  console.error('Error creating profile:', createError);
-                } else {
-                  // שמירת הפרופיל ב-state
-                  setProfile(newProfile);
-                }
-              } else {
-                const { error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ last_login_at: new Date().toISOString() })
-                  .eq('id', session.user.id);
-
-                if (updateError) {
-                  console.error('Error updating last login:', updateError);
-                } else {
-                  // שמירת הפרופיל הקיים ב-state
-                  setProfile(existingProfile);
-                }
-              }
-            } catch (error) {
-              console.error('Error handling profile in background:', error);
+        switch (event) {
+          case 'SIGNED_OUT':
+            setAuthState(AuthState.UNAUTHENTICATED);
+            setProfile(null);
+            setProfileLoading(false);
+            // Clear timeouts
+            if (profileUpdateTimeoutRef.current) {
+              clearTimeout(profileUpdateTimeoutRef.current);
             }
-          }, 2000);
+            break;
+
+          case 'SIGNED_IN':
+          case 'INITIAL_SESSION':
+            if (safeUser) {
+              setAuthState(AuthState.AUTHENTICATED);
+              setProfileLoading(true);
+              await handleProfileOperations(safeUser, event);
+              setProfileLoading(false);
+            }
+            break;
+
+          case 'USER_UPDATED':
+            if (safeUser) {
+              setAuthState(AuthState.AUTHENTICATED);
+            }
+            break;
+
+          default:
+            // Handle other events if needed
+            break;
         }
+
+        setLoading(false);
+        // console.log('Auth state change handler completed at:', new Date().toISOString()); // Debug log
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      // console.log('Cleaning up auth state change subscription at:', new Date().toISOString()); // Debug log
+      subscription.unsubscribe();
+      if (profileUpdateTimeoutRef.current) {
+        clearTimeout(profileUpdateTimeoutRef.current);
+      }
+    };
+  }, []); // Only run once on mount
 
-  /**
-   * התנתקות מהמערכת
-   * מבצעת ניקוי מידי של ה-state ומנסה להתנתק מהשרת ברקע
-   */
-  const signOut = async () => {
+  // Safe sign out function
+  const signOut = useCallback(async () => {
+    // console.log('signOut function called at:', new Date().toISOString()); // Debug log
     try {
-      // ניקוי מידי של ה-state - המשתמש רואה התנתקות מיד
+      // Immediate state cleanup
       setProfile(null);
       setUser(null);
       setSession(null);
+      setAuthState(AuthState.UNAUTHENTICATED);
       
-      // ניקוי כל המידע מה-localStorage ו-sessionStorage
+      // Clear timeouts
+      if (profileUpdateTimeoutRef.current) {
+        clearTimeout(profileUpdateTimeoutRef.current);
+      }
+
+      // Clear storage
       try {
-        // ניקוי כל המידע הקשור ל-auth מ-localStorage
         Object.keys(localStorage).forEach(key => {
           if (key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
             localStorage.removeItem(key);
           }
         });
-        
-        // ניקוי sessionStorage
         sessionStorage.clear();
       } catch (e) {
-        console.error('Could not remove auth from localStorage:', e);
+        console.error('Could not clear storage:', e);
       }
-      
-      // ניסיון התנתקות מהשרת ברקע (לא חוסם את המשתמש)
-      supabase.auth.signOut().catch(e => {
-        // התנתקות ברקע נכשלה - זה בסדר כי כבר ניקינו את המידע
-        console.error('Background sign out failed:', e);
-      });
-      
+
+      // Background sign out
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Error in signOut:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // פונקציה לטעינת הפרופיל
-  const loadProfile = async () => {
-    if (!user) return;
-    
+  // Safe profile loading function
+  const loadProfile = useCallback(async () => {
+    // console.log('loadProfile function called at:', new Date().toISOString()); // Debug log
+    if (!user?.id) {
+      console.error('Cannot load profile: no authenticated user');
+      return;
+    }
+
     setProfileLoading(true);
     try {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) {
-        console.error('Error loading profile:', error);
-        setProfile(null);
-      } else {
-        setProfile(profileData);
-      }
+      const profileData = await loadProfileSafelyRef.current?.(user.id);
+      setProfile(profileData || null);
     } catch (error) {
       console.error('Error in loadProfile:', error);
       setProfile(null);
     } finally {
       setProfileLoading(false);
     }
-  };
+  }, [user]); // Only depend on user, not loadProfileSafely
 
-  const value = {
+  const value: AuthContextType = useMemo(() => {
+    // console.log('Creating new auth context value at:', new Date().toISOString(), 'with dependencies:', {
+    //   user: user?.id,
+    //   session: !!session,
+    //   loading,
+    //   profile: profile?.id,
+    //   profileLoading,
+    //   isAuthenticated,
+    //   isAdmin,
+    //   loadProfileFunction: !!loadProfile,
+    //   signOutFunction: !!signOut
+    // });
+    return {
+      user,
+      session,
+      loading,
+      profile,
+      profileLoading,
+      loadProfile,
+      signOut,
+      isAuthenticated,
+      isAdmin
+    };
+  }, [
     user,
     session,
     loading,
@@ -263,7 +431,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profileLoading,
     loadProfile,
     signOut,
-  };
+    isAuthenticated,
+    isAdmin
+  ]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -273,6 +443,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
+  // console.log('useAuth hook called at:', new Date().toISOString()); // Debug log
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

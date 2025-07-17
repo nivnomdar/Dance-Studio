@@ -9,6 +9,7 @@ import { useProfile } from '../../hooks/useProfile';
 import SecondaryNavbar from './SecondaryNavbar';
 
 function Navbar() {
+  // console.log('Navbar render at:', new Date().toISOString()); // Debug log
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
@@ -57,7 +58,7 @@ function Navbar() {
         }
       });
       
-      console.log('Navbar OAuth sign in result:', { data, error });
+      // console.log('Navbar OAuth sign in result:', { data, error });
       
       if (error) {
         showPopup({
