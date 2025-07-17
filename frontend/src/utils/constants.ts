@@ -4,7 +4,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Cache Configuration
-export const CACHE_DURATION = 60000; // 60 seconds - increased to reduce API calls
+export const CACHE_DURATION = 300000; // 5 minutes - increased to reduce API calls
 
 // Day names mapping
 export const DAY_NAMES_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -15,11 +15,11 @@ export const DEFAULT_CLASS_TIMES = ['18:00', '19:00', '20:00'];
 
 // Debounce delays for different operations
 export const DEBOUNCE_DELAYS = {
-  SESSIONS_DATA: 1000, // 1000ms for sessions data loading - increased to reduce API calls
-  TIMES_LOADING: 800, // 800ms for times loading - increased to reduce API calls
-  SPOTS_CHECKING: 1200, // 1200ms for spots checking - increased to reduce API calls
-  PROFILE_LOADING: 500, // 500ms for profile loading
-  REGISTRATION_SUBMIT: 1000 // 1000ms for registration submission
+  SESSIONS_DATA: 300, // 300ms for sessions data loading - reduced for faster loading
+  TIMES_LOADING: 200, // 200ms for times loading - reduced for faster loading
+  SPOTS_CHECKING: 300, // 300ms for spots checking - reduced for faster loading
+  PROFILE_LOADING: 200, // 200ms for profile loading
+  REGISTRATION_SUBMIT: 500 // 500ms for registration submission
 };
 
 /**
@@ -31,10 +31,10 @@ export const calculateRetryDelay = (retryCount: number, baseDelay: number = 1000
 
 // Timeout constants
 export const TIMEOUTS = {
-  HEALTH_CHECK: 5000, // 5 seconds for health checks
-  API_REQUEST: 10000, // 10 seconds for API requests
-  SESSIONS_FETCH: 5000, // 5 seconds for sessions data
-  SPOTS_CHECK: 5000 // 5 seconds for spots checking
+  HEALTH_CHECK: 3000, // 3 seconds for health checks
+  API_REQUEST: 8000, // 8 seconds for API requests
+  SESSIONS_FETCH: 3000, // 3 seconds for sessions data
+  SPOTS_CHECK: 3000 // 3 seconds for spots checking
 };
 
 /**

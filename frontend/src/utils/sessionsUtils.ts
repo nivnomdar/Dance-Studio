@@ -15,9 +15,89 @@ let classSessionsCache: Map<string, CacheEntry> = new Map();
 let classDatesCache: Map<string, CacheEntry> = new Map();
 let classTimesCache: Map<string, CacheEntry> = new Map();
 
+// LocalStorage cache keys
+const STORAGE_KEYS = {
+  SESSIONS: 'dance_studio_sessions_cache',
+  SESSION_CLASSES: 'dance_studio_session_classes_cache',
+  CLASS_SESSIONS: 'dance_studio_class_sessions_cache',
+  CLASS_DATES: 'dance_studio_class_dates_cache',
+  CLASS_TIMES: 'dance_studio_class_times_cache'
+};
+
+// Load cache from localStorage on initialization
+const loadCacheFromStorage = () => {
+  try {
+    const sessionsData = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+    if (sessionsData) {
+      const parsed = JSON.parse(sessionsData);
+      if (isCacheValid(parsed)) {
+        sessionsCache = parsed;
+      }
+    }
+    
+    const sessionClassesData = localStorage.getItem(STORAGE_KEYS.SESSION_CLASSES);
+    if (sessionClassesData) {
+      const parsed = JSON.parse(sessionClassesData);
+      if (isCacheValid(parsed)) {
+        sessionClassesCache = parsed;
+      }
+    }
+    
+    const classSessionsData = localStorage.getItem(STORAGE_KEYS.CLASS_SESSIONS);
+    if (classSessionsData) {
+      const parsed = JSON.parse(classSessionsData);
+      if (parsed && typeof parsed === 'object') {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (isCacheValid(value as CacheEntry)) {
+            classSessionsCache.set(key, value as CacheEntry);
+          }
+        }
+      }
+    }
+    
+    const classDatesData = localStorage.getItem(STORAGE_KEYS.CLASS_DATES);
+    if (classDatesData) {
+      const parsed = JSON.parse(classDatesData);
+      if (parsed && typeof parsed === 'object') {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (isCacheValid(value as CacheEntry)) {
+            classDatesCache.set(key, value as CacheEntry);
+          }
+        }
+      }
+    }
+    
+    const classTimesData = localStorage.getItem(STORAGE_KEYS.CLASS_TIMES);
+    if (classTimesData) {
+      const parsed = JSON.parse(classTimesData);
+      if (parsed && typeof parsed === 'object') {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (isCacheValid(value as CacheEntry)) {
+            classTimesCache.set(key, value as CacheEntry);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load cache from localStorage:', error);
+  }
+};
+
+// Save cache to localStorage
+const saveCacheToStorage = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Failed to save cache to localStorage:', error);
+  }
+};
+
+// Initialize cache from localStorage
+loadCacheFromStorage();
+
 // Request throttling
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 8000; // 8 seconds between requests
+const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests - reduced from 8 seconds
 let isRequestInProgress = false;
 let requestQueue: Array<() => void> = [];
 let consecutiveErrors = 0;
@@ -195,7 +275,7 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       return classCache!.data;
     }
     
-    // Check global cache
+    // Check global cache - if we have valid global cache, use it for all classes
     if (isCacheValid(sessionsCache) && isCacheValid(sessionClassesCache)) {
       const allSessions = sessionsCache!.data;
       const allSessionClasses = sessionClassesCache!.data;
@@ -316,8 +396,13 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
     // Convert Set back to array and sort by date
     const dates = Array.from(datesSet).sort();
     
-    // Cache the result
-    classDatesCache.set(cacheKey, { data: dates, timestamp: Date.now() });
+    // Cache the result immediately
+    const cacheEntry = { data: dates, timestamp: Date.now() };
+    classDatesCache.set(cacheKey, cacheEntry);
+    
+    // Save to localStorage
+    const allDatesCache = Object.fromEntries(classDatesCache);
+    saveCacheToStorage(STORAGE_KEYS.CLASS_DATES, allDatesCache);
     
     return dates;
   } catch (error) {
@@ -366,8 +451,13 @@ export const getAvailableTimesForDateFromSessions = async (
     // Convert Set back to array and sort by time
     const times = Array.from(timesSet).sort();
     
-    // Cache the result
-    classTimesCache.set(cacheKey, { data: times, timestamp: Date.now() });
+    // Cache the result immediately
+    const cacheEntry = { data: times, timestamp: Date.now() };
+    classTimesCache.set(cacheKey, cacheEntry);
+    
+    // Save to localStorage
+    const allTimesCache = Object.fromEntries(classTimesCache);
+    saveCacheToStorage(STORAGE_KEYS.CLASS_TIMES, allTimesCache);
     
     return times;
   } catch (error) {
@@ -563,4 +653,15 @@ export const clearSessionsCache = () => {
   lastRequestTime = 0;
   isRequestInProgress = false;
   requestQueue = [];
+  
+  // Clear localStorage cache
+  try {
+    localStorage.removeItem(STORAGE_KEYS.SESSIONS);
+    localStorage.removeItem(STORAGE_KEYS.SESSION_CLASSES);
+    localStorage.removeItem(STORAGE_KEYS.CLASS_SESSIONS);
+    localStorage.removeItem(STORAGE_KEYS.CLASS_DATES);
+    localStorage.removeItem(STORAGE_KEYS.CLASS_TIMES);
+  } catch (error) {
+    console.warn('Failed to clear localStorage cache:', error);
+  }
 };

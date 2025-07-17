@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
@@ -164,7 +164,7 @@ interface ClassDetailPageProps {
   initialClass?: Class;
 }
 
-function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
+const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { showPopup } = usePopup();
@@ -193,14 +193,56 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const [loadingSpots, setLoadingSpots] = useState<{ [key: string]: boolean }>({});
   const [registrations, setRegistrations] = useState<any[]>([]);
 
-  // Derived
-  const profile = localProfile || contextProfile;
+  // Derived - memoized for performance
+  const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
+
+  // Function to load all data at once for better performance
+  const loadAllData = useCallback(async (classId: string) => {
+    try {
+      setLoadingDates(true);
+      setLoadingTimes(true);
+      
+      // Load dates and times in parallel
+      const [dates, message] = await Promise.all([
+        getAvailableDatesForButtonsFromSessions(classId),
+        getAvailableDatesMessageFromSessions(classId)
+      ]);
+      
+      setDatesCache(prev => ({ ...prev, [classId]: dates }));
+      setDatesMessage(message);
+      
+      // If we have dates, load times for the first date
+      if (dates.length > 0) {
+        const firstDate = dates[0];
+        const times = await getAvailableTimesForDateFromSessions(classId, firstDate);
+        const key = classId + '_' + firstDate;
+        setTimesCache(prev => ({ ...prev, [key]: times }));
+      }
+      
+    } catch (error: any) {
+      if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+        clearSessionsCache();
+        setUsingFallbackMode(true);
+        setSpotsCache({});
+        setLoadingSpots({});
+      }
+      setDatesCache(prev => ({ ...prev, [classId]: [] }));
+      setDatesMessage('אין תאריכים זמינים');
+    } finally {
+      setLoadingDates(false);
+      setLoadingTimes(false);
+    }
+  }, []);
 
   // Fetch class data
   useEffect(() => {
     if (initialClass) {
       setClassData(initialClass);
       setLoading(false);
+      // Preload data for initial class
+      if (initialClass.id) {
+        loadAllData(initialClass.id);
+      }
       return;
     }
     if (!slug) {
@@ -211,53 +253,28 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
     setLoading(true);
     classesService.getClassBySlug(slug)
       .then(data => {
-        if (data) setClassData(data);
-        else setError('השיעור לא נמצא');
+        if (data) {
+          setClassData(data);
+          // Preload data for fetched class
+          loadAllData(data.id);
+        } else {
+          setError('השיעור לא נמצא');
+        }
       })
       .catch(err => setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעור'))
       .finally(() => setLoading(false));
-  }, [slug, initialClass]);
+  }, [slug, initialClass, loadAllData]);
 
-  // Fetch available dates (with cache)
-  useEffect(() => {
-    if (!classData) return;
-    const classId = classData.id;
-    if (datesCache[classId]) return; // already cached
-    setLoadingDates(true);
-    const fetchDates = async () => {
-      try {
-        // Add delay before fetching dates
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const dates = await getAvailableDatesForButtonsFromSessions(classId);
-        const message = await getAvailableDatesMessageFromSessions(classId);
-        setDatesCache(prev => ({ ...prev, [classId]: dates }));
-        setDatesMessage(message);
-      } catch (error: any) {
-        if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
-          clearSessionsCache();
-          setUsingFallbackMode(true);
-          // Clear spots cache when switching to fallback mode
-          setSpotsCache({});
-          setLoadingSpots({});
-        }
-        // If sessions fail, show empty dates
-        setDatesCache(prev => ({ ...prev, [classId]: [] }));
-        setDatesMessage('אין תאריכים זמינים');
-      } finally {
-        setLoadingDates(false);
-      }
-    };
-    // Add delay before starting to fetch dates
-    const timeout = setTimeout(fetchDates, 2000);
-    return () => clearTimeout(timeout);
-  }, [classData, usingFallbackMode, datesCache]);
+  // Fetch available dates (with cache) - now handled by loadAllData
+  // useEffect removed to avoid duplicate loading
 
-  // Fetch available times (with cache)
+  // Fetch available times (with cache) - only when date is selected and not already cached
   useEffect(() => {
     if (!classData || !selectedDate) return;
     const classId = classData.id;
     const key = classId + '_' + selectedDate;
-    if (timesCache[key]) return;
+    if (timesCache[key]) return; // already cached
+    
     setLoadingTimes(true);
     const fetchTimes = async () => {
       try {
@@ -267,19 +284,16 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
           clearSessionsCache();
           setUsingFallbackMode(true);
-          // Clear spots cache when switching to fallback mode
           setSpotsCache({});
           setLoadingSpots({});
         }
-        // If sessions fail, show empty times
         setTimesCache(prev => ({ ...prev, [key]: [] }));
       } finally {
         setLoadingTimes(false);
       }
     };
-    // Debounce with longer delay
-    const timeout = setTimeout(fetchTimes, 1000);
-    return () => clearTimeout(timeout);
+    
+    fetchTimes(); // No delay - load immediately
   }, [classData, selectedDate, usingFallbackMode, timesCache]);
 
   // Fetch available spots for all times when date is selected (with batch API)
@@ -366,9 +380,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       }
     };
     
-    // Add longer delay before first request to prevent rapid requests
-    const timeout = setTimeout(() => fetchAllSpots(), 2000);
-    return () => clearTimeout(timeout);
+    // Load immediately for better performance
+    fetchAllSpots();
   }, [classData, selectedDate, usingFallbackMode, spotsCache, timesCache]);
 
   // Load profile for trial class
@@ -411,8 +424,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       }
     };
     
-    // Add longer delay to prevent immediate requests on mount
-    const timeout = setTimeout(loadRegistrations, 3000);
+    // Reduced delay for faster loading
+    const timeout = setTimeout(loadRegistrations, 500);
     return () => clearTimeout(timeout);
   }, [user?.id, authLoading, session]);
 
@@ -590,8 +603,8 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
         }
       };
       
-      // Add delay before refreshing registrations
-      setTimeout(loadRegistrations, 2000);
+      // Reduced delay for faster loading
+      setTimeout(loadRegistrations, 500);
       
       // איפוס הטופס
       setFormData({ first_name: '', last_name: '', phone: '' });
@@ -1258,6 +1271,6 @@ function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
       )}
     </div>
   );
-}
+});
 
 export default ClassDetailPage; 
