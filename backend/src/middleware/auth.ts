@@ -53,6 +53,8 @@ export const admin = async (req: Request, res: Response, next: NextFunction) => 
       throw new AppError('Invalid or expired token', 401);
     }
 
+    console.log('Admin middleware: user authenticated:', user.id);
+
     // בדוק אם המשתמש הוא מנהל
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -61,9 +63,11 @@ export const admin = async (req: Request, res: Response, next: NextFunction) => 
       .single();
 
     if (profileError || !profile || profile.role !== 'admin') {
+      console.log('Admin middleware: access denied for user:', user.id, 'role:', profile?.role);
       throw new AppError('Access denied. Admin only.', 403);
     }
 
+    console.log('Admin middleware: user is admin:', user.id);
     req.user = user;
     next();
   } catch (error) {

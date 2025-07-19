@@ -50,46 +50,50 @@ class RequestQueue {
 
 const requestQueue = new RequestQueue();
 
-// Enhanced fetchWithRetry with queue
+// Simple fetch with retry
 const fetchWithRetryAndQueue = async <T>(
   fetchFn: () => Promise<Response>,
   retries = 1,
   delay = 1000
 ): Promise<T> => {
-  return requestQueue.add(async () => {
-    let lastError: Error;
-    
-    for (let i = 0; i <= retries; i++) {
-      try {
-        const response = await fetchFn();
-        
-        if (response.ok) {
-          return await response.json();
-        }
-        
-        // Handle rate limiting
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('Retry-After');
-          const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay * Math.pow(2, i);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
-        
-        if (i === retries) {
-          throw lastError;
-        }
-        
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+  let lastError: Error;
+  
+  for (let i = 0; i <= retries; i++) {
+    try {
+      console.log(`fetchWithRetryAndQueue: attempt ${i + 1}/${retries + 1}`);
+      const response = await fetchFn();
+      console.log(`fetchWithRetryAndQueue: response status ${response.status}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`fetchWithRetryAndQueue: received data:`, data);
+        return data;
       }
+      
+      // Handle rate limiting
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay * Math.pow(2, i);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      console.error(`fetchWithRetryAndQueue: HTTP error ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.error(`fetchWithRetryAndQueue: error on attempt ${i + 1}:`, lastError.message);
+      
+      if (i === retries) {
+        throw lastError;
+      }
+      
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
     }
-    
-    throw lastError!;
-  });
+  }
+  
+  throw lastError!;
 };
 
 class ApiError extends Error {
@@ -119,13 +123,52 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-// פונקציה לקבלת headers עם authorization
+// פונקציה לקבלת headers עם authorization - עם cache
+let cachedSession: any = null;
+let sessionCacheTime = 0;
+const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5 דקות
+
+// פונקציה לאיפוס ה-cache
+export function clearSessionCache() {
+  cachedSession = null;
+  sessionCacheTime = 0;
+}
+
 async function getAuthHeaders(): Promise<HeadersInit> {
   try {
+    const now = Date.now();
+    
+    // בדוק אם יש session cached ותקין
+    if (cachedSession && (now - sessionCacheTime) < SESSION_CACHE_DURATION) {
+      console.log('Using cached session');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+
+      if (cachedSession.access_token) {
+        headers['Authorization'] = `Bearer ${cachedSession.access_token}`;
+      }
+      return headers;
+    }
+
+    // אם אין cache או שהוא פג תוקף, קבל session חדש
+    console.log('Fetching new session');
     const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (session) {
+      cachedSession = session;
+      sessionCacheTime = now;
+      console.log('Session cached');
+    }
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     };
 
     if (session?.access_token) {
@@ -133,8 +176,12 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     }
     return headers;
   } catch (error) {
+    console.error('Error getting auth headers:', error);
     return {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     };
   }
 }
@@ -145,6 +192,13 @@ export const apiService = {
     async getAll(): Promise<Class[]> {
       return fetchWithRetryAndQueue<Class[]>(() => 
         fetch(`${API_BASE_URL}/classes`)
+      );
+    },
+
+    async getAllForAdmin(): Promise<Class[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<Class[]>(() => 
+        fetch(`${API_BASE_URL}/classes/admin`, { headers })
       );
     },
 
@@ -262,15 +316,41 @@ export const apiService = {
   admin: {
     async getOverview(): Promise<any> {
       const headers = await getAuthHeaders();
+      const timestamp = Date.now();
       return fetchWithRetryAndQueue<any>(() => 
-        fetch(`${API_BASE_URL}/classes/admin/overview`, { headers })
+        fetch(`${API_BASE_URL}/classes/admin/overview?_t=${timestamp}`, { headers })
+      );
+    },
+
+    async getClasses(): Promise<Class[]> {
+      const headers = await getAuthHeaders();
+      const timestamp = Date.now();
+      return fetchWithRetryAndQueue<Class[]>(() => 
+        fetch(`${API_BASE_URL}/classes?_t=${timestamp}`, { headers })
+      );
+    },
+
+    async getRegistrations(): Promise<RegistrationWithDetails[]> {
+      const headers = await getAuthHeaders();
+      const timestamp = Date.now();
+      return fetchWithRetryAndQueue<RegistrationWithDetails[]>(() => 
+        fetch(`${API_BASE_URL}/registrations?_t=${timestamp}`, { headers })
+      );
+    },
+
+    async getSessions(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      const timestamp = Date.now();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/sessions?_t=${timestamp}`, { headers })
       );
     },
 
     async getCalendar(): Promise<any> {
       const headers = await getAuthHeaders();
+      const timestamp = Date.now();
       return fetchWithRetryAndQueue<any>(() => 
-        fetch(`${API_BASE_URL}/classes/admin/calendar`, { headers })
+        fetch(`${API_BASE_URL}/classes/admin/calendar?_t=${timestamp}`, { headers })
       );
     }
   },
@@ -280,6 +360,14 @@ export const apiService = {
     async getBatchCapacity(classId: string, date: string): Promise<any[]> {
       return fetchWithRetryAndQueue<any[]>(() => 
         fetch(`${API_BASE_URL}/sessions/capacity/batch/${classId}/${date}`)
+      );
+    },
+
+    async getSessionClasses(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      const timestamp = Date.now();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/sessions/session-classes?_t=${timestamp}`, { headers })
       );
     }
   }

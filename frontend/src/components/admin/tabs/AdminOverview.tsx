@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
 
@@ -7,15 +7,23 @@ interface AdminOverviewProps {
 }
 
 export default function AdminOverview({ profile }: AdminOverviewProps) {
-  const { data, isLoading, error, fetchOverview, isFetching } = useAdminData();
+  const { data, isLoading, error, fetchOverview, isFetching, resetRateLimit } = useAdminData();
   const [timeFilter, setTimeFilter] = useState<'day' | 'week' | 'month' | 'year'>('week');
+  const hasInitialized = useRef(false);
 
-  // טעינת נתונים רק אם אין נתונים או שהם ישנים
+  // טעינת נתונים רק פעם אחת - עם מניעת רענונים כפולים
   useEffect(() => {
-    if (!data.overview) {
+    console.log('AdminOverview useEffect called');
+    console.log('hasInitialized.current:', hasInitialized.current);
+    console.log('data.overview:', data.overview);
+    
+    // טען רק אם לא טענו עדיין ואין נתונים
+    if (!hasInitialized.current && !data.overview) {
+      console.log('AdminOverview: calling fetchOverview');
+      hasInitialized.current = true;
       fetchOverview();
     }
-  }, [data.overview, fetchOverview]);
+  }, [fetchOverview]); // תלוי רק ב-fetchOverview, לא ב-data כדי למנוע לולאות
 
   if (isLoading && !data.overview) {
     return (
@@ -40,12 +48,25 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
             </svg>
           </div>
           <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchOverview}
-            className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
-          >
-            נסה שוב
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                resetRateLimit();
+                fetchOverview();
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+            >
+              נסה שוב
+            </button>
+            {error.includes('יותר מדי בקשות') && (
+              <button
+                onClick={resetRateLimit}
+                className="px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-all duration-300"
+              >
+                איפוס הגבלה
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -69,7 +90,10 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-[#4B2E83] mb-4">סקירה כללית</h2>
         <button
-          onClick={fetchOverview}
+          onClick={() => {
+            resetRateLimit();
+            fetchOverview();
+          }}
           disabled={isFetching}
           className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >

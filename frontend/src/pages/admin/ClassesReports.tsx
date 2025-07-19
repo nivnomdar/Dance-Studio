@@ -1,28 +1,110 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminData } from '../../contexts/AdminDataContext';
 import type { UserProfile } from '../../types/auth';
-import { ClassesTab, SessionsTab, RegistrationsTab } from './tabs';
+import { ClassesTab, SessionsTab, RegistrationsTab, OverviewTab } from './tabs';
 
 interface ClassesReportsProps {
   profile: UserProfile;
 }
 
-type TabType = 'classes' | 'sessions' | 'registrations';
+type TabType = 'overview' | 'classes' | 'sessions' | 'registrations';
+
+// Global flag to prevent multiple initializations across renders
+let globalClassesReportsInitialized = false;
 
 export default function ClassesReports({ profile }: ClassesReportsProps) {
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { data, isLoading, error, fetchClasses, isFetching } = useAdminData();
-  const [activeTab, setActiveTab] = useState<TabType>('classes');
+  const { data, isLoading, error, fetchClasses, isFetching, resetRateLimit } = useAdminData();
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const previousUserIdRef = useRef<string | null>(null); // Track previous user ID
 
-  // Load data on component mount
+  // Load data on component mount - only once
   useEffect(() => {
-    if (data.classes.length === 0) {
+    console.log('ClassesReports useEffect called');
+    console.log('globalClassesReportsInitialized:', globalClassesReportsInitialized);
+    console.log('data.classes.length:', data.classes.length);
+    console.log('isLoading:', isLoading);
+    
+    // טען רק אם לא טענו עדיין ואין נתונים ולא בטעינה
+    if (!globalClassesReportsInitialized && data.classes.length === 0 && !isLoading) {
+      console.log('ClassesReports: calling fetchClasses');
+      globalClassesReportsInitialized = true;
       fetchClasses();
+    } else if (data.classes.length > 0) {
+      // אם יש כבר נתונים, סמן כמוכן
+      console.log('ClassesReports: data already loaded, marking as initialized');
+      globalClassesReportsInitialized = true;
+    } else if (isLoading && globalClassesReportsInitialized) {
+      // אם בטעינה ויש כבר flag, אל תעשה כלום
+      console.log('ClassesReports: already loading, skipping');
     }
-  }, [data.classes.length, fetchClasses]);
+  }, [fetchClasses, data.classes.length, isLoading]); // תלוי גם ב-isLoading
+
+  // Reset global flag when user changes
+  useEffect(() => {
+    const currentUserId = session?.user?.id;
+    
+    // אם יש כבר נתונים טעונים, אל תאפס את ה־flag
+    if (globalClassesReportsInitialized && data.classes.length > 0) {
+      console.log('ClassesReports: data already loaded, preventing user change reset');
+      return;
+    }
+    
+    // אם יש session קיים ואותו משתמש, אל תאפס
+    if (currentUserId && previousUserIdRef.current === currentUserId && globalClassesReportsInitialized) {
+      console.log('ClassesReports: same user with existing session, not resetting');
+      return;
+    }
+    
+    // רק אם יש משתמש חדש ושונה מהקודם
+    if (currentUserId && currentUserId !== previousUserIdRef.current) {
+      console.log('ClassesReports: user actually changed, resetting global flag');
+      console.log('Previous user:', previousUserIdRef.current);
+      console.log('Current user:', currentUserId);
+      globalClassesReportsInitialized = false;
+      previousUserIdRef.current = currentUserId;
+    } else if (currentUserId && !previousUserIdRef.current) {
+      // First time loading with a user
+      console.log('ClassesReports: first time loading with user:', currentUserId);
+      previousUserIdRef.current = currentUserId;
+    } else if (currentUserId && previousUserIdRef.current === currentUserId) {
+      // Same user, don't reset
+      console.log('ClassesReports: same user, not resetting global flag');
+    }
+    // אם אין משתמש או אותו משתמש, אל תאפס את ה־flag
+  }, [session?.user?.id, data.classes.length]);
+
+  // Prevent resetting global flag if data was already loaded successfully
+  useEffect(() => {
+    if (globalClassesReportsInitialized && data.classes.length > 0) {
+      console.log('ClassesReports: data already loaded successfully, preventing reset');
+    }
+  }, [data.classes.length]);
+
+  // Prevent unnecessary resets when data is loading
+  useEffect(() => {
+    if (isLoading && globalClassesReportsInitialized) {
+      console.log('ClassesReports: data is loading, keeping global flag as true');
+    }
+  }, [isLoading]);
+
+  // Ensure global flag is not reset when session exists
+  useEffect(() => {
+    if (session?.user?.id && globalClassesReportsInitialized && data.classes.length > 0) {
+      console.log('ClassesReports: session exists and data loaded, keeping global flag');
+    }
+  }, [session?.user?.id, data.classes.length]);
+
+  // Function to refresh data
+  const handleRefresh = () => {
+    console.log('ClassesReports: manual refresh requested');
+    globalClassesReportsInitialized = false;
+    resetRateLimit();
+    fetchClasses();
+  };
 
   if (isLoading && data.classes.length === 0) {
     return (
@@ -48,12 +130,22 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
               </svg>
             </div>
             <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={fetchClasses}
-              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
-            >
-              נסה שוב
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={handleRefresh}
+                className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+              >
+                נסה שוב
+              </button>
+              {error.includes('יותר מדי בקשות') && (
+                <button
+                  onClick={resetRateLimit}
+                  className="px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-all duration-300"
+                >
+                  איפוס הגבלה
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -78,7 +170,7 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
                 חזור לפאנל
               </button>
               <button
-                onClick={fetchClasses}
+                onClick={handleRefresh}
                 disabled={isFetching}
                 className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -91,6 +183,16 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
         {/* Tabs Navigation */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EC4899]/10">
           <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === 'overview'
+                  ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
+                  : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
+              }`}
+            >
+              סקירה כללית
+            </button>
             <button
               onClick={() => setActiveTab('classes')}
               className={`px-6 py-3 rounded-lg font-medium transition-all ${
@@ -125,6 +227,14 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
         </div>
 
         {/* Tab Content */}
+        {activeTab === 'overview' && (
+          <OverviewTab 
+            data={data} 
+            session={session} 
+            fetchClasses={fetchClasses}
+          />
+        )}
+        
         {activeTab === 'classes' && (
           <ClassesTab 
             data={data} 

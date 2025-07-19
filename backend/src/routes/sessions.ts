@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../database';
 import { logger } from '../utils/logger';
+import { auth, admin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -98,8 +99,10 @@ const countRegistrations = async (sessionId: string, date: string, time: string)
 };
 
 // Get all sessions
-router.get('/', async (req, res) => {
+router.get('/', admin, async (req, res) => {
   try {
+    logger.info('Admin sessions endpoint called by user:', req.user?.id);
+    
     const { data: sessions, error } = await supabase
       .from('schedule_sessions')
       .select('*')
@@ -110,6 +113,7 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch sessions' });
     }
 
+    logger.info('Sessions fetched successfully:', { count: sessions?.length || 0 });
     res.json(sessions);
   } catch (error) {
     logger.error('Error in sessions route:', error);
@@ -118,8 +122,10 @@ router.get('/', async (req, res) => {
 });
 
 // Get all session classes
-router.get('/session-classes', async (req, res) => {
+router.get('/session-classes', admin, async (req, res) => {
   try {
+    logger.info('Admin session-classes endpoint called by user:', req.user?.id);
+    
     // קודם נקבל את כל ה-session_classes בלי join
     const { data: sessionClasses, error } = await supabase
       .from('session_classes')
@@ -131,7 +137,7 @@ router.get('/session-classes', async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch session classes' });
     }
 
-    logger.info('Session classes fetched successfully:', sessionClasses);
+    logger.info('Session classes fetched successfully:', { count: sessionClasses?.length || 0 });
     res.json(sessionClasses);
   } catch (error) {
     logger.error('Error in session classes route:', error);

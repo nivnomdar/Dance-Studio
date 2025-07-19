@@ -11,6 +11,8 @@ const router = Router();
 // Get all registrations with class and user details (admin only)
 router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.info('Admin registrations endpoint called by user:', req.user?.id);
+    
     // Check if user is admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -19,12 +21,16 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
       .single();
 
     if (profileError || !profile) {
+      logger.error('User profile not found:', req.user?.id);
       throw new AppError('User profile not found', 404);
     }
 
     if (profile.role !== 'admin') {
+      logger.error('Access denied for user:', req.user?.id, 'role:', profile.role);
       throw new AppError('Access denied. Admin only.', 403);
     }
+
+    logger.info('User is admin, fetching registrations...');
 
     // Get all registrations with class and user details
     const { data, error } = await supabase
@@ -37,9 +43,11 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
       .order('created_at', { ascending: false });
 
     if (error) {
+      logger.error('Error fetching registrations:', error);
       throw new AppError('Failed to fetch registrations', 500);
     }
 
+    logger.info('Registrations fetched successfully:', { count: data?.length || 0 });
     res.json(data || []);
   } catch (error) {
     next(error);

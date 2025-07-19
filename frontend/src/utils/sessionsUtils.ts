@@ -24,6 +24,14 @@ const STORAGE_KEYS = {
   CLASS_TIMES: 'dance_studio_class_times_cache'
 };
 
+/**
+ * פונקציה לבדיקת תוקף cache
+ */
+const isCacheValid = (cache: CacheEntry | null): boolean => {
+  if (!cache) return false;
+  return (Date.now() - cache.timestamp) < CACHE_DURATION;
+};
+
 // Load cache from localStorage on initialization
 const loadCacheFromStorage = () => {
   try {
@@ -162,14 +170,6 @@ const formatTimeForDisplay = (session: any): string => {
   }
   
   return '';
-};
-
-/**
- * פונקציה לבדיקת תוקף cache
- */
-const isCacheValid = (cache: CacheEntry | null): boolean => {
-  if (!cache) return false;
-  return (Date.now() - cache.timestamp) < CACHE_DURATION;
 };
 
 /**

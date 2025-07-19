@@ -3,7 +3,7 @@ import { supabase } from '../database';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { validateClass } from '../middleware/validation';
-import { auth } from '../middleware/auth';
+import { auth, admin } from '../middleware/auth';
 
 /**
  * פונקציה משותפת לקבלת session מתוך session class
@@ -153,8 +153,9 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
 });
 
 // Get admin dashboard overview (admin only)
-router.get('/admin/overview', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/admin/overview', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.info('Admin overview endpoint called by user:', req.user?.id);
     logger.info('Fetching admin dashboard overview');
     
     // Fetch all required data in parallel
@@ -483,8 +484,10 @@ router.get('/admin/overview', auth, async (req: Request, res: Response, next: Ne
 });
 
 // Get all classes
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    logger.info('Admin classes endpoint called by user:', req.user?.id);
+    
     const { data, error } = await supabase
       .from('classes')
       .select('*')
@@ -492,9 +495,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .order('created_at', { ascending: false });
 
     if (error) {
+      logger.error('Error fetching classes:', error);
       throw new AppError('Failed to fetch classes', 500);
     }
 
+    logger.info('Classes fetched successfully:', { count: data?.length || 0 });
     res.json(data || []);
   } catch (error) {
     next(error);
