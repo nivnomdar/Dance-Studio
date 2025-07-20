@@ -56,8 +56,11 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
     const weeklySchedule: { [key: string]: any } = {};
     
     for (let week = 0; week < 4; week++) {
+      // Calculate the start of the week (Sunday)
       const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() + (week * 7));
+      const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
+      const daysToSubtract = currentDayOfWeek; // Days to go back to Sunday
+      weekStart.setDate(today.getDate() - daysToSubtract + (week * 7));
       weekStart.setHours(0, 0, 0, 0);
       
       const weekKey = `week_${week + 1}`;
@@ -70,10 +73,13 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
       for (let day = 0; day < 7; day++) {
         const currentDate = new Date(weekStart);
         currentDate.setDate(weekStart.getDate() + day);
+        currentDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
         
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const dayName = dayNames[currentDate.getDay()];
         const dateKey = currentDate.toISOString().split('T')[0];
+        
+
         
         // Find classes scheduled for this day
         const dayClasses = classes?.filter(cls => {
@@ -84,7 +90,21 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
             
             // Check if session is active on this day
             const sessionWeekdays = session.weekdays || [];
-            return sessionWeekdays.includes(currentDate.getDay());
+            
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const isActive = sessionWeekdays.some((weekday: any) => {
+              // Handle both string and number formats
+              if (typeof weekday === 'string') {
+                return weekday.toLowerCase() === dayName;
+              }
+              if (typeof weekday === 'number') {
+                // Convert number to day name
+                return dayNames[weekday] === dayName;
+              }
+              return false;
+            });
+            
+            return isActive;
           });
           
           return cls.is_active && hasActiveSessions;
@@ -105,7 +125,21 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
                 const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
                 if (!session || !session.is_active) return false;
                 const sessionWeekdays = session.weekdays || [];
-                return sessionWeekdays.includes(currentDate.getDay());
+                
+                const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                const isActive = sessionWeekdays.some((weekday: any) => {
+                  // Handle both string and number formats
+                  if (typeof weekday === 'string') {
+                    return weekday.toLowerCase() === dayName;
+                  }
+                  if (typeof weekday === 'number') {
+                    // Convert number to day name
+                    return dayNames[weekday] === dayName;
+                  }
+                  return false;
+                });
+                
+                return isActive;
               })
               ?.map((sc: any) => {
                 const session = Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
@@ -483,8 +517,31 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
   }
 });
 
-// Get all classes
-router.get('/', admin, async (req: Request, res: Response, next: NextFunction) => {
+// Get all active classes (public)
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Public classes endpoint called');
+    
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching classes:', error);
+      throw new AppError('Failed to fetch classes', 500);
+    }
+
+    logger.info('Classes fetched successfully:', { count: data?.length || 0 });
+    res.json(data || []);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all classes (admin only)
+router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Admin classes endpoint called by user:', req.user?.id);
     

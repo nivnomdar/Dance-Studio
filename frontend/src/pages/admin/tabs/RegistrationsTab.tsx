@@ -267,16 +267,16 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] sm:min-w-[1000px]">
+              <table className="w-full min-w-[600px] sm:min-w-[800px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם מלא</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">אימייל</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">טלפון</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שיעור</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תאריך הבא</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">סטטוס</th>
-                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">פעולות</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שם מלא</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-24 sm:w-28">אימייל</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">טלפון</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">שיעור</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">תאריך הבא</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">פעולות</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EC4899]/10">
@@ -285,22 +285,22 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                       key={reg.id} 
                       className="hover:bg-[#EC4899]/5 transition-colors"
                     >
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <div className="font-semibold text-[#4B2E83]">{reg.user_name}</div>
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <div className="font-semibold text-[#4B2E83] text-xs sm:text-sm truncate">{reg.user_name}</div>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <div className="text-sm text-[#4B2E83]/70">{reg.email}</div>
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <div className="text-xs sm:text-sm text-[#4B2E83]/70 truncate">{reg.email}</div>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <div className="text-sm text-[#4B2E83]/70">{reg.phone}</div>
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <div className="text-xs sm:text-sm text-[#4B2E83]/70">{reg.phone}</div>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] truncate">
                           {reg.class_name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <div className="text-sm text-[#4B2E83]/70">
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <div className="text-xs sm:text-sm text-[#4B2E83]/70">
                           {reg.next_session_date ? (
                             new Date(reg.next_session_date).toLocaleDateString('he-IL')
                           ) : (
@@ -308,8 +308,8 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                        <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           reg.status === 'active' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
@@ -318,13 +318,13 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                            reg.status === 'cancelled' ? 'בוטל' : reg.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-l border-[#EC4899]/10">
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditRegistration(reg);
                           }}
-                          className="px-3 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                          className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
                         >
                           ערוך
                         </button>
@@ -362,16 +362,16 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                   <h3 className="text-lg font-semibold text-red-800">הרשמות מבוטלות</h3>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[800px] sm:min-w-[1000px]">
+                  <table className="w-full min-w-[600px] sm:min-w-[800px]">
                     <thead className="bg-red-100">
                       <tr>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">שם מלא</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">אימייל</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">טלפון</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">שיעור</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">תאריך מבוטל</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">סטטוס</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">פעולות</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-20 sm:w-24">שם מלא</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-24 sm:w-28">אימייל</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-16 sm:w-20">טלפון</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-16 sm:w-20">שיעור</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-16 sm:w-20">תאריך מבוטל</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap w-12 sm:w-16">פעולות</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-red-200">
@@ -380,22 +380,22 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                           key={reg.id} 
                           className="hover:bg-red-50 transition-colors"
                         >
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <div className="font-semibold text-red-800">{reg.user_name}</div>
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <div className="font-semibold text-red-800 text-xs sm:text-sm truncate">{reg.user_name}</div>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <div className="text-sm text-red-700">{reg.email}</div>
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <div className="text-xs sm:text-sm text-red-700 truncate">{reg.email}</div>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <div className="text-sm text-red-700">{reg.phone}</div>
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <div className="text-xs sm:text-sm text-red-700">{reg.phone}</div>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 truncate">
                               {reg.class_name}
                             </span>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <div className="text-sm text-red-700">
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <div className="text-xs sm:text-sm text-red-700">
                               {reg.selected_date ? (
                                 new Date(reg.selected_date).toLocaleDateString('he-IL')
                               ) : (
@@ -403,21 +403,21 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                            <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               בוטל
                             </span>
                           </td>
-                          <td className="px-6 py-4 border-l border-red-200">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditRegistration(reg);
-                              }}
-                              className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all duration-300 text-xs"
-                            >
-                              ערוך
-                            </button>
+                          <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-red-200">
+                                                          <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditRegistration(reg);
+                                }}
+                                className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all duration-300 text-xs"
+                              >
+                                ערוך
+                              </button>
                           </td>
                         </tr>
                       ))}

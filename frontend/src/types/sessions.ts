@@ -8,7 +8,7 @@ export interface Session {
   end_time: string;
   start_date: string;
   end_date?: string;
-  weekdays: string[]; // Array of strings (e.g., ["monday", "tuesday"])
+  weekdays: (string | number)[]; // Array of strings or numbers (e.g., ["monday", "tuesday"] or [1, 2])
   max_capacity: number;
   location: string;
   is_active: boolean;

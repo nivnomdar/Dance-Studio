@@ -65,10 +65,22 @@ const getDayNameFromDate = (date: string): string => {
 const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
   if (!session || !session.is_active) return false;
   
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  
   return session.weekdays.some((weekday: any) => {
-    const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-    const dayNameLower = dayName.toLowerCase();
-    return weekdayLower === dayNameLower;
+    // Handle number format (0-6) - this is the main case for schedule_sessions
+    if (typeof weekday === 'number' && weekday >= 0 && weekday <= 6) {
+      return dayNames[weekday] === dayName.toLowerCase();
+    }
+    
+    // Handle string format (e.g., "monday", "Tuesday")
+    if (typeof weekday === 'string') {
+      const weekdayLower = weekday.toLowerCase();
+      const dayNameLower = dayName.toLowerCase();
+      return weekdayLower === dayNameLower;
+    }
+    
+    return false;
   });
 };
 
@@ -98,8 +110,57 @@ const countRegistrations = async (sessionId: string, date: string, time: string)
   return count || 0;
 };
 
-// Get all sessions
-router.get('/', admin, async (req, res) => {
+// Get all sessions (public)
+router.get('/', async (req, res) => {
+  try {
+    logger.info('Public sessions endpoint called');
+    
+    const { data: sessions, error } = await supabase
+      .from('schedule_sessions')
+      .select('*')
+      .eq('is_active', true)
+      .order('start_time');
+
+    if (error) {
+      logger.error('Error fetching sessions:', error);
+      return res.status(500).json({ error: 'Failed to fetch sessions' });
+    }
+
+    logger.info('Sessions fetched successfully:', { count: sessions?.length || 0 });
+    res.json(sessions);
+  } catch (error) {
+    logger.error('Error in sessions route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all session classes (public)
+router.get('/session-classes', async (req, res) => {
+  try {
+    logger.info('Public session-classes endpoint called');
+    
+    // קודם נקבל את כל ה-session_classes בלי join
+    const { data: sessionClasses, error } = await supabase
+      .from('session_classes')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at');
+
+    if (error) {
+      logger.error('Error fetching session classes:', error);
+      return res.status(500).json({ error: 'Failed to fetch session classes' });
+    }
+
+    logger.info('Session classes fetched successfully:', { count: sessionClasses?.length || 0 });
+    res.json(sessionClasses);
+  } catch (error) {
+    logger.error('Error in session classes route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all sessions (admin only)
+router.get('/admin', admin, async (req, res) => {
   try {
     logger.info('Admin sessions endpoint called by user:', req.user?.id);
     
@@ -121,8 +182,8 @@ router.get('/', admin, async (req, res) => {
   }
 });
 
-// Get all session classes
-router.get('/session-classes', admin, async (req, res) => {
+// Get all session classes (admin only)
+router.get('/admin/session-classes', admin, async (req, res) => {
   try {
     logger.info('Admin session-classes endpoint called by user:', req.user?.id);
     

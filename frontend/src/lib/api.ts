@@ -342,7 +342,7 @@ export const apiService = {
       const headers = await getAuthHeaders();
       const timestamp = Date.now();
       return fetchWithRetryAndQueue<any[]>(() => 
-        fetch(`${API_BASE_URL}/sessions?_t=${timestamp}`, { headers })
+        fetch(`${API_BASE_URL}/sessions/admin?_t=${timestamp}`, { headers })
       );
     },
 
@@ -364,10 +364,16 @@ export const apiService = {
     },
 
     async getSessionClasses(): Promise<any[]> {
-      const headers = await getAuthHeaders();
       const timestamp = Date.now();
       return fetchWithRetryAndQueue<any[]>(() => 
-        fetch(`${API_BASE_URL}/sessions/session-classes?_t=${timestamp}`, { headers })
+        fetch(`${API_BASE_URL}/sessions/session-classes?_t=${timestamp}`)
+      );
+    },
+
+    async getAllSessions(): Promise<any[]> {
+      const timestamp = Date.now();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/sessions?_t=${timestamp}`)
       );
     }
   }

@@ -211,16 +211,16 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
           <p className="text-sm sm:text-base text-[#4B2E83]/70">סקירה כללית של כל השיעורים הקיימים במערכת</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] sm:min-w-[1000px]">
+          <table className="w-full min-w-[600px] sm:min-w-[800px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם השיעור</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">קטגוריה</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">מחיר</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">הרשמות פעילות</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">הכנסות צפויות</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">סטטוס</th>
-                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">פעולות</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-24 sm:w-28">שם השיעור</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">קטגוריה</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">מחיר</th>
+
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">הכנסות צפויות</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
+                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -229,29 +229,24 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                   key={cls.id} 
                   className="hover:bg-[#EC4899]/5 transition-colors"
                 >
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
                     <div>
-                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">{cls.name}</div>
-                      <div className="text-xs sm:text-sm text-[#4B2E83]/70">{cls.description}</div>
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{cls.name}</div>
+                      <div className="text-xs sm:text-sm text-[#4B2E83]/70 truncate">{cls.description}</div>
                     </div>
                   </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] truncate">
                       {cls.category}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10 text-[#EC4899] font-semibold text-xs sm:text-sm">₪{cls.price}</td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
-                    <div className="text-center">
-                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">{cls.active_registrations}</div>
-                      <div className="text-xs text-[#4B2E83]/70">מתוך {cls.total_registrations}</div>
-                    </div>
-                  </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10 text-[#EC4899] font-semibold text-xs sm:text-sm">
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10 text-[#EC4899] font-semibold text-xs sm:text-sm">₪{cls.price}</td>
+
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10 text-[#EC4899] font-semibold text-xs sm:text-sm">
                     ₪{(cls.active_registrations * cls.price).toLocaleString()}
                   </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       cls.is_active 
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
@@ -259,14 +254,14 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                       {cls.is_active ? 'פעיל' : 'לא פעיל'}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                  <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
                     <div className="flex gap-1 sm:gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditClass(cls);
                         }}
-                        className="px-2 sm:px-3 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
                       >
                         ערוך
                       </button>
@@ -275,7 +270,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                           e.stopPropagation();
                           handleViewClassSessions(cls);
                         }}
-                        className="px-2 sm:px-3 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
+                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
                       >
                         קבוצות
                       </button>

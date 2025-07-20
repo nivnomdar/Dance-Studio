@@ -1,6 +1,7 @@
 import { Session, SessionClass } from '../types/sessions';
 import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
 import { apiService } from '../lib/api';
+import { isSessionActiveOnDay } from './weekdaysUtils';
 
 // Enhanced cache with class-specific caching
 interface CacheEntry {
@@ -126,19 +127,7 @@ const generateAvailabilityMessage = (availableSpots: number): string => {
   }
 };
 
-/**
- * פונקציה משותפת לבדיקה אם session פעיל ביום מסוים
- */
-const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
-  if (!session || !session.is_active) return false;
-  
-  return session.weekdays.some((weekday: any) => {
-    // weekday can be a string from JSONB array like "monday", "Tuesday"
-    const weekdayLower = typeof weekday === 'string' ? weekday.toLowerCase() : weekday;
-    const dayNameLower = dayName.toLowerCase();
-    return weekdayLower === dayNameLower;
-  });
-};
+
 
 /**
  * פונקציה לניקוי פורמט השעות - מסירה שניות ומשאירה רק שעות ודקות

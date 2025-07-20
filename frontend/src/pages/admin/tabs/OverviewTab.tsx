@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { ClassDetailsModal, RegistrationEditModal } from '../modals';
+import { weekdaysToHebrew, HEBREW_WEEKDAYS } from '../../../utils/weekdaysUtils';
 
 interface OverviewTabProps {
   data: any;
   session: any;
   fetchClasses: () => void;
 }
-
-// Hebrew weekday names
-const HEBREW_WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
 export default function OverviewTab({ data, session, fetchClasses }: OverviewTabProps) {
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
@@ -54,23 +52,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
       return sessionDate >= today && sessionDate <= nextWeek;
     });
     
-    // Get weekday names
-    const weekdayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    const weekdayNamesEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    
-    const weekdays = sessionData.weekdays?.map((day: any) => {
-      // Handle string format (e.g., "thursday", "Wednesday")
-      if (typeof day === 'string') {
-        const dayLower = day.toLowerCase();
-        const dayIndex = weekdayNamesEn.indexOf(dayLower);
-        return dayIndex !== -1 ? weekdayNames[dayIndex] : day;
-      }
-      // Handle number format (0-6)
-      if (typeof day === 'number') {
-        return weekdayNames[day] || `יום ${day}`;
-      }
-      return `יום ${day}`;
-    }) || [];
+    const weekdays = weekdaysToHebrew(sessionData.weekdays || []);
 
     // Get linked classes names
     const linkedClasses = sessionClasses.map((sc: any) => {
@@ -123,6 +105,26 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
   const totalClasses = data.classes?.length || 0;
   const totalActiveRegistrations = processedSessions.reduce((sum: number, s: any) => sum + s.activeRegistrationsCount, 0);
   const totalExpectedRevenue = processedSessions.reduce((sum: number, s: any) => sum + s.totalRevenue, 0);
+  
+  // Additional statistics
+  const totalRegistrations = data.registrations?.length || 0;
+  const cancelledRegistrations = data.registrations?.filter((reg: any) => reg.status === 'cancelled').length || 0;
+  const pendingRegistrations = data.registrations?.filter((reg: any) => reg.status === 'pending').length || 0;
+  
+  // Weekly statistics
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const registrationsThisWeek = data.registrations?.filter((reg: any) => 
+    new Date(reg.created_at) > oneWeekAgo
+  ).length || 0;
+  
+  const cancellationsThisWeek = data.registrations?.filter((reg: any) => 
+    reg.status === 'cancelled' && new Date(reg.updated_at || reg.created_at) > oneWeekAgo
+  ).length || 0;
+  
+  // Average occupancy rate
+  const averageOccupancyRate = processedSessions.length > 0 
+    ? processedSessions.reduce((sum: number, s: any) => sum + s.occupancyRate, 0) / processedSessions.length 
+    : 0;
 
   // Format weekdays to Hebrew
   const formatWeekdays = (weekdays: number[]) => {
@@ -149,26 +151,38 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Key Statistics */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ קבוצות</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{totalSessions}</div>
+          <div className="text-xs text-[#4B2E83]/70">סה"כ קבוצות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{totalClasses}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ שיעורים</div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{totalClasses}</div>
+          <div className="text-xs text-[#4B2E83]/70">סה"כ שיעורים</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalActiveRegistrations}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{totalActiveRegistrations}</div>
+          <div className="text-xs text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">₪{totalExpectedRevenue.toLocaleString()}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הכנסות צפויות</div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">₪{totalExpectedRevenue.toLocaleString()}</div>
+          <div className="text-xs text-[#4B2E83]/70">הכנסות צפויות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{activeSessions}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">קבוצות פעילות</div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{activeSessions}</div>
+          <div className="text-xs text-[#4B2E83]/70">קבוצות פעילות</div>
+        </div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{registrationsThisWeek}</div>
+          <div className="text-xs text-[#4B2E83]/70">הרשמות השבוע</div>
+        </div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{averageOccupancyRate.toFixed(1)}%</div>
+          <div className="text-xs text-[#4B2E83]/70">תפוסה ממוצעת</div>
+        </div>
+        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{cancelledRegistrations}</div>
+          <div className="text-xs text-[#4B2E83]/70">הרשמות בוטלו</div>
         </div>
       </div>
 
@@ -208,7 +222,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] sm:min-w-[1500px]">
+          <table className="w-full min-w-[800px] sm:min-w-[1000px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
                 <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם הקבוצה</th>
@@ -254,7 +268,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                       <div className="flex flex-wrap gap-1">
                         {sessionData.weekdays.length > 0 ? (
                           sessionData.weekdays.map((day: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
+                            <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] truncate">
                               {day}
                             </span>
                           ))
@@ -291,7 +305,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                       <div className="flex flex-wrap gap-1">
                         {sessionData.linkedClasses.length > 0 ? (
                           sessionData.linkedClasses.map((className: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899]">
+                            <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
                               {className}
                             </span>
                           ))
@@ -303,7 +317,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                     <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <button
                         onClick={() => setExpandedSession(expandedSession === sessionData.id ? null : sessionData.id)}
-                        className="px-2 sm:px-3 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
                       >
                         {expandedSession === sessionData.id ? 'הסתר' : 'פרטים'}
                       </button>
@@ -316,13 +330,13 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                       <td colSpan={9} className="px-6 py-4 bg-gray-50">
                         <div className="space-y-6">
                                                      {/* Linked Classes Section */}
-                           <div>
+                           <div className="border-2 border-[#EC4899]/20 rounded-xl p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
                              <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">שיעורים מקושרים</h3>
                              <div className="flex flex-wrap gap-2 justify-start">
                                {sessionData.sessionClasses.map((sessionClass: any) => {
                                  const classData = data.classes?.find((c: any) => c.id === sessionClass.class_id);
                                  return (
-                                   <div key={sessionClass.id} className="bg-white p-2 rounded-lg border border-[#EC4899]/10 w-48 flex flex-col justify-between">
+                                   <div key={sessionClass.id} className="bg-white p-1.5 sm:p-2 rounded-lg border border-[#EC4899]/10 w-40 sm:w-48 flex flex-col justify-between">
                                      <div>
                                        <div className="flex justify-between items-start mb-1">
                                          <h4 className="font-semibold text-[#4B2E83] text-xs leading-tight line-clamp-2">{classData?.name || 'שיעור לא ידוע'}</h4>
@@ -341,7 +355,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                                      </div>
                                      <button
                                        onClick={() => handleViewClassDetails(classData)}
-                                       className="w-full px-1 py-0.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded text-xs font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+                                       className="w-full px-0.5 sm:px-1 py-0.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded text-xs font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
                                      >
                                        פרטי שיעור
                                      </button>
@@ -352,39 +366,38 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                            </div>
 
                            {/* Registrations Section */}
-                           <div>
+                           <div className="border-2 border-[#4B2E83]/20 rounded-xl p-4 bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5">
                              {(() => {
                                return (
                                  <>
                                    <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">הרשמות לשבוע הקרוב ({sessionData.upcomingActiveRegistrations.length})</h3>
                                    <div className="overflow-x-auto">
-                                     <table className="w-full text-xs sm:text-sm min-w-[800px] sm:min-w-[1000px]">
+                                     <table className="w-full text-xs sm:text-sm min-w-[400px] sm:min-w-[600px]">
                                        <thead className="bg-[#EC4899]/5">
-                                         <tr>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">שם מלא</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">אימייל</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">טלפון</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">תאריך נבחר</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">שעה נבחרת</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">סטטוס</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">ניסיון</th>
-                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">פעולות</th>
+                                                                                  <tr>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-16 sm:w-20">שם מלא</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-20 sm:w-24">אימייל</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-14 sm:w-16">טלפון</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-14 sm:w-16">תאריך</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-10 sm:w-12">שעה</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-10 sm:w-12">סטטוס</th>
+                                           <th className="px-1 sm:px-2 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap w-10 sm:w-12">פעולות</th>
                                          </tr>
                                        </thead>
                                        <tbody className="divide-y divide-[#EC4899]/10">
-                                         {sessionData.upcomingActiveRegistrations.map((registration: any) => (
+                                                                                  {sessionData.upcomingActiveRegistrations.map((registration: any) => (
                                            <tr key={registration.id} className="hover:bg-[#EC4899]/5">
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm truncate">
                                                {registration.first_name} {registration.last_name}
                                              </td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.email}</td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.phone}</td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm truncate">{registration.email}</td>
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.phone}</td>
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">
                                                {new Date(registration.selected_date).toLocaleDateString('he-IL')}
                                              </td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.selected_time}</td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2">
-                                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.selected_time}</td>
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2">
+                                               <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
                                                  registration.status === 'active' ? 'bg-green-100 text-green-800' :
                                                  registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                  'bg-red-100 text-red-800'
@@ -393,11 +406,10 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                                                   registration.status === 'pending' ? 'ממתין' : 'בוטל'}
                                                </span>
                                              </td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.experience || '-'}</td>
-                                             <td className="px-2 sm:px-4 py-1 sm:py-2">
+                                             <td className="px-1 sm:px-2 py-1 sm:py-2">
                                                <button
                                                  onClick={() => handleEditRegistration(registration)}
-                                                 className="px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded text-xs hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300"
+                                                 className="px-0.5 sm:px-1 py-0.5 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded text-xs hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300"
                                                >
                                                  ערוך
                                                </button>
