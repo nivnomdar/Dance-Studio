@@ -18,26 +18,26 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* All Sessions Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-        <div className="p-6 border-b border-[#EC4899]/10">
-          <h2 className="text-2xl font-bold text-[#4B2E83] mb-2">כל הסשנים במערכת</h2>
-          <p className="text-[#4B2E83]/70">סקירה מפורטת של כל הסשנים הקיימים במערכת</p>
+        <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
+          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">כל הקבוצות במערכת</h2>
+          <p className="text-sm sm:text-base text-[#4B2E83]/70">סקירה מפורטת של כל הקבוצות הקיימות במערכת</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px] sm:min-w-[1200px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שם הסשן</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">תיאור</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">תאריך מיועד</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שעות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">ימי שבוע</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">הרשמות פעילות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">תפוסה</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">סטטוס</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שיעורים מקושרים</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם הקבוצה</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תיאור</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תאריך מיועד</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שעות</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">ימי שבוע</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">הרשמות פעילות</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תפוסה</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">סטטוס</th>
+                <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שיעורים מקושרים</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -74,11 +74,11 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                     className="hover:bg-[#EC4899]/5 transition-colors cursor-pointer"
                     onClick={() => handleViewSessionDetails(session)}
                   >
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <div className="font-semibold text-[#4B2E83]">{session.name}</div>
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">{session.name}</div>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <div className="text-sm text-[#4B2E83]/70 max-w-xs truncate">
+                    <td className="px-3 sm:px-6 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                      <div className="text-xs sm:text-sm text-[#4B2E83]/70 max-w-xs truncate">
                         {session.description || 'אין תיאור'}
                       </div>
                     </td>

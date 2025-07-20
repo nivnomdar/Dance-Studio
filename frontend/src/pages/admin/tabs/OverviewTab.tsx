@@ -17,7 +17,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Process schedule_sessions data with aggregated information
+  // Process schedule_sessions data with aggregated information for upcoming week
   const processedSessions = data.sessions?.map((sessionData: any) => {
     // Get linked session_classes for this session
     const sessionClasses = data.session_classes?.filter((sc: any) => sc.session_id === sessionData.id) || [];
@@ -26,28 +26,76 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
     const sessionRegistrations = data.registrations?.filter((reg: any) => reg.session_id === sessionData.id) || [];
     const activeRegistrations = sessionRegistrations.filter((reg: any) => reg.status === 'active');
     
-    // Calculate total expected revenue
+    // Filter active registrations for upcoming week only
+    const upcomingActiveRegistrations = activeRegistrations.filter((reg: any) => {
+      const registrationDate = new Date(reg.selected_date);
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return registrationDate >= today && registrationDate <= nextWeek;
+    });
+    
+    // Calculate total expected revenue based on upcoming registrations only
     const totalRevenue = sessionClasses.reduce((sum: number, sc: any) => {
-      const classRegistrations = activeRegistrations.filter((reg: any) => reg.session_class_id === sc.id);
+      const classRegistrations = upcomingActiveRegistrations.filter((reg: any) => reg.session_class_id === sc.id);
       return sum + (classRegistrations.length * sc.price);
     }, 0);
 
-    // Calculate occupancy rate
-    const occupancyRate = sessionData.max_capacity > 0 ? (activeRegistrations.length / sessionData.max_capacity) * 100 : 0;
+    // Calculate occupancy rate based on upcoming registrations only
+    const occupancyRate = sessionData.max_capacity > 0 ? (upcomingActiveRegistrations.length / sessionData.max_capacity) * 100 : 0;
+
+    // Get all unique selected dates from upcoming active registrations
+    const allSelectedDates = [...new Set(upcomingActiveRegistrations.map((reg: any) => reg.selected_date))].filter(Boolean) as string[];
+    
+    // Filter dates for upcoming week only
+    const upcomingWeekDates = allSelectedDates.filter((date: string) => {
+      const sessionDate = new Date(date);
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return sessionDate >= today && sessionDate <= nextWeek;
+    });
+    
+    // Get weekday names
+    const weekdayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const weekdayNamesEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    
+    const weekdays = sessionData.weekdays?.map((day: any) => {
+      // Handle string format (e.g., "thursday", "Wednesday")
+      if (typeof day === 'string') {
+        const dayLower = day.toLowerCase();
+        const dayIndex = weekdayNamesEn.indexOf(dayLower);
+        return dayIndex !== -1 ? weekdayNames[dayIndex] : day;
+      }
+      // Handle number format (0-6)
+      if (typeof day === 'number') {
+        return weekdayNames[day] || `יום ${day}`;
+      }
+      return `יום ${day}`;
+    }) || [];
+
+    // Get linked classes names
+    const linkedClasses = sessionClasses.map((sc: any) => {
+      const classData = data.classes?.find((c: any) => c.id === sc.class_id);
+      return classData ? classData.name : 'שיעור לא ידוע';
+    });
 
     return {
       ...sessionData,
       linkedClassesCount: sessionClasses.length,
       registrationsCount: sessionRegistrations.length,
-      activeRegistrationsCount: activeRegistrations.length,
+      activeRegistrationsCount: upcomingActiveRegistrations.length,
       totalRevenue,
       occupancyRate,
       sessionClasses,
-      registrations: sessionRegistrations
+      registrations: sessionRegistrations,
+      allSelectedDates,
+      upcomingWeekDates,
+      weekdays,
+      linkedClasses,
+      upcomingActiveRegistrations
     };
   }) || [];
 
-  // Filter sessions
+  // Filter sessions for upcoming week
   const filteredSessions = processedSessions
     .filter((sessionData: any) => {
       const matchesSearch = sessionData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,9 +105,17 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                            (filterStatus === 'active' && sessionData.is_active) ||
                            (filterStatus === 'inactive' && !sessionData.is_active);
       
-      return matchesSearch && matchesStatus;
+      // Filter for upcoming week - show sessions with active registrations in the next 7 days
+      const hasUpcomingDates = sessionData.upcomingWeekDates.length > 0;
+      
+      return matchesSearch && matchesStatus && hasUpcomingDates;
     })
-    .sort((a: any, b: any) => b.activeRegistrationsCount - a.activeRegistrationsCount);
+    .sort((a: any, b: any) => {
+      // Sort by earliest upcoming date first
+      const aEarliestDate = a.upcomingWeekDates.length > 0 ? new Date(Math.min(...a.upcomingWeekDates.map((d: string) => new Date(d).getTime()))) : new Date(9999, 11, 31);
+      const bEarliestDate = b.upcomingWeekDates.length > 0 ? new Date(Math.min(...b.upcomingWeekDates.map((d: string) => new Date(d).getTime()))) : new Date(9999, 11, 31);
+      return aEarliestDate.getTime() - bEarliestDate.getTime();
+    });
 
   // Overall statistics
   const totalSessions = processedSessions.length;
@@ -91,36 +147,36 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Key Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
-          <div className="text-sm text-[#4B2E83]/70">סה"כ סשנים</div>
+      <div className="grid grid-cols-5 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ קבוצות</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-3xl font-bold text-[#4B2E83]">{totalClasses}</div>
-          <div className="text-sm text-[#4B2E83]/70">סה"כ שיעורים</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{totalClasses}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ שיעורים</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-3xl font-bold text-[#EC4899]">{totalActiveRegistrations}</div>
-          <div className="text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalActiveRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-3xl font-bold text-[#4B2E83]">₪{totalExpectedRevenue.toLocaleString()}</div>
-          <div className="text-sm text-[#4B2E83]/70">הכנסות צפויות</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">₪{totalExpectedRevenue.toLocaleString()}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הכנסות צפויות</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-3xl font-bold text-[#EC4899]">{activeSessions}</div>
-          <div className="text-sm text-[#4B2E83]/70">סשנים פעילים</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{activeSessions}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">קבוצות פעילות</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש סשן</label>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש קבוצה קרובה</label>
             <input
               type="text"
               placeholder="חפש לפי שם או תיאור..."
@@ -130,15 +186,15 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס סשן</label>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס קבוצה</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             >
-              <option value="all">כל הסשנים</option>
-              <option value="active">פעילים בלבד</option>
-              <option value="inactive">לא פעילים</option>
+              <option value="all">כל הקבוצות הקרובות</option>
+              <option value="active">פעילות בלבד</option>
+              <option value="inactive">לא פעילות</option>
             </select>
           </div>
         </div>
@@ -146,83 +202,110 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
 
       {/* Sessions Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-        <div className="p-6 border-b border-[#EC4899]/10">
-          <h2 className="text-2xl font-bold text-[#4B2E83] mb-2">סקירה כללית של סשנים</h2>
-          <p className="text-[#4B2E83]/70">מידע מפורט על כל הסשנים, השיעורים המקושרים וההרשמות</p>
+        <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
+          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">סקירה כללית לקבוצות הקרובות</h2>
+          <p className="text-sm sm:text-base text-[#4B2E83]/70">קבוצות מתוכננות לשבוע הקרוב עם פרטי השיעורים וההרשמות</p>
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1100px] sm:min-w-[1500px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שם הסשן</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">ימי פעילות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שעות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">תאריכים</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">קיבולת מקסימלית</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שיעורים מקושרים</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">הרשמות פעילות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">אחוז תפוסה</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">הכנסות צפויות</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">פעולות</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם הקבוצה</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תאריך מיועד</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שעות</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">ימי שבוע</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">הרשמות פעילות</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תפוסה</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">סטטוס</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שיעורים מקושרים</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
               {filteredSessions.map((sessionData: any) => (
                 <React.Fragment key={sessionData.id}>
                   <tr className="hover:bg-[#EC4899]/5 transition-colors">
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <div>
-                        <div className="font-semibold text-[#4B2E83]">{sessionData.name}</div>
-                        <div className="text-sm text-[#4B2E83]/70">{sessionData.description}</div>
-                      </div>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] leading-tight">{sessionData.name}</div>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <span className="text-sm text-[#4B2E83]">
-                        {formatWeekdays(sessionData.weekdays)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <span className="text-sm text-[#4B2E83]">
-                        {sessionData.start_time?.substring(0, 5)} - {sessionData.end_time?.substring(0, 5)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
-                      <div className="text-sm text-[#4B2E83]">
-                        <div>{new Date(sessionData.start_date).toLocaleDateString('he-IL')}</div>
-                        {sessionData.end_date && (
-                          <div className="text-xs text-[#4B2E83]/70">
-                            עד {new Date(sessionData.end_date).toLocaleDateString('he-IL')}
-                          </div>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                      <div className="space-y-1">
+                        {sessionData.upcomingWeekDates.length > 0 ? (
+                          sessionData.upcomingWeekDates.map((date: string, dateIndex: number) => (
+                            <div key={dateIndex} className="text-xs sm:text-sm font-medium text-[#4B2E83] leading-tight">
+                              {new Date(date).toLocaleDateString('he-IL')}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-xs sm:text-sm text-[#4B2E83]/50">לא מוגדר</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10 text-center">
-                      <span className="font-semibold text-[#4B2E83]">{sessionData.max_capacity}</span>
-                    </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10 text-center">
-                      <span className="font-semibold text-[#EC4899]">{sessionData.linkedClassesCount}</span>
-                    </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10 text-center">
-                      <div>
-                        <div className="font-semibold text-[#4B2E83]">{sessionData.activeRegistrationsCount}</div>
-                        <div className="text-xs text-[#4B2E83]/70">מתוך {sessionData.registrationsCount}</div>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                      <div className="text-xs sm:text-sm text-[#EC4899] font-medium leading-tight">
+                        {sessionData.start_time && sessionData.end_time 
+                          ? `${sessionData.start_time.substring(0, 5)} - ${sessionData.end_time.substring(0, 5)}`
+                          : 'לא מוגדר'
+                        }
                       </div>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getOccupancyColor(sessionData.occupancyRate)}`}>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                      <div className="flex flex-wrap gap-1">
+                        {sessionData.weekdays.length > 0 ? (
+                          sessionData.weekdays.map((day: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
+                              {day}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#4B2E83]/50">לא מוגדר</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
+                      <div className="leading-tight">
+                        <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">
+                          {sessionData.activeRegistrationsCount} מתוך {sessionData.max_capacity} הרשמות
+                        </div>
+                        <div className="text-xs text-[#4B2E83]/70">
+                          {sessionData.activeRegistrationsCount === sessionData.max_capacity ? 'מלא' : 'פנוי'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getOccupancyColor(sessionData.occupancyRate)}`}>
                         {sessionData.occupancyRate.toFixed(1)}%
                       </span>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10 text-[#EC4899] font-semibold">
-                      ₪{sessionData.totalRevenue.toLocaleString()}
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        sessionData.is_active 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {sessionData.is_active ? 'פעיל' : 'לא פעיל'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                      <div className="flex flex-wrap gap-1">
+                        {sessionData.linkedClasses.length > 0 ? (
+                          sessionData.linkedClasses.map((className: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899]">
+                              {className}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#4B2E83]/50">אין שיעורים מקושרים</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <button
                         onClick={() => setExpandedSession(expandedSession === sessionData.id ? null : sessionData.id)}
-                        className="px-3 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                        className="px-2 sm:px-3 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
                       >
-                        {expandedSession === sessionData.id ? 'הסתר פרטים' : 'הצג פרטים'}
+                        {expandedSession === sessionData.id ? 'הסתר' : 'פרטים'}
                       </button>
                     </td>
                   </tr>
@@ -230,20 +313,20 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                   {/* Expanded Details */}
                   {expandedSession === sessionData.id && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-4 bg-gray-50">
+                      <td colSpan={9} className="px-6 py-4 bg-gray-50">
                         <div className="space-y-6">
                                                      {/* Linked Classes Section */}
                            <div>
                              <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">שיעורים מקושרים</h3>
-                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                             <div className="flex flex-wrap gap-2 justify-start">
                                {sessionData.sessionClasses.map((sessionClass: any) => {
                                  const classData = data.classes?.find((c: any) => c.id === sessionClass.class_id);
                                  return (
-                                   <div key={sessionClass.id} className="bg-white p-3 rounded-lg border border-[#EC4899]/10 h-32 flex flex-col justify-between">
+                                   <div key={sessionClass.id} className="bg-white p-2 rounded-lg border border-[#EC4899]/10 w-48 flex flex-col justify-between">
                                      <div>
-                                       <div className="flex justify-between items-start mb-2">
-                                         <h4 className="font-semibold text-[#4B2E83] text-sm leading-tight line-clamp-2">{classData?.name || 'שיעור לא ידוע'}</h4>
-                                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                                       <div className="flex justify-between items-start mb-1">
+                                         <h4 className="font-semibold text-[#4B2E83] text-xs leading-tight line-clamp-2">{classData?.name || 'שיעור לא ידוע'}</h4>
+                                         <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
                                            sessionClass.is_trial ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                                          }`}>
                                            {sessionClass.is_trial ? 'ניסיון' : 'רגיל'}
@@ -258,7 +341,7 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
                                      </div>
                                      <button
                                        onClick={() => handleViewClassDetails(classData)}
-                                       className="w-full px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded text-xs font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+                                       className="w-full px-1 py-0.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded text-xs font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
                                      >
                                        פרטי שיעור
                                      </button>
@@ -270,58 +353,64 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
 
                            {/* Registrations Section */}
                            <div>
-                             <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">הרשמות ({sessionData.registrations.length})</h3>
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead className="bg-[#EC4899]/5">
-                                  <tr>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">שם מלא</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">אימייל</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">טלפון</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">תאריך נבחר</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">שעה נבחרת</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">סטטוס</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">ניסיון</th>
-                                    <th className="px-4 py-2 text-right text-[#4B2E83] font-medium">פעולות</th>
-                                  </tr>
-                                </thead>
-                                                                 <tbody className="divide-y divide-[#EC4899]/10">
-                                   {sessionData.registrations.map((registration: any) => (
-                                    <tr key={registration.id} className="hover:bg-[#EC4899]/5">
-                                      <td className="px-4 py-2 text-[#4B2E83]">
-                                        {registration.first_name} {registration.last_name}
-                                      </td>
-                                      <td className="px-4 py-2 text-[#4B2E83]">{registration.email}</td>
-                                      <td className="px-4 py-2 text-[#4B2E83]">{registration.phone}</td>
-                                      <td className="px-4 py-2 text-[#4B2E83]">
-                                        {new Date(registration.selected_date).toLocaleDateString('he-IL')}
-                                      </td>
-                                      <td className="px-4 py-2 text-[#4B2E83]">{registration.selected_time}</td>
-                                      <td className="px-4 py-2">
-                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                          registration.status === 'active' ? 'bg-green-100 text-green-800' :
-                                          registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                          'bg-red-100 text-red-800'
-                                        }`}>
-                                          {registration.status === 'active' ? 'פעיל' :
-                                           registration.status === 'pending' ? 'ממתין' : 'בוטל'}
-                                        </span>
-                                      </td>
-                                      <td className="px-4 py-2 text-[#4B2E83]">{registration.experience || '-'}</td>
-                                      <td className="px-4 py-2">
-                                        <button
-                                          onClick={() => handleEditRegistration(registration)}
-                                          className="px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded text-xs hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300"
-                                        >
-                                          ערוך
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
+                             {(() => {
+                               return (
+                                 <>
+                                   <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">הרשמות לשבוע הקרוב ({sessionData.upcomingActiveRegistrations.length})</h3>
+                                   <div className="overflow-x-auto">
+                                     <table className="w-full text-xs sm:text-sm min-w-[800px] sm:min-w-[1000px]">
+                                       <thead className="bg-[#EC4899]/5">
+                                         <tr>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">שם מלא</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">אימייל</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">טלפון</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">תאריך נבחר</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">שעה נבחרת</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">סטטוס</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">ניסיון</th>
+                                           <th className="px-2 sm:px-4 py-1 sm:py-2 text-right text-[#4B2E83] font-medium whitespace-nowrap">פעולות</th>
+                                         </tr>
+                                       </thead>
+                                       <tbody className="divide-y divide-[#EC4899]/10">
+                                         {sessionData.upcomingActiveRegistrations.map((registration: any) => (
+                                           <tr key={registration.id} className="hover:bg-[#EC4899]/5">
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">
+                                               {registration.first_name} {registration.last_name}
+                                             </td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.email}</td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.phone}</td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">
+                                               {new Date(registration.selected_date).toLocaleDateString('he-IL')}
+                                             </td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.selected_time}</td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2">
+                                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                 registration.status === 'active' ? 'bg-green-100 text-green-800' :
+                                                 registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                 'bg-red-100 text-red-800'
+                                               }`}>
+                                                 {registration.status === 'active' ? 'פעיל' :
+                                                  registration.status === 'pending' ? 'ממתין' : 'בוטל'}
+                                               </span>
+                                             </td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.experience || '-'}</td>
+                                             <td className="px-2 sm:px-4 py-1 sm:py-2">
+                                               <button
+                                                 onClick={() => handleEditRegistration(registration)}
+                                                 className="px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded text-xs hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300"
+                                               >
+                                                 ערוך
+                                               </button>
+                                             </td>
+                                           </tr>
+                                         ))}
+                                       </tbody>
+                                     </table>
+                                   </div>
+                                 </>
+                               );
+                             })()}
+                           </div>
                         </div>
                       </td>
                     </tr>
@@ -341,8 +430,8 @@ export default function OverviewTab({ data, session, fetchClasses }: OverviewTab
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[#4B2E83] mb-2">לא נמצאו סשנים</h3>
-          <p className="text-[#4B2E83]/70">נסה לשנות את פרמטרי החיפוש או הסינון</p>
+          <h3 className="text-lg font-semibold text-[#4B2E83] mb-2">לא נמצאו קבוצות קרובות</h3>
+          <p className="text-[#4B2E83]/70">אין קבוצות מתוכננות לשבוע הקרוב או נסה לשנות את פרמטרי החיפוש</p>
         </div>
       )}
 

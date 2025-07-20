@@ -108,7 +108,7 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
 
   if (isLoading && data.classes.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
@@ -121,7 +121,7 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
 
   if (error && data.classes.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6 overflow-x-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -153,26 +153,26 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-2 sm:p-6 overflow-x-hidden">
+      <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EC4899]/10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-[#4B2E83]">דוחות שיעורים</h1>
-              <p className="text-[#4B2E83]/70 mt-2">סקירה כללית של השיעורים, הסשנים וההרשמות</p>
+              <h1 className="text-xl sm:text-3xl font-bold text-[#4B2E83]">דוחות שיעורים</h1>
+              <p className="text-sm sm:text-base text-[#4B2E83]/70 mt-1 sm:mt-2">סקירה כללית של השיעורים, הסשנים וההרשמות</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => navigate('/admin')}
-                className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm"
+                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs sm:text-sm"
               >
                 חזור לפאנל
               </button>
               <button
                 onClick={handleRefresh}
                 disabled={isFetching}
-                className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isFetching ? 'מעדכן...' : 'רענן נתונים'}
               </button>
@@ -181,11 +181,11 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EC4899]/10">
-          <div className="flex gap-2">
+        <div className="bg-white rounded-2xl p-2 sm:p-6 shadow-sm border border-[#EC4899]/10">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              className={`px-2 sm:px-6 py-1.5 sm:py-3 rounded-lg font-medium transition-all text-xs sm:text-base ${
                 activeTab === 'overview'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
@@ -195,7 +195,7 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
             </button>
             <button
               onClick={() => setActiveTab('classes')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              className={`px-2 sm:px-6 py-1.5 sm:py-3 rounded-lg font-medium transition-all text-xs sm:text-base ${
                 activeTab === 'classes'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
@@ -205,17 +205,17 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
             </button>
             <button
               onClick={() => setActiveTab('sessions')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              className={`px-2 sm:px-6 py-1.5 sm:py-3 rounded-lg font-medium transition-all text-xs sm:text-base ${
                 activeTab === 'sessions'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
               }`}
             >
-              סשנים
+              קבוצות
             </button>
             <button
               onClick={() => setActiveTab('registrations')}
-              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              className={`px-2 sm:px-6 py-1.5 sm:py-3 rounded-lg font-medium transition-all text-xs sm:text-base ${
                 activeTab === 'registrations'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'

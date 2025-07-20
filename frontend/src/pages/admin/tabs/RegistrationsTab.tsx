@@ -13,6 +13,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   const [registrationEditModalOpen, setRegistrationEditModalOpen] = useState(false);
   const [editingRegistration, setEditingRegistration] = useState<any>(null);
   const [isSavingRegistration, setIsSavingRegistration] = useState(false);
+  const [expandedCancelledGroups, setExpandedCancelledGroups] = useState<Set<string>>(new Set());
 
   // Define the processed registration type
   type ProcessedRegistration = {
@@ -26,6 +27,8 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     phone?: string;
     status: string;
     created_at: string;
+    selected_date?: string;
+    selected_time?: string;
     class_name: string;
     session_name: string;
     user_name: string;
@@ -36,56 +39,113 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     const classData = data.classes.find((c: any) => c.id === reg.class_id);
     const sessionData = data.sessions.find((s: any) => s.id === reg.session_id);
     
+    // Get next session date for this registration
+    let nextSessionDate = null;
+    if (reg.selected_date) {
+      const selectedDate = new Date(reg.selected_date);
+      const today = new Date();
+      if (selectedDate >= today) {
+        nextSessionDate = selectedDate;
+      }
+    }
+    
     return {
       ...reg,
       class_name: classData?.name || 'שיעור לא ידוע',
       session_name: sessionData?.name || 'סשן לא ידוע',
       session_id: reg.session_id,
+      next_session_date: nextSessionDate,
       user_name: reg.user ? 
         `${reg.user.first_name || ''} ${reg.user.last_name || ''}`.trim() || reg.user.email :
         `${reg.first_name || ''} ${reg.last_name || ''}`.trim() || reg.email || 'לא ידוע'
     };
   });
 
-  // Group registrations by session
-  const registrationsBySession = processedRegistrations.reduce((acc: any, reg: any) => {
-    const sessionKey = reg.session_id || 'no-session';
-    if (!acc[sessionKey]) {
-      acc[sessionKey] = {
+  // Group registrations by date and time
+  const registrationsByDateTime = processedRegistrations.reduce((acc: any, reg: any) => {
+    // Only include active registrations with future dates
+    if (reg.status !== 'active' || !reg.selected_date) return acc;
+    
+    const selectedDate = new Date(reg.selected_date);
+    const today = new Date();
+    if (selectedDate < today) return acc;
+    
+    // Create a unique key for date + time + session
+    const dateTimeKey = `${reg.selected_date}_${reg.selected_time}_${reg.session_id}`;
+    
+    if (!acc[dateTimeKey]) {
+      const sessionData = data.sessions.find((s: any) => s.id === reg.session_id);
+      const classData = data.classes.find((c: any) => c.id === reg.class_id);
+      
+      acc[dateTimeKey] = {
+        date: reg.selected_date,
+        time: reg.selected_time,
         session_id: reg.session_id,
-        session_name: reg.session_name,
+        session_name: sessionData?.name || 'קבוצה לא ידועה',
+        class_name: classData?.name || 'שיעור לא ידוע',
         registrations: []
       };
     }
-    acc[sessionKey].registrations.push(reg);
+    
+    acc[dateTimeKey].registrations.push(reg);
     return acc;
   }, {});
 
-  // Convert to array and sort by session name
-  const sessionsList = Object.values(registrationsBySession).sort((a: any, b: any) => 
-    a.session_name.localeCompare(b.session_name, 'he')
+
+
+  // Convert to array and sort by date and time
+  const dateTimeList = Object.values(registrationsByDateTime).sort((a: any, b: any) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    if (dateA.getTime() !== dateB.getTime()) {
+      return dateA.getTime() - dateB.getTime();
+    }
+    // If same date, sort by time
+    return a.time.localeCompare(b.time);
+  });
+
+  // Filter registrations within each date/time group and add cancelled registrations
+  const filteredDateTimeList = dateTimeList.map((dateTimeGroup: any) => {
+    const dateTimeKey = `${dateTimeGroup.date}_${dateTimeGroup.time}_${dateTimeGroup.session_id}`;
+    
+    // Find cancelled registrations for this same date/time/session
+    const cancelledForThisGroup = processedRegistrations.filter((reg: any) => 
+      reg.status === 'cancelled' && 
+      reg.selected_date === dateTimeGroup.date && 
+      reg.selected_time === dateTimeGroup.time && 
+      reg.session_id === dateTimeGroup.session_id &&
+      reg.selected_date && 
+      new Date(reg.selected_date) >= new Date()
+    );
+
+    return {
+      ...dateTimeGroup,
+      dateTimeKey,
+      hasCancelled: cancelledForThisGroup.length > 0,
+      cancelledRegistrations: cancelledForThisGroup,
+      registrations: dateTimeGroup.registrations
+        .filter((reg: any) => {
+          const matchesSearch = reg.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               reg.class_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                               reg.session_name.toLowerCase().includes(searchTerm.toLowerCase());
+          
+          const matchesStatus = filterStatus === 'all' || reg.status === filterStatus;
+          
+          return matchesSearch && matchesStatus;
+        })
+        .sort((a: any, b: any) => a.user_name.localeCompare(b.user_name, 'he'))
+    };
+  }).filter((dateTimeGroup: any) => dateTimeGroup.registrations.length > 0);
+
+
+
+  // Statistics - only future active registrations
+  const futureActiveRegistrations = processedRegistrations.filter(reg => 
+    reg.status === 'active' && reg.selected_date && new Date(reg.selected_date) >= new Date()
   );
-
-  // Filter registrations within each session
-  const filteredSessionsList = sessionsList.map((sessionGroup: any) => ({
-    ...sessionGroup,
-    registrations: sessionGroup.registrations
-      .filter((reg: any) => {
-        const matchesSearch = reg.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             reg.class_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             reg.session_name.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesStatus = filterStatus === 'all' || reg.status === filterStatus;
-        
-        return matchesSearch && matchesStatus;
-      })
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  })).filter((sessionGroup: any) => sessionGroup.registrations.length > 0);
-
-  // Statistics
-  const totalRegistrations = processedRegistrations.length;
-  const activeRegistrations = processedRegistrations.filter(reg => reg.status === 'active').length;
+  const totalRegistrations = futureActiveRegistrations.length;
+  const activeRegistrations = futureActiveRegistrations.length;
   const cancelledRegistrations = processedRegistrations.filter(reg => reg.status === 'cancelled').length;
 
   // Handle registration edit
@@ -124,32 +184,43 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     }
   };
 
+  // Handle toggle cancelled registrations for a specific group
+  const handleToggleCancelled = (dateTimeKey: string) => {
+    const newExpanded = new Set(expandedCancelledGroups);
+    if (newExpanded.has(dateTimeKey)) {
+      newExpanded.delete(dateTimeKey);
+    } else {
+      newExpanded.add(dateTimeKey);
+    }
+    setExpandedCancelledGroups(newExpanded);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-3xl font-bold text-[#EC4899]">{totalRegistrations}</div>
-          <div className="text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-3xl font-bold text-[#4B2E83]">{activeRegistrations}</div>
-          <div className="text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{activeRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-3xl font-bold text-[#EC4899]">{cancelledRegistrations}</div>
-          <div className="text-sm text-[#4B2E83]/70">הרשמות בוטלו</div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{cancelledRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות בוטלו</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש הרשמה</label>
             <input
               type="text"
-              placeholder="חפש לפי שם, אימייל, שיעור או סשן..."
+              placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
@@ -181,29 +252,35 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         </div>
       </div>
 
-      {/* Registrations by Session */}
+      {/* Registrations by Date and Time */}
       <div className="space-y-6">
-        {filteredSessionsList.map((sessionGroup: any) => (
-          <div key={sessionGroup.session_id} className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-            <div className="p-6 border-b border-[#EC4899]/10 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
-              <h2 className="text-xl font-bold text-[#4B2E83] mb-2">{sessionGroup.session_name}</h2>
-              <p className="text-[#4B2E83]/70">{sessionGroup.registrations.length} הרשמות בסשן זה</p>
+        {filteredDateTimeList.map((dateTimeGroup: any) => (
+          <div key={`${dateTimeGroup.date}_${dateTimeGroup.time}_${dateTimeGroup.session_id}`} className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
+            <div className="p-3 sm:p-6 border-b border-[#EC4899]/10 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-[#4B2E83] mb-1 sm:mb-2">{dateTimeGroup.session_name}</h2>
+                  <p className="text-sm sm:text-base text-[#4B2E83]/70">
+                    {new Date(dateTimeGroup.date).toLocaleDateString('he-IL')} • {dateTimeGroup.time} • {dateTimeGroup.registrations.length} רשומים פעילים
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[800px] sm:min-w-[1000px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שם מלא</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">אימייל</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">טלפון</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">שיעור</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">תאריך הרשמה</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">סטטוס</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10">פעולות</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שם מלא</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">אימייל</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">טלפון</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">שיעור</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">תאריך הבא</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">סטטוס</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap">פעולות</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#EC4899]/10">
-                  {sessionGroup.registrations.map((reg: any) => (
+                  {dateTimeGroup.registrations.map((reg: any) => (
                     <tr 
                       key={reg.id} 
                       className="hover:bg-[#EC4899]/5 transition-colors"
@@ -224,7 +301,11 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                       </td>
                       <td className="px-6 py-4 border-l border-[#EC4899]/10">
                         <div className="text-sm text-[#4B2E83]/70">
-                          {new Date(reg.created_at).toLocaleDateString('he-IL')}
+                          {reg.next_session_date ? (
+                            new Date(reg.next_session_date).toLocaleDateString('he-IL')
+                          ) : (
+                            <span className="text-[#4B2E83]/50">לא מוגדר</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 border-l border-[#EC4899]/10">
@@ -253,12 +334,104 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                 </tbody>
               </table>
             </div>
+
+            {/* Show Cancelled Button if there are cancelled registrations */}
+            {dateTimeGroup.hasCancelled && (
+              <div className="p-3 sm:p-6 border-t border-[#EC4899]/10 bg-gray-50">
+                <button
+                  onClick={() => handleToggleCancelled(dateTimeGroup.dateTimeKey)}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium transition-colors"
+                >
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${expandedCancelledGroups.has(dateTimeGroup.dateTimeKey) ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  הצג {dateTimeGroup.cancelledRegistrations.length} הרשמות מבוטלות
+                </button>
+              </div>
+            )}
+
+            {/* Cancelled Registrations Table */}
+            {dateTimeGroup.hasCancelled && expandedCancelledGroups.has(dateTimeGroup.dateTimeKey) && (
+              <div className="border-t border-red-200 bg-red-50">
+                <div className="p-3 sm:p-6 border-b border-red-200 bg-red-100">
+                  <h3 className="text-lg font-semibold text-red-800">הרשמות מבוטלות</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] sm:min-w-[1000px]">
+                    <thead className="bg-red-100">
+                      <tr>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">שם מלא</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">אימייל</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">טלפון</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">שיעור</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">תאריך מבוטל</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">סטטוס</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-red-800 border-l border-red-200 whitespace-nowrap">פעולות</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-200">
+                      {dateTimeGroup.cancelledRegistrations.map((reg: any) => (
+                        <tr 
+                          key={reg.id} 
+                          className="hover:bg-red-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <div className="font-semibold text-red-800">{reg.user_name}</div>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <div className="text-sm text-red-700">{reg.email}</div>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <div className="text-sm text-red-700">{reg.phone}</div>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              {reg.class_name}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <div className="text-sm text-red-700">
+                              {reg.selected_date ? (
+                                new Date(reg.selected_date).toLocaleDateString('he-IL')
+                              ) : (
+                                <span className="text-red-500">לא מוגדר</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              בוטל
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 border-l border-red-200">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditRegistration(reg);
+                              }}
+                              className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:from-red-700 hover:to-red-800 transition-all duration-300 text-xs"
+                            >
+                              ערוך
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* No Results */}
-      {filteredSessionsList.length === 0 && (
+      {filteredDateTimeList.length === 0 && (
         <div className="bg-white rounded-2xl p-12 text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,6 +442,8 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           <p className="text-[#4B2E83]/70">נסה לשנות את פרמטרי החיפוש או הסינון</p>
         </div>
       )}
+
+
 
       {/* Registration Edit Modal */}
       {registrationEditModalOpen && editingRegistration && (

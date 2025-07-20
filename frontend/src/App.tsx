@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import DeveloperCredit from './components/layout/DeveloperCredit';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import ClassesPage from './pages/ClassesPage';
@@ -18,6 +19,35 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ClassesReportsWrapper from './pages/admin/ClassesReportsWrapper';
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
 
+function AppContent() {
+  const location = useLocation();
+  
+  // Check if current path is admin dashboard
+  const isAdminPath = location.pathname.startsWith('/admin');
+  
+  return (
+    <div className="min-h-screen bg-black flex flex-col">
+      <Navbar />
+      <main className="pt-12 flex-grow"> {/* Add padding-top to account for fixed navbar */}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/classes" element={<ClassesPage />} />
+          <Route path="/class/:slug" element={<ClassDetailPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+        </Routes>
+      </main>
+      {!isAdminPath ? <Footer /> : <DeveloperCredit />}
+    </div>
+  );
+}
+
 function App() {
   // console.log('App component render at:', new Date().toISOString()); // Debug log
   return (
@@ -25,25 +55,7 @@ function App() {
       <PopupProvider>
         <CartProvider>
           <Router>
-            <div className="min-h-screen bg-black flex flex-col">
-              <Navbar />
-              <main className="pt-12 flex-grow"> {/* Add padding-top to account for fixed navbar */}
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/class/:slug" element={<ClassDetailPage />} />
-                  <Route path="/contact" element={<ContactPage />} />
-                  <Route path="/profile" element={<UserProfile />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                </Routes>
-              </main>
-              <Footer />
-            </div>
+            <AppContent />
             {/* <ThrottleMonitor isVisible={import.meta.env.DEV} /> */}
           </Router>
         </CartProvider>
