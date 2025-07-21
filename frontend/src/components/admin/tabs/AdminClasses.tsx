@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
-import { ClassesTab, SessionsTab, RegistrationsTab, OverviewTab } from '../../../pages/admin/tabs';
+import { ClassesTab, SessionsTab, RegistrationsTab } from '../../../pages/admin/tabs';
 
 interface AdminClassesProps {
   profile: UserProfile;
 }
 
-type TabType = 'overview' | 'classes' | 'sessions' | 'registrations';
+type TabType = 'classes' | 'sessions' | 'registrations';
 
 // Global flag to prevent multiple initializations across renders
 let globalAdminClassesInitialized = false;
@@ -18,7 +18,7 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { data, isLoading, error, fetchClasses, isFetching, resetRateLimit } = useAdminData();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('classes');
   const previousUserIdRef = useRef<string | null>(null); // Track previous user ID
 
   // Load data on component mount - only once
@@ -182,16 +182,7 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
       {/* Tabs Navigation */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#EC4899]/10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-3 rounded-lg font-medium transition-all text-sm ${
-              activeTab === 'overview'
-                ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
-                : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
-            }`}
-          >
-            סקירה כללית
-          </button>
+
           <button
             onClick={() => setActiveTab('classes')}
             className={`px-4 py-3 rounded-lg font-medium transition-all text-sm ${
@@ -227,14 +218,6 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
 
       {/* Tab Content */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-        {activeTab === 'overview' && (
-          <OverviewTab 
-            data={data} 
-            session={session} 
-            fetchClasses={fetchClasses}
-          />
-        )}
-        
         {activeTab === 'classes' && (
           <ClassesTab 
             data={data} 

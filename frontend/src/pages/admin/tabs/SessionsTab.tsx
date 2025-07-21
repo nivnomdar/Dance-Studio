@@ -30,15 +30,15 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
           <table className="w-full min-w-[600px] sm:min-w-[800px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שם הקבוצה</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">תיאור</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">תאריך מיועד</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">שעות</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">ימי שבוע</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">הרשמות פעילות</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">תפוסה</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
-                <th className="px-2 sm:px-4 py-2 sm:py-4 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שיעורים מקושרים</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שם הקבוצה</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">תיאור</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">תאריך מיועד</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">שעות</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">ימי שבוע</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">הרשמות פעילות</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">תפוסה</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
+                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שיעורים מקושרים</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -59,15 +59,15 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                     className="hover:bg-[#EC4899]/5 transition-colors cursor-pointer"
                     onClick={() => handleViewSessionDetails(session)}
                   >
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{session.name}</div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="text-xs sm:text-sm text-[#4B2E83]/70 max-w-xs truncate">
                         {session.description || 'אין תיאור'}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="space-y-1">
                         {(() => {
                           // Get all active registrations for this session
@@ -75,22 +75,31 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                             reg.session_id === session.id && reg.status === 'active'
                           );
                           
-                          // Get all unique selected dates from all registrations
-                          const allSelectedDates = [...new Set(sessionRegistrations.map((reg: any) => reg.selected_date))].filter(Boolean) as string[];
+                          // Get all unique selected dates from all registrations and filter for future dates only
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0); // Reset time to start of day
+                          
+                          const allSelectedDates = [...new Set(sessionRegistrations.map((reg: any) => reg.selected_date))]
+                            .filter((date): date is string => Boolean(date))
+                            .filter((date: string) => {
+                              const registrationDate = new Date(date);
+                              registrationDate.setHours(0, 0, 0, 0);
+                              return registrationDate >= today;
+                            });
                           
                           if (allSelectedDates.length > 0) {
                             return allSelectedDates.map((date: string, dateIndex: number) => (
-                              <div key={dateIndex} className="text-sm font-medium text-[#4B2E83]">
+                              <div key={dateIndex} className="text-xs sm:text-sm font-medium text-[#4B2E83]">
                                 {new Date(date).toLocaleDateString('he-IL')}
                               </div>
                             ));
                           } else {
-                            return <span className="text-sm text-[#4B2E83]/50">לא מוגדר</span>;
+                            return <span className="text-xs sm:text-sm text-[#4B2E83]/50">לא מוגדר</span>;
                           }
                         })()}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="text-xs sm:text-sm text-[#EC4899] font-medium">
                         {session.start_time && session.end_time 
                           ? `${session.start_time.substring(0, 5)} - ${session.end_time.substring(0, 5)}`
@@ -98,7 +107,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                         }
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {weekdays.length > 0 ? (
                           weekdays.map((day: string, index: number) => (
@@ -111,30 +120,30 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                         )}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
-                                                <div className="text-center">
-                            {(() => {
-                              // Count active registrations for this session
-                              const sessionRegistrations = (data.registrations || []).filter((reg: any) => 
-                                reg.session_id === session.id && reg.status === 'active'
-                              );
-                              const activeRegistrations = sessionRegistrations.length;
-                              
-                              return (
-                                <>
-                                  <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">
-                                    {activeRegistrations} מתוך {session.max_capacity} הרשמות
-                                  </div>
-                                  <div className="text-xs text-[#4B2E83]/70">
-                                    {activeRegistrations === session.max_capacity ? 'מלא' : 'פנוי'}
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
+                      <div className="leading-tight">
+                        {(() => {
+                          // Count active registrations for this session
+                          const sessionRegistrations = (data.registrations || []).filter((reg: any) => 
+                            reg.session_id === session.id && reg.status === 'active'
+                          );
+                          const activeRegistrations = sessionRegistrations.length;
+                          
+                          return (
+                            <>
+                              <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">
+                                {activeRegistrations} מתוך {session.max_capacity} הרשמות
+                              </div>
+                              <div className="text-xs text-[#4B2E83]/70">
+                                {activeRegistrations === session.max_capacity ? 'מלא' : 'פנוי'}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </td>
 
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="text-center">
                         {(() => {
                           // Count active registrations for this session
@@ -163,7 +172,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                       </div>
                     </td>
 
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         session.is_active 
                           ? 'bg-green-100 text-green-800' 
@@ -172,7 +181,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                         {session.is_active ? 'פעיל' : 'לא פעיל'}
                       </span>
                     </td>
-                    <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {linkedClasses.length > 0 ? (
                           linkedClasses.map((className: string, index: number) => (

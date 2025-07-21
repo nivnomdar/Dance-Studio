@@ -13,8 +13,20 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
 
   // Get registrations for this session
   const sessionRegistrations = registrations.filter(reg => reg.session_id === session.id);
-  const activeRegistrations = sessionRegistrations.filter(reg => reg.status === 'active');
-  const cancelledRegistrations = sessionRegistrations.filter(reg => reg.status === 'cancelled');
+  
+  // Filter for future dates only
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+  
+  const futureRegistrations = sessionRegistrations.filter((reg: any) => {
+    if (!reg.selected_date) return false;
+    const registrationDate = new Date(reg.selected_date);
+    registrationDate.setHours(0, 0, 0, 0);
+    return registrationDate >= today;
+  });
+  
+  const activeRegistrations = futureRegistrations.filter(reg => reg.status === 'active');
+  const cancelledRegistrations = futureRegistrations.filter(reg => reg.status === 'cancelled');
 
   // Convert weekdays to Hebrew names
   const weekdays = weekdaysToHebrew(session.weekdays || []);
@@ -81,7 +93,7 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
 
           {/* Registration Statistics */}
           <div className="p-6 border-b border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-green-50 p-4 rounded-xl border border-green-200 text-center">
                 <div className="text-3xl font-bold text-green-600">{activeRegistrations.length}</div>
                 <div className="text-sm text-green-700 font-medium">הרשמות פעילות</div>
@@ -89,10 +101,6 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
               <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-center">
                 <div className="text-3xl font-bold text-red-600">{cancelledRegistrations.length}</div>
                 <div className="text-sm text-red-700 font-medium">הרשמות בוטלו</div>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 text-center">
-                <div className="text-3xl font-bold text-blue-600">{sessionRegistrations.length}</div>
-                <div className="text-sm text-blue-700 font-medium">סה"כ הרשמות</div>
               </div>
             </div>
           </div>
@@ -102,11 +110,11 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-[#4B2E83]">רשימת משתתפים</h3>
               <div className="text-sm text-[#4B2E83]/70">
-                {sessionRegistrations.length} משתתפים
+                {activeRegistrations.length} משתתפים (שיעורים עתידיים בלבד)
               </div>
             </div>
             
-            {sessionRegistrations.length === 0 ? (
+            {futureRegistrations.length === 0 ? (
               <div className="text-center py-12">
                 <div className="mx-auto mb-4 w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
                   <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,12 +133,12 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
                         <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">שם מלא</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">אימייל</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">טלפון</th>
-                        <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">תאריך הרשמה</th>
+                        <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">תאריך שיעור</th>
                         <th className="px-6 py-4 text-right text-sm font-semibold text-[#4B2E83]">סטטוס</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {sessionRegistrations.map((reg: any) => (
+                      {futureRegistrations.map((reg: any) => (
                         <tr key={reg.id} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-6 py-4">
                             <div className="font-medium text-[#4B2E83]">
@@ -153,7 +161,7 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
                           </td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-[#4B2E83]/80">
-                              {new Date(reg.created_at).toLocaleDateString('he-IL')}
+                              {reg.selected_date ? new Date(reg.selected_date).toLocaleDateString('he-IL') : 'לא מוגדר'}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -173,11 +181,11 @@ export default function SessionDetailsModal({ session, isOpen, onClose, registra
                 </div>
                 
                 {/* Notes Section */}
-                {sessionRegistrations.some((reg: any) => reg.notes) && (
+                {futureRegistrations.some((reg: any) => reg.notes) && (
                   <div className="p-6 border-t border-gray-100">
                     <h4 className="text-lg font-semibold text-[#4B2E83] mb-4">הערות משתתפים</h4>
                     <div className="space-y-3">
-                      {sessionRegistrations
+                      {futureRegistrations
                         .filter((reg: any) => reg.notes)
                         .map((reg: any) => (
                           <div key={reg.id} className="bg-gray-50 p-4 rounded-lg">
