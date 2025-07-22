@@ -156,14 +156,13 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
           <table className="w-full">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">שם הקבוצה</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">תיאור</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">שעות</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">ימי שבוע</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">תפוסה</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">שיעורים מקושרים</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">פעולות</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שם הקבוצה</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">שעות</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">ימי שבוע</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">תפוסה</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">סטטוס</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שיעורים מקושרים</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -183,11 +182,6 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                     <td className="px-3 py-3 border-l border-[#EC4899]/10">
                       <div className="font-semibold text-sm text-[#4B2E83] truncate">
                         {sessionData.name}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
-                      <div className="text-xs text-[#4B2E83]/70 truncate max-w-[10ch]" title={sessionData.description || 'אין תיאור'}>
-                        {sessionData.description || 'אין תיאור'}
                       </div>
                     </td>
                     <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
