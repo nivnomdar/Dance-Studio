@@ -50,7 +50,7 @@ export const getSafeUserId = (user: User | SafeUser | null): string | null => {
   if (!user) return null;
   
   // Handle both User and SafeUser types
-  return 'id' in user ? user.id : user.id;
+  return user.id;
 };
 
 /**
@@ -67,8 +67,8 @@ export const isSessionValid = (session: Session | SafeSession | null): boolean =
   if (!session) return false;
   
   // Check if session has required properties
-  const hasAccessToken = 'access_token' in session ? Boolean(session.access_token) : Boolean(session.access_token);
-  const hasUser = 'user' in session ? Boolean(session.user) : Boolean(session.user);
+  const hasAccessToken = Boolean(session.access_token);
+  const hasUser = Boolean(session.user);
   
   return hasAccessToken && hasUser;
 };

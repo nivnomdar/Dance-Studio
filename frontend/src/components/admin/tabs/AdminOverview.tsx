@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { UserProfile } from '../../../types/auth';
-import { weekdaysToHebrew, HEBREW_WEEKDAYS } from '../../../utils/weekdaysUtils';
+// ... existing code ...
 import { ClassDetailsModal, RegistrationEditModal } from '../../../pages/admin/modals';
 
 // Types
@@ -41,16 +41,7 @@ const getDayOfWeekName = (dayNumber: number): string => {
   return WEEKDAY_NAMES[dayNumber] || 'לא ידוע';
 };
 
-const isToday = (date: Date): boolean => {
-  const today = new Date();
-  return date.toDateString() === today.toDateString();
-};
-
-const isTomorrow = (date: Date): boolean => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return date.toDateString() === tomorrow.toDateString();
-};
+// ... existing code ...
 
 const getOccupancyColor = (rate: number): string => {
   if (rate >= 80) return 'text-green-600 bg-green-100';
