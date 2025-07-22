@@ -23,23 +23,13 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
 
   // Load data on component mount - only once
   useEffect(() => {
-    console.log('ClassesReports useEffect called');
-    console.log('globalClassesReportsInitialized:', globalClassesReportsInitialized);
-    console.log('data.classes.length:', data.classes.length);
-    console.log('isLoading:', isLoading);
-    
     // טען רק אם לא טענו עדיין ואין נתונים ולא בטעינה
     if (!globalClassesReportsInitialized && data.classes.length === 0 && !isLoading) {
-      console.log('ClassesReports: calling fetchClasses');
       globalClassesReportsInitialized = true;
       fetchClasses();
     } else if (data.classes.length > 0) {
       // אם יש כבר נתונים, סמן כמוכן
-      console.log('ClassesReports: data already loaded, marking as initialized');
       globalClassesReportsInitialized = true;
-    } else if (isLoading && globalClassesReportsInitialized) {
-      // אם בטעינה ויש כבר flag, אל תעשה כלום
-      console.log('ClassesReports: already loading, skipping');
     }
   }, [fetchClasses, data.classes.length, isLoading]); // תלוי גם ב-isLoading
 
@@ -49,58 +39,42 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
     
     // אם יש כבר נתונים טעונים, אל תאפס את ה־flag
     if (globalClassesReportsInitialized && data.classes.length > 0) {
-      console.log('ClassesReports: data already loaded, preventing user change reset');
       return;
     }
     
     // אם יש session קיים ואותו משתמש, אל תאפס
     if (currentUserId && previousUserIdRef.current === currentUserId && globalClassesReportsInitialized) {
-      console.log('ClassesReports: same user with existing session, not resetting');
       return;
     }
     
     // רק אם יש משתמש חדש ושונה מהקודם
     if (currentUserId && currentUserId !== previousUserIdRef.current) {
-      console.log('ClassesReports: user actually changed, resetting global flag');
-      console.log('Previous user:', previousUserIdRef.current);
-      console.log('Current user:', currentUserId);
       globalClassesReportsInitialized = false;
       previousUserIdRef.current = currentUserId;
     } else if (currentUserId && !previousUserIdRef.current) {
       // First time loading with a user
-      console.log('ClassesReports: first time loading with user:', currentUserId);
       previousUserIdRef.current = currentUserId;
-    } else if (currentUserId && previousUserIdRef.current === currentUserId) {
-      // Same user, don't reset
-      console.log('ClassesReports: same user, not resetting global flag');
     }
     // אם אין משתמש או אותו משתמש, אל תאפס את ה־flag
   }, [session?.user?.id, data.classes.length]);
 
   // Prevent resetting global flag if data was already loaded successfully
   useEffect(() => {
-    if (globalClassesReportsInitialized && data.classes.length > 0) {
-      console.log('ClassesReports: data already loaded successfully, preventing reset');
-    }
+    // Data already loaded successfully
   }, [data.classes.length]);
 
   // Prevent unnecessary resets when data is loading
   useEffect(() => {
-    if (isLoading && globalClassesReportsInitialized) {
-      console.log('ClassesReports: data is loading, keeping global flag as true');
-    }
+    // Data is loading
   }, [isLoading]);
 
   // Ensure global flag is not reset when session exists
   useEffect(() => {
-    if (session?.user?.id && globalClassesReportsInitialized && data.classes.length > 0) {
-      console.log('ClassesReports: session exists and data loaded, keeping global flag');
-    }
+    // Session exists and data loaded
   }, [session?.user?.id, data.classes.length]);
 
   // Function to refresh data
   const handleRefresh = () => {
-    console.log('ClassesReports: manual refresh requested');
     globalClassesReportsInitialized = false;
     resetRateLimit();
     fetchClasses();

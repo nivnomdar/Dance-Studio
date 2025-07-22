@@ -11,7 +11,6 @@ export default function AuthCallback() {
   useEffect(() => {
     // Add a timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      console.log('AuthCallback timeout - redirecting to home');
       if (!hasNavigated) {
         setHasNavigated(true);
         navigate('/', { replace: true });
@@ -23,7 +22,6 @@ export default function AuthCallback() {
         // First, check if user is already authenticated
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession && !hasNavigated) {
-          console.log('User already authenticated, navigating...');
           setIsAuthenticated(true);
           setHasNavigated(true);
           navigate('/', { replace: true });
@@ -48,26 +46,20 @@ export default function AuthCallback() {
 
         // If there's no code, redirect to home
         if (!code) {
-          console.log('No authorization code found in URL - user might already be authenticated');
           // Check session again before redirecting
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
-            console.log('User is authenticated, navigating...');
             setIsAuthenticated(true);
             setHasNavigated(true);
             navigate('/', { replace: true });
           } else {
-            console.log('No session found, redirecting to home');
             navigate('/', { replace: true });
           }
           return;
         }
 
         // Exchange the code for a session
-        console.log('Exchanging code for session...');
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        
-        console.log('Exchange result:', { data, error: exchangeError });
         
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
@@ -79,19 +71,14 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          console.log('Successfully authenticated:', data.session.user.email);
-          console.log('Session data:', data.session);
-          
           // Set authenticated state and navigate
           if (!hasNavigated) {
             setIsAuthenticated(true);
             setHasNavigated(true);
-            console.log('Navigating to home page...');
             navigate('/', { replace: true });
           }
         } else {
           console.error('No session returned from code exchange');
-          console.log('Full exchange data:', data);
           setError('שגיאה בהתחברות. אנא נסה שוב.');
           setTimeout(() => {
             navigate('/', { replace: true });
@@ -109,9 +96,7 @@ export default function AuthCallback() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('AuthCallback: Auth state change:', event, session?.user?.email);
       if (event === 'SIGNED_IN' && session && !hasNavigated) {
-        console.log('AuthCallback: User signed in, navigating...');
         setIsAuthenticated(true);
         setHasNavigated(true);
         navigate('/', { replace: true });

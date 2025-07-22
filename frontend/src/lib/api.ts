@@ -60,13 +60,10 @@ const fetchWithRetryAndQueue = async <T>(
   
   for (let i = 0; i <= retries; i++) {
     try {
-      console.log(`fetchWithRetryAndQueue: attempt ${i + 1}/${retries + 1}`);
       const response = await fetchFn();
-      console.log(`fetchWithRetryAndQueue: response status ${response.status}`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log(`fetchWithRetryAndQueue: received data:`, data);
         return data;
       }
       
@@ -140,7 +137,6 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     
     // בדוק אם יש session cached ותקין
     if (cachedSession && (now - sessionCacheTime) < SESSION_CACHE_DURATION) {
-      console.log('Using cached session');
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -155,13 +151,11 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     }
 
     // אם אין cache או שהוא פג תוקף, קבל session חדש
-    console.log('Fetching new session');
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (session) {
       cachedSession = session;
       sessionCacheTime = now;
-      console.log('Session cached');
     }
     
     const headers: HeadersInit = {

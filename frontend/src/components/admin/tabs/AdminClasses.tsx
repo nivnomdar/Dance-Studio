@@ -23,23 +23,13 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
 
   // Load data on component mount - only once
   useEffect(() => {
-    console.log('AdminClasses useEffect called');
-    console.log('globalAdminClassesInitialized:', globalAdminClassesInitialized);
-    console.log('data.classes.length:', data.classes.length);
-    console.log('isLoading:', isLoading);
-    
     // טען רק אם לא טענו עדיין ואין נתונים ולא בטעינה
     if (!globalAdminClassesInitialized && data.classes.length === 0 && !isLoading) {
-      console.log('AdminClasses: calling fetchClasses');
       globalAdminClassesInitialized = true;
       fetchClasses();
     } else if (data.classes.length > 0) {
       // אם יש כבר נתונים, סמן כמוכן
-      console.log('AdminClasses: data already loaded, marking as initialized');
       globalAdminClassesInitialized = true;
-    } else if (isLoading && globalAdminClassesInitialized) {
-      // אם בטעינה ויש כבר flag, אל תעשה כלום
-      console.log('AdminClasses: already loading, skipping');
     }
   }, [fetchClasses, data.classes.length, isLoading]); // תלוי גם ב-isLoading
 
@@ -49,58 +39,42 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
     
     // אם יש כבר נתונים טעונים, אל תאפס את ה־flag
     if (globalAdminClassesInitialized && data.classes.length > 0) {
-      console.log('AdminClasses: data already loaded, preventing user change reset');
       return;
     }
     
     // אם יש session קיים ואותו משתמש, אל תאפס
     if (currentUserId && previousUserIdRef.current === currentUserId && globalAdminClassesInitialized) {
-      console.log('AdminClasses: same user with existing session, not resetting');
       return;
     }
     
     // רק אם יש משתמש חדש ושונה מהקודם
     if (currentUserId && currentUserId !== previousUserIdRef.current) {
-      console.log('AdminClasses: user actually changed, resetting global flag');
-      console.log('Previous user:', previousUserIdRef.current);
-      console.log('Current user:', currentUserId);
       globalAdminClassesInitialized = false;
       previousUserIdRef.current = currentUserId;
     } else if (currentUserId && !previousUserIdRef.current) {
       // First time loading with a user
-      console.log('AdminClasses: first time loading with user:', currentUserId);
       previousUserIdRef.current = currentUserId;
-    } else if (currentUserId && previousUserIdRef.current === currentUserId) {
-      // Same user, don't reset
-      console.log('AdminClasses: same user, not resetting global flag');
     }
     // אם אין משתמש או אותו משתמש, אל תאפס את ה־flag
   }, [session?.user?.id, data.classes.length]);
   
   // Prevent resetting global flag if data was already loaded successfully
   useEffect(() => {
-    if (globalAdminClassesInitialized && data.classes.length > 0) {
-      console.log('AdminClasses: data already loaded successfully, preventing reset');
-    }
+    // Data already loaded successfully
   }, [data.classes.length]);
 
   // Prevent unnecessary resets when data is loading
   useEffect(() => {
-    if (isLoading && globalAdminClassesInitialized) {
-      console.log('AdminClasses: data is loading, keeping global flag as true');
-    }
+    // Data is loading
   }, [isLoading]);
 
   // Ensure global flag is not reset when session exists
   useEffect(() => {
-    if (session?.user?.id && globalAdminClassesInitialized && data.classes.length > 0) {
-      console.log('AdminClasses: session exists and data loaded, keeping global flag');
-    }
+    // Session exists and data loaded
   }, [session?.user?.id, data.classes.length]);
 
   // Function to refresh data
   const handleRefresh = () => {
-    console.log('AdminClasses: manual refresh requested');
     globalAdminClassesInitialized = false;
     resetRateLimit();
     fetchClasses();

@@ -86,21 +86,12 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   useEffect(() => {
     if (!lastUserIdRef.current && session?.user?.id) {
       lastUserIdRef.current = session.user.id;
-      console.log('Initializing lastUserIdRef with:', session.user.id);
     }
   }, [session?.user?.id]);
 
   // Log when data changes (only when it actually changes)
   useEffect(() => {
-    if (data.classes.length > 0 || data.overview) {
-      console.log('AdminDataProvider: data loaded:', {
-        overview: data.overview ? 'exists' : 'null',
-        classes: data.classes.length,
-        registrations: data.registrations.length,
-        sessions: data.sessions.length,
-        session_classes: data.session_classes.length
-      });
-    }
+    // Data loaded successfully
   }, [data]);
 
   // Rate limiting: max 20 requests per minute (יותר נדיב)
@@ -114,7 +105,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     }
     
     if (requestCountRef.current >= 20) { // הגדלתי מ-10 ל-20
-      console.log('isRateLimited: rate limit exceeded, requestCount:', requestCountRef.current);
       return true;
     }
     
@@ -124,7 +114,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // Reset rate limiting
   const resetRateLimit = () => {
-    console.log('resetRateLimit called');
     requestCountRef.current = 0;
     lastRequestTimeRef.current = 0;
     setError(null);
@@ -133,7 +122,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // Check if data is fresh (less than 5 minutes old)
   const isDataFresh = () => {
     const isFresh = Date.now() - dataRef.current.lastFetchTime < 5 * 60 * 1000; // 5 minutes
-    console.log('isDataFresh:', isFresh, 'lastFetchTime:', dataRef.current.lastFetchTime, 'now:', Date.now());
     return isFresh;
   };
 
@@ -143,16 +131,13 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       try {
         const result = await fetchFunction();
         if (attempt > 0) {
-          console.log(`ניסיון ${attempt + 1} הצליח!`);
           setError(`הנתונים נטענו בהצלחה לאחר ${attempt + 1} ניסיונות!`);
           setTimeout(() => setError(null), 3000); // Clear success message after 3 seconds
         }
         return result;
       } catch (error: any) {
-        console.log('retryWithBackoff: error on attempt', attempt + 1, error.message);
         if (error.message.includes('429') && attempt < maxRetries - 1) {
           const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
-          console.log(`השרת עמוס, מנסה שוב בעוד ${delay}ms...`);
           setError(`השרת עמוס, מנסה שוב בעוד ${delay/1000} שניות... (ניסיון ${attempt + 1}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
@@ -164,16 +149,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתוני שיעורים
   const fetchClasses = useCallback(async (forceRefresh = false) => {
-    console.log('fetchClasses: called', {
-      hasSession: !!session,
-      isFetching: isFetchingRef.current,
-      classesLength: dataRef.current.classes.length,
-      isDataFresh: isDataFresh(),
-      forceRefresh
-    });
-    
     if (!session) {
-      console.log('fetchClasses: skipping - no session');
       return;
     }
     if (isRateLimited()) {
@@ -181,7 +157,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (!forceRefresh && dataRef.current.classes.length > 0 && isDataFresh()) {
-      console.log('fetchClasses: skipping - data is fresh');
       return;
     }
 
@@ -190,19 +165,12 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     setIsLoading(true);
     setError(null);
     try {
-      console.log('fetchClasses: making API call');
       const [classes, registrations, sessions, session_classes] = await Promise.all([
         apiService.admin.getClasses(),
         apiService.admin.getRegistrations(),
         apiService.admin.getSessions(),
         apiService.sessions.getSessionClasses()
       ]);
-      console.log('fetchClasses: received data:', {
-        classes: classes?.length || 0,
-        registrations: registrations?.length || 0,
-        sessions: sessions?.length || 0,
-        session_classes: session_classes?.length || 0
-      });
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -344,9 +312,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     setIsLoading(true);
     setError(null);
     try {
-      console.log('fetchOverview: making API call');
       const overview = await apiService.admin.getOverview();
-      console.log('fetchOverview: received data:', overview);
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -370,7 +336,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // ניקוי cache
   const clearCache = () => {
-    console.log('clearCache called');
     setData({
       overview: null,
       classes: [],
@@ -394,9 +359,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
         clearTimeout(fetchTimeoutRef.current);
         fetchTimeoutRef.current = null;
       }
-      console.log('clearCache: user changed, resetting all refs');
-    } else {
-      console.log('clearCache: same user, not resetting refs');
     }
   };
 
@@ -414,21 +376,13 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   useEffect(() => {
     if (!session) return;
     
-    console.log('AdminDataProvider: useEffect triggered', {
-      globalHasInitialized: globalHasInitializedRef.current,
-      sessionId: session.user?.id
-    });
-    
     // טען נתונים רק אם אין נתונים קיימים
     if (!globalHasInitializedRef.current && fetchFunctionsRef.current) {
-      console.log('AdminDataProvider: initial data load');
       globalHasInitializedRef.current = true;
       fetchFunctionsRef.current.fetchOverview();
       fetchFunctionsRef.current.fetchClasses();
       fetchFunctionsRef.current.fetchShop();
       fetchFunctionsRef.current.fetchContact();
-    } else {
-      console.log('AdminDataProvider: already initialized or functions not ready, skipping');
     }
   }, [session]);
 
@@ -453,7 +407,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   useEffect(() => {
     const currentUserId = session?.user?.id;
     if (currentUserId !== lastUserIdRef.current) {
-      console.log('User changed from', lastUserIdRef.current, 'to', currentUserId);
       clearCache();
       clearSessionCache(); // נקה גם את session cache
       lastUserIdRef.current = currentUserId || null;

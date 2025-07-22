@@ -92,7 +92,6 @@ function ClassesPage() {
         if (Date.now() - timestamp < CLASSES_CACHE_DURATION) {
           // Filter cached data to show only active classes
           const activeCachedClasses = data.filter((cls: Class) => cls.is_active === true);
-          console.log('ClassesPage: Cached classes (filtered):', activeCachedClasses);
           return activeCachedClasses;
         }
       }
@@ -125,7 +124,6 @@ function ClassesPage() {
     if (!forceRefresh && !hasFetchedRef.current) {
       const cachedClasses = getCachedClasses();
       if (cachedClasses) {
-        console.log('ClassesPage: Using cached classes:', cachedClasses);
         setClasses(cachedClasses);
         setLoading(false);
         hasFetchedRef.current = true;
@@ -140,12 +138,8 @@ function ClassesPage() {
       
       const data = await classesService.getAllClasses();
       
-      console.log('ClassesPage: All classes from API:', data);
-      
       // Filter to show only active classes
       const activeClasses = data.filter(cls => cls.is_active === true);
-      
-      console.log('ClassesPage: Active classes after filtering:', activeClasses);
       
       setClasses(activeClasses);
       cacheClasses(activeClasses);

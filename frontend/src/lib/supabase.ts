@@ -24,7 +24,6 @@ let hideGoTrueClientLogs = true; // ברירת מחדל: להסתיר
 // פונקציה להפעלה/כיבוי הסתרת לוגים
 export const toggleGoTrueClientLogs = (hide: boolean = true) => {
   hideGoTrueClientLogs = hide;
-  console.log(`GoTrueClient logs ${hide ? 'hidden' : 'visible'}`);
 };
 
 // Override console methods to filter GoTrueClient logs
@@ -82,12 +81,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// הודעה על הסתרת לוגים
-console.log('🔇 GoTrueClient logs are hidden. Use toggleGoTrueClientLogs(false) to show them.');
-
 // הוספת הפונקציה ל-global object כדי שניתן יהיה לקרוא לה מהקונסול
 if (typeof window !== 'undefined') {
   (window as any).toggleGoTrueClientLogs = toggleGoTrueClientLogs;
-  console.log('💡 Type "toggleGoTrueClientLogs(false)" in console to show GoTrueClient logs');
-  console.log('💡 Type "toggleGoTrueClientLogs(true)" in console to hide GoTrueClient logs');
 } 
