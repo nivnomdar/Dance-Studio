@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { SessionDetailsModal } from '../modals';
+import { SessionDetailsModal, RegistrationEditModal, SessionEditModal } from '../modals';
 import { weekdaysToHebrew } from '../../../utils/weekdaysUtils';
+import { apiService } from '../../../lib/api';
 
 interface SessionsTabProps {
   data: any;
   session: any;
-  fetchClasses: () => void;
+  fetchClasses: (forceRefresh?: boolean) => void;
 }
 
 export default function SessionsTab({ data, session, fetchClasses }: SessionsTabProps) {
   const [sessionDetailsModalOpen, setSessionDetailsModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [selectedRegistrationForEdit, setSelectedRegistrationForEdit] = useState<any>(null);
+  const [sessionEditModalOpen, setSessionEditModalOpen] = useState(false);
+  const [selectedSessionForEdit, setSelectedSessionForEdit] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Handle view session details
   const handleViewSessionDetails = (session: any) => {
@@ -18,167 +24,208 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
     setSessionDetailsModalOpen(true);
   };
 
+  // Handle edit registration
+  const handleEditRegistration = (registration: any) => {
+    setSelectedRegistrationForEdit(registration);
+  };
+
+  // Handle add new session
+  const handleAddNewSession = () => {
+    setSelectedSessionForEdit({});
+    setSessionEditModalOpen(true);
+  };
+
+  // Handle edit session
+  const handleEditSession = (sessionData: any) => {
+    setSelectedSessionForEdit(sessionData);
+    setSessionEditModalOpen(true);
+  };
+
+  // Handle save session
+  const handleSaveSession = async (sessionData: any) => {
+    try {
+      if (sessionData.id) {
+        await apiService.sessions.updateSession(sessionData.id, sessionData);
+      } else {
+        await apiService.sessions.createSession(sessionData);
+      }
+      
+      await fetchClasses(true);
+      setSessionEditModalOpen(false);
+      setSelectedSessionForEdit(null);
+    } catch (error) {
+      console.error('Error saving session:', error);
+      alert('שגיאה בשמירת הקבוצה');
+    }
+  };
+
+  // Filter sessions
+  const filteredSessions = (data.sessions || [])
+    .filter((sessionData: any) => {
+      const matchesSearch = sessionData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           sessionData.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = filterStatus === 'all' || 
+                           (filterStatus === 'active' && sessionData.is_active) ||
+                           (filterStatus === 'inactive' && !sessionData.is_active);
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+  // Key Statistics
+  const totalSessions = data.sessions?.length || 0;
+  const activeSessions = data.sessions?.filter((s: any) => s.is_active).length || 0;
+  const totalRegistrations = data.registrations?.length || 0;
+  const activeRegistrations = data.registrations?.filter((r: any) => r.status === 'active').length || 0;
+
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
-      {/* All Sessions Section */}
+      {/* Key Statistics */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ קבוצות</div>
+        </div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{activeSessions}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">קבוצות פעילות</div>
+        </div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{activeRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
+        </div>
+        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{totalRegistrations}</div>
+          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש קבוצה</label>
+            <input
+              type="text"
+              placeholder="חפש לפי שם או תיאור..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס קבוצה</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+            >
+              <option value="all">כל הקבוצות</option>
+              <option value="active">פעילות בלבד</option>
+              <option value="inactive">לא פעילות</option>
+            </select>
+          </div>
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterStatus('all');
+              }}
+              className="flex-1 px-4 py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300"
+            >
+              נקה פילטרים
+            </button>
+            <button 
+              onClick={handleAddNewSession}
+              className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+            >
+              הוסיפי קבוצה חדשה
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
         <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
-          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">כל הקבוצות במערכת</h2>
-          <p className="text-sm sm:text-base text-[#4B2E83]/70">סקירה מפורטת של כל הקבוצות הקיימות במערכת</p>
+          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">ניהול קבוצות</h2>
+          <p className="text-sm sm:text-base text-[#4B2E83]/70">ניהול הקבוצות במערכת עם אפשרויות עריכה</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] sm:min-w-[800px]">
+          <table className="w-full">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שם הקבוצה</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">תיאור</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">תאריך מיועד</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">שעות</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">ימי שבוע</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-16 sm:w-20">הרשמות פעילות</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">תפוסה</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-12 sm:w-16">סטטוס</th>
-                <th className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 whitespace-nowrap w-20 sm:w-24">שיעורים מקושרים</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">שם הקבוצה</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">תיאור</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">שעות</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">ימי שבוע</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">תפוסה</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">שיעורים מקושרים</th>
+                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
-              {(data.sessions || []).map((session: any) => {
+              {filteredSessions.map((sessionData: any) => {
                 // Get classes linked to this session
                 const linkedClasses = (data.session_classes || [])
-                  .filter((sc: any) => sc.session_id === session.id)
+                  .filter((sc: any) => sc.session_id === sessionData.id)
                   .map((sc: any) => {
-                    const classData = data.classes.find((c: any) => c.id === sc.class_id);
+                    const classData = data.classes?.find((c: any) => c.id === sc.class_id);
                     return classData ? classData.name : 'שיעור לא ידוע';
                   });
 
-                const weekdays = weekdaysToHebrew(session.weekdays || []);
+                const weekdays = weekdaysToHebrew(sessionData.weekdays || []);
 
                 return (
-                  <tr 
-                    key={session.id} 
-                    className="hover:bg-[#EC4899]/5 transition-colors cursor-pointer"
-                    onClick={() => handleViewSessionDetails(session)}
-                  >
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{session.name}</div>
-                    </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="text-xs sm:text-sm text-[#4B2E83]/70 max-w-xs truncate">
-                        {session.description || 'אין תיאור'}
+                  <tr key={sessionData.id} className="hover:bg-[#EC4899]/5 transition-colors">
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                      <div className="font-semibold text-sm text-[#4B2E83] truncate">
+                        {sessionData.name}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="space-y-1">
-                        {(() => {
-                          // Get all active registrations for this session
-                          const sessionRegistrations = (data.registrations || []).filter((reg: any) => 
-                            reg.session_id === session.id && reg.status === 'active'
-                          );
-                          
-                          // Get all unique selected dates from all registrations and filter for future dates only
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0); // Reset time to start of day
-                          
-                          const allSelectedDates = [...new Set(sessionRegistrations.map((reg: any) => reg.selected_date))]
-                            .filter((date): date is string => Boolean(date))
-                            .filter((date: string) => {
-                              const registrationDate = new Date(date);
-                              registrationDate.setHours(0, 0, 0, 0);
-                              return registrationDate >= today;
-                            });
-                          
-                          if (allSelectedDates.length > 0) {
-                            return allSelectedDates.map((date: string, dateIndex: number) => (
-                              <div key={dateIndex} className="text-xs sm:text-sm font-medium text-[#4B2E83]">
-                                {new Date(date).toLocaleDateString('he-IL')}
-                              </div>
-                            ));
-                          } else {
-                            return <span className="text-xs sm:text-sm text-[#4B2E83]/50">לא מוגדר</span>;
-                          }
-                        })()}
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                      <div className="text-xs text-[#4B2E83]/70 truncate max-w-[10ch]" title={sessionData.description || 'אין תיאור'}>
+                        {sessionData.description || 'אין תיאור'}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="text-xs sm:text-sm text-[#EC4899] font-medium">
-                        {session.start_time && session.end_time 
-                          ? `${session.start_time.substring(0, 5)} - ${session.end_time.substring(0, 5)}`
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="text-sm text-[#EC4899] font-medium">
+                        {sessionData.start_time && sessionData.end_time 
+                          ? `${sessionData.start_time.substring(0, 5)} - ${sessionData.end_time.substring(0, 5)}`
                           : 'לא מוגדר'
                         }
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {weekdays.length > 0 ? (
-                          weekdays.map((day: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] truncate">
+                          weekdays.slice(0, 3).map((day: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
                               {day}
                             </span>
                           ))
                         ) : (
                           <span className="text-xs text-[#4B2E83]/50">לא מוגדר</span>
                         )}
+                        {weekdays.length > 3 && (
+                          <span className="text-xs text-[#4B2E83]/70">+{weekdays.length - 3}</span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
-                      <div className="leading-tight">
-                        {(() => {
-                          // Count active registrations for this session
-                          const sessionRegistrations = (data.registrations || []).filter((reg: any) => 
-                            reg.session_id === session.id && reg.status === 'active'
-                          );
-                          const activeRegistrations = sessionRegistrations.length;
-                          
-                          return (
-                            <>
-                              <div className="font-semibold text-xs sm:text-sm text-[#4B2E83]">
-                                {activeRegistrations} מתוך {session.max_capacity} הרשמות
-                              </div>
-                              <div className="text-xs text-[#4B2E83]/70">
-                                {activeRegistrations === session.max_capacity ? 'מלא' : 'פנוי'}
-                              </div>
-                            </>
-                          );
-                        })()}
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="text-sm font-semibold text-[#4B2E83]">
+                        {sessionData.max_capacity || 0}
                       </div>
                     </td>
-
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="text-center">
-                        {(() => {
-                          // Count active registrations for this session
-                          const sessionRegistrations = (data.registrations || []).filter((reg: any) => 
-                            reg.session_id === session.id && reg.status === 'active'
-                          );
-                          const activeRegistrations = sessionRegistrations.length;
-                          const occupancyPercentage = session.max_capacity > 0 ? Math.round((activeRegistrations / session.max_capacity) * 100) : 0;
-                          
-                          // Determine color based on occupancy percentage
-                          let colorClass = '';
-                          if (occupancyPercentage >= 80) {
-                            colorClass = 'bg-green-100 text-green-800'; // Green for high occupancy (80%+) - good
-                          } else if (occupancyPercentage >= 50) {
-                            colorClass = 'bg-yellow-100 text-yellow-800'; // Yellow for medium occupancy (50-79%)
-                          } else {
-                            colorClass = 'bg-red-100 text-red-800'; // Red for low occupancy (<50%) - bad
-                          }
-                          
-                          return (
-                            <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${colorClass}`}>
-                              {occupancyPercentage}%
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    </td>
-
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        session.is_active 
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        sessionData.is_active 
                           ? 'bg-green-100 text-green-800 border border-green-200' 
                           : 'bg-red-50 text-red-700 border border-red-200'
                       }`}>
-                        {session.is_active ? (
+                        {sessionData.is_active ? (
                           <>
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -195,17 +242,36 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                         )}
                       </span>
                     </td>
-                    <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {linkedClasses.length > 0 ? (
-                          linkedClasses.map((className: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
+                          linkedClasses.slice(0, 2).map((className: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
                               {className}
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-[#4B2E83]/50">אין שיעורים מקושרים</span>
+                          <span className="text-xs text-[#4B2E83]/50">אין שיעורים</span>
                         )}
+                        {linkedClasses.length > 2 && (
+                          <span className="text-xs text-[#4B2E83]/70">+{linkedClasses.length - 2}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="flex gap-1 justify-center">
+                        <button
+                          onClick={() => handleViewSessionDetails(sessionData)}
+                          className="px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                        >
+                          פרטים
+                        </button>
+                        <button
+                          onClick={() => handleEditSession(sessionData)}
+                          className="px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
+                        >
+                          ערוך
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -216,7 +282,20 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
         </div>
       </div>
 
-      {/* Session Details Modal */}
+      {/* No Results */}
+      {filteredSessions.length === 0 && (
+        <div className="bg-white rounded-2xl p-12 text-center">
+          <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-[#4B2E83] mb-2">לא נמצאו קבוצות</h3>
+          <p className="text-[#4B2E83]/70">נסה לשנות את פרמטרי החיפוש או הסינון</p>
+        </div>
+      )}
+
+      {/* Modals */}
       {sessionDetailsModalOpen && selectedSession && (
         <SessionDetailsModal
           session={selectedSession}
@@ -226,6 +305,52 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
             setSelectedSession(null);
           }}
           registrations={data.registrations || []}
+        />
+      )}
+
+      {selectedRegistrationForEdit && (
+        <RegistrationEditModal
+          registrationData={selectedRegistrationForEdit}
+          isOpen={!!selectedRegistrationForEdit}
+          onClose={() => setSelectedRegistrationForEdit(null)}
+          onSave={async (updatedRegistration) => {
+            try {
+              const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: JSON.stringify({ status: updatedRegistration.status })
+              });
+
+              if (response.ok) {
+                await fetchClasses(true);
+                setSelectedRegistrationForEdit(null);
+              } else {
+                throw new Error('Failed to update registration');
+              }
+            } catch (error) {
+              console.error('Error updating registration:', error);
+              alert('שגיאה בעדכון ההרשמה');
+            }
+          }}
+          isLoading={false}
+        />
+      )}
+
+      {sessionEditModalOpen && (
+        <SessionEditModal
+          sessionData={selectedSessionForEdit}
+          isOpen={sessionEditModalOpen}
+          onClose={() => {
+            setSessionEditModalOpen(false);
+            setSelectedSessionForEdit(null);
+          }}
+          onSave={handleSaveSession}
+          isLoading={false}
+          classes={data.classes || []}
+          sessionClasses={data.session_classes || []}
         />
       )}
     </div>

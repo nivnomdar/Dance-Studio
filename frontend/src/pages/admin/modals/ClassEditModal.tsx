@@ -56,31 +56,48 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-6 text-white">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-[#EC4899]">
-              {isNewClass ? 'הוספת שיעור חדש' : 'עריכת שיעור'}
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {isNewClass ? 'הוספת שיעור חדש' : 'עריכת שיעור'}
+                </h2>
+                <p className="text-white/80 text-sm mt-1">
+                  {isNewClass ? 'צור שיעור חדש במערכת' : 'ערוך את פרטי השיעור'}
+                </p>
+              </div>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-[#EC4899] text-2xl transition-colors"
+              className="text-white/80 hover:text-white text-3xl font-light transition-colors duration-200 hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center"
             >
               ×
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        <div className="overflow-y-auto max-h-[calc(95vh-140px)]">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* פרטי בסיס - שם, מזהה, קטגוריה */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
               פרטי בסיס
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="md:col-span-2 lg:col-span-2">
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   שם השיעור *
                 </label>
                 <input
@@ -94,7 +111,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
               </div>
               {isNewClass && (
                 <div>
-                  <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     מזהה URL (slug) *
                   </label>
                   <input
@@ -108,7 +125,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   קטגוריה
                 </label>
                 <input
@@ -123,13 +140,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* פרטי מחיר ומשך */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
               פרטי מחיר ומשך
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   מחיר (₪) *
                 </label>
                 <input
@@ -143,7 +163,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   משך (דקות) *
                 </label>
                 <input
@@ -158,7 +178,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   מקסימום משתתפות
                 </label>
                 <input
@@ -171,7 +191,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 />
               </div>
               <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4">
-                <span className="text-sm text-[#EC4899] font-medium text-center">
+                <span className="text-sm text-[#4B2E83] font-medium text-center">
                   קבוצת גיל: 18+ (ברירת מחדל)
                 </span>
               </div>
@@ -179,13 +199,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* פרטי רמה */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
               רמה וקהל יעד
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   רמה
                 </label>
                 <select
@@ -203,13 +226,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* פרטי מיקום */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
               מיקום
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   מיקום
                 </label>
                 <input
@@ -224,13 +250,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* מדיה ועיצוב */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+              </svg>
               מדיה ועיצוב
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   קישור לתמונה
                 </label>
                 <input
@@ -242,7 +271,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   ערכת צבע
                 </label>
                 <select
@@ -277,13 +306,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* תיאורים */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
               תיאורים
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   תיאור קצר
                 </label>
                 <textarea
@@ -295,7 +327,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   תיאור ארוך
                 </label>
                 <textarea
@@ -308,7 +340,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#EC4899] mb-2">
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     מה כלול בשיעור
                   </label>
                   <input
@@ -324,8 +356,11 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
           </div>
 
           {/* הגדרות נוספות */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-[#EC4899] border-b border-[#EC4899]/20 pb-2">
+          <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
               הגדרות נוספות
             </h3>
             <div className="flex items-center">
@@ -334,9 +369,9 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 id="is_active"
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="h-4 w-4 text-[#EC4899] focus:ring-[#EC4899] border-gray-300 rounded"
+                className="h-4 w-4 text-[#4B2E83] focus:ring-[#4B2E83] border-gray-300 rounded"
               />
-              <label htmlFor="is_active" className="mr-2 text-sm font-medium text-[#EC4899]">
+              <label htmlFor="is_active" className="mr-2 text-sm font-medium text-[#4B2E83]">
                 שיעור פעיל
               </label>
             </div>
@@ -347,7 +382,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-[#EC4899] text-[#EC4899] rounded-lg font-medium hover:bg-[#EC4899] hover:text-white transition-all duration-300"
+              className="px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300"
             >
               ביטול
             </button>
@@ -360,6 +395,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

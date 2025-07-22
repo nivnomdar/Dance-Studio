@@ -375,6 +375,83 @@ export const apiService = {
       return fetchWithRetryAndQueue<any[]>(() => 
         fetch(`${API_BASE_URL}/sessions?_t=${timestamp}`)
       );
+    },
+
+    async createSession(sessionData: any): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() => 
+        fetch(`${API_BASE_URL}/sessions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(sessionData)
+        })
+      );
+    },
+
+    async updateSession(id: string, sessionData: any): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() => 
+        fetch(`${API_BASE_URL}/sessions/${id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(sessionData)
+        })
+      );
+    },
+
+    async deleteSession(id: string): Promise<void> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<void>(() => 
+        fetch(`${API_BASE_URL}/sessions/${id}`, {
+          method: 'DELETE',
+          headers
+        }).then(response => {
+          if (!response.ok) {
+            throw new ApiError(response.status, 'Failed to delete session');
+          }
+          return response;
+        })
+      );
+    },
+
+    // Session Classes Management
+    async getAllSessionClasses(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/sessions/session-classes/all`, { headers })
+      );
+    },
+
+    async addClassToSession(sessionId: string, classId: string, price: number, isTrial: boolean = false, maxUsesPerUser?: number): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() => 
+        fetch(`${API_BASE_URL}/sessions/session-classes`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            session_id: sessionId,
+            class_id: classId,
+            price,
+            is_trial: isTrial,
+            max_uses_per_user: maxUsesPerUser
+          })
+        })
+      );
+    },
+
+    async removeClassFromSession(sessionId: string, classId: string): Promise<void> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<void>(() => 
+        fetch(`${API_BASE_URL}/sessions/session-classes/${sessionId}/${classId}`, {
+          method: 'DELETE',
+          headers
+        }).then(response => {
+          if (!response.ok) {
+            throw new ApiError(response.status, 'Failed to remove class from session');
+          }
+          return response;
+        })
+      );
     }
   }
 }; 

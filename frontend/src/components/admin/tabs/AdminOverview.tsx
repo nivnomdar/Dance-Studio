@@ -427,14 +427,14 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                             <div className="font-semibold text-xs sm:text-sm">
                               {new Date(sessionData.specificDate).toLocaleDateString('he-IL')}
                             </div>
-                            {(() => {
-                              // Get the specific day of week for this date
-                              const specificDate = new Date(sessionData.specificDate);
-                              const dayOfWeek = specificDate.getDay(); // 0=Sunday, 1=Monday, etc.
-                              
-                              // Convert day number to Hebrew name
-                              const dayName = getDayOfWeekName(dayOfWeek);
-                              
+                              {(() => {
+                                // Get the specific day of week for this date
+                                const specificDate = new Date(sessionData.specificDate);
+                                const dayOfWeek = specificDate.getDay(); // 0=Sunday, 1=Monday, etc.
+                                
+                                // Convert day number to Hebrew name
+                                const dayName = getDayOfWeekName(dayOfWeek);
+                                
                               const date = new Date(sessionData.specificDate);
                               const today = new Date();
                               today.setHours(0,0,0,0);
@@ -530,8 +530,8 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                           <>
                             {sessionData.linkedClasses.slice(0, 2).map((className: string, index: number) => (
                               <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate max-w-20 sm:max-w-24">
-                                {className}
-                              </span>
+                              {className}
+                            </span>
                             ))}
                             {sessionData.linkedClasses.length > 2 && (
                               <button
@@ -604,7 +604,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                                               רגיל
                                             </>
                                           )}
-                                        </span>
+            </span>
           </div>
                                       <div className="text-xs text-[#4B2E83]/70 space-y-0.5">
                                         <div>מחיר: ₪{sessionClass.price}</div>
@@ -701,7 +701,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                                                         בוטל
                                                       </>
                                                     )}
-                                                  </span>
+            </span>
                                                 </td>
                                                 <td className="px-1 sm:px-2 py-1 sm:py-2">
                                                   <button

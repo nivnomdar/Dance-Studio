@@ -204,7 +204,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
               onClick={() => handleEditClass({})}
               className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
             >
-              הוסף שיעור חדש
+              הוסיפי שיעור חדש
             </button>
           </div>
         </div>
