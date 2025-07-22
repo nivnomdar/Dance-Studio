@@ -326,7 +326,7 @@ export const apiService = {
       const headers = await getAuthHeaders();
       const timestamp = Date.now();
       return fetchWithRetryAndQueue<Class[]>(() => 
-        fetch(`${API_BASE_URL}/classes?_t=${timestamp}`, { headers })
+        fetch(`${API_BASE_URL}/classes/admin?_t=${timestamp}`, { headers })
       );
     },
 

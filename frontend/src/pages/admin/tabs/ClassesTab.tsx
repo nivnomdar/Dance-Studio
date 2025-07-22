@@ -4,7 +4,7 @@ import { ClassEditModal, ClassSessionsModal } from '../modals';
 interface ClassesTabProps {
   data: any;
   session: any;
-  fetchClasses: () => void;
+  fetchClasses: (forceRefresh?: boolean) => void;
 }
 
 export default function ClassesTab({ data, session, fetchClasses }: ClassesTabProps) {
@@ -32,6 +32,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
   };
 
   // Process classes data for reports
+  console.log('ClassesTab: Raw classes data:', data.classes);
   const processedClasses: ProcessedClass[] = data.classes.map((cls: any) => {
     const classRegistrations = data.registrations.filter((reg: any) => reg.class_id === cls.id);
     const activeRegistrations = classRegistrations.filter((reg: any) => reg.status === 'active');
@@ -50,8 +51,10 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
       created_at: cls.created_at
     };
   });
+  console.log('ClassesTab: Processed classes:', processedClasses);
 
   // Filter classes
+  console.log('ClassesTab: Filter status:', filterStatus);
   const filteredClasses = processedClasses
     .filter(cls => {
       const matchesSearch = cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,9 +65,12 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                            (filterStatus === 'active' && cls.is_active) ||
                            (filterStatus === 'inactive' && !cls.is_active);
       
+      console.log(`ClassesTab: Class "${cls.name}" - is_active: ${cls.is_active}, matchesStatus: ${matchesStatus}`);
+      
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => b.active_registrations - a.active_registrations);
+  console.log('ClassesTab: Filtered classes:', filteredClasses);
 
   // Key Statistics
   const totalClasses = processedClasses.length;
@@ -122,7 +128,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         throw new Error(`Failed to ${isNewClass ? 'create' : 'update'} class`);
       }
 
-      await fetchClasses();
+      await fetchClasses(true); // Force refresh to update the table
       setEditModalOpen(false);
       setEditingClass(null);
     } catch (error) {
@@ -246,12 +252,26 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                     ₪{(cls.active_registrations * cls.price).toLocaleString()}
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">
-                    <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       cls.is_active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800 border border-green-200' 
+                        : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
-                      {cls.is_active ? 'פעיל' : 'לא פעיל'}
+                      {cls.is_active ? (
+                        <>
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          פעיל
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                          לא פעיל
+                        </>
+                      )}
                     </span>
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-4 border-l border-[#EC4899]/10">

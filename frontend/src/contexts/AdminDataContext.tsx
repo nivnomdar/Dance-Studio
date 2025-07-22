@@ -20,7 +20,7 @@ interface AdminDataContextType {
   isLoading: boolean;
   error: string | null;
   fetchOverview: () => Promise<void>;
-  fetchClasses: () => Promise<void>;
+  fetchClasses: (forceRefresh?: boolean) => Promise<void>;
   fetchShop: () => Promise<void>;
   fetchContact: () => Promise<void>;
   fetchCalendar: () => Promise<void>;
@@ -70,6 +70,12 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   const lastUserIdRef = useRef<string | null>(null);
   const globalHasInitializedRef = useRef<boolean>(false); // Global flag to prevent multiple initializations
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timeout
+  const fetchFunctionsRef = useRef<{
+    fetchOverview: () => Promise<void>;
+    fetchClasses: () => Promise<void>;
+    fetchShop: () => Promise<void>;
+    fetchContact: () => Promise<void>;
+  } | null>(null);
 
   // Update ref when data changes
   useEffect(() => {
@@ -157,16 +163,24 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   }, []);
 
   // טעינת נתוני שיעורים
-  const fetchClasses = useCallback(async () => {
-    if (!session || isFetchingRef.current) {
-      console.log('fetchClasses: skipping - no session or already fetching');
+  const fetchClasses = useCallback(async (forceRefresh = false) => {
+    console.log('fetchClasses: called', {
+      hasSession: !!session,
+      isFetching: isFetchingRef.current,
+      classesLength: dataRef.current.classes.length,
+      isDataFresh: isDataFresh(),
+      forceRefresh
+    });
+    
+    if (!session) {
+      console.log('fetchClasses: skipping - no session');
       return;
     }
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.classes.length > 0 && isDataFresh()) {
+    if (!forceRefresh && dataRef.current.classes.length > 0 && isDataFresh()) {
       console.log('fetchClasses: skipping - data is fresh');
       return;
     }
@@ -318,7 +332,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתוני סקירה כללית
   const fetchOverview = useCallback(async () => {
-    if (!session || isFetchingRef.current) return;
+    if (!session) return;
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
@@ -386,6 +400,38 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     }
   };
 
+  // Update fetch functions ref when they change
+  useEffect(() => {
+    fetchFunctionsRef.current = {
+      fetchOverview,
+      fetchClasses,
+      fetchShop,
+      fetchContact
+    };
+  }, [fetchOverview, fetchClasses, fetchShop, fetchContact]);
+
+  // טעינת נתונים ראשונית כשהדשבורד נטען
+  useEffect(() => {
+    if (!session) return;
+    
+    console.log('AdminDataProvider: useEffect triggered', {
+      globalHasInitialized: globalHasInitializedRef.current,
+      sessionId: session.user?.id
+    });
+    
+    // טען נתונים רק אם אין נתונים קיימים
+    if (!globalHasInitializedRef.current && fetchFunctionsRef.current) {
+      console.log('AdminDataProvider: initial data load');
+      globalHasInitializedRef.current = true;
+      fetchFunctionsRef.current.fetchOverview();
+      fetchFunctionsRef.current.fetchClasses();
+      fetchFunctionsRef.current.fetchShop();
+      fetchFunctionsRef.current.fetchContact();
+    } else {
+      console.log('AdminDataProvider: already initialized or functions not ready, skipping');
+    }
+  }, [session]);
+
   // רענון נתונים כל 5 דקות
   useEffect(() => {
     if (!session) return;
@@ -428,7 +474,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     isLoading,
     error,
     fetchOverview,
-    fetchClasses: debouncedFetchClasses, // Use debounced version
+    fetchClasses, // Use regular version for direct calls
     fetchShop,
     fetchContact,
     fetchCalendar,

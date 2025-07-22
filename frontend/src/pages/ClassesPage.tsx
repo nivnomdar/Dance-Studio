@@ -90,7 +90,10 @@ function ClassesPage() {
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < CLASSES_CACHE_DURATION) {
-          return data;
+          // Filter cached data to show only active classes
+          const activeCachedClasses = data.filter((cls: Class) => cls.is_active === true);
+          console.log('ClassesPage: Cached classes (filtered):', activeCachedClasses);
+          return activeCachedClasses;
         }
       }
     } catch (error) {
@@ -122,6 +125,7 @@ function ClassesPage() {
     if (!forceRefresh && !hasFetchedRef.current) {
       const cachedClasses = getCachedClasses();
       if (cachedClasses) {
+        console.log('ClassesPage: Using cached classes:', cachedClasses);
         setClasses(cachedClasses);
         setLoading(false);
         hasFetchedRef.current = true;
@@ -136,8 +140,15 @@ function ClassesPage() {
       
       const data = await classesService.getAllClasses();
       
-      setClasses(data);
-      cacheClasses(data);
+      console.log('ClassesPage: All classes from API:', data);
+      
+      // Filter to show only active classes
+      const activeClasses = data.filter(cls => cls.is_active === true);
+      
+      console.log('ClassesPage: Active classes after filtering:', activeClasses);
+      
+      setClasses(activeClasses);
+      cacheClasses(activeClasses);
       hasFetchedRef.current = true;
       setRetryCount(0);
       
@@ -328,6 +339,13 @@ function ClassesPage() {
   };
 
   const handleRefresh = () => {
+    // Clear cache and force refresh
+    try {
+      sessionStorage.removeItem(CLASSES_CACHE_KEY);
+    } catch (error) {
+      // Ignore cache errors
+    }
+    hasFetchedRef.current = false;
     fetchClasses(true); // Force refresh
   };
 

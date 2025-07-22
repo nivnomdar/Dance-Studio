@@ -534,6 +534,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     logger.info('Classes fetched successfully:', { count: data?.length || 0 });
+    logger.info('Active classes:', data?.map(c => ({ id: c.id, name: c.name, is_active: c.is_active })));
     res.json(data || []);
   } catch (error) {
     next(error);
@@ -548,7 +549,6 @@ router.get('/admin', admin, async (req: Request, res: Response, next: NextFuncti
     const { data, error } = await supabase
       .from('classes')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -557,6 +557,7 @@ router.get('/admin', admin, async (req: Request, res: Response, next: NextFuncti
     }
 
     logger.info('Classes fetched successfully:', { count: data?.length || 0 });
+    logger.info('All classes:', data?.map(c => ({ id: c.id, name: c.name, is_active: c.is_active, slug: c.slug })));
     res.json(data || []);
   } catch (error) {
     next(error);

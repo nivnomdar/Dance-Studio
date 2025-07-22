@@ -74,28 +74,19 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
   const { data, isLoading, error, fetchClasses, isFetching, resetRateLimit } = useAdminData();
   const { session } = useAuth();
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [expandedLinkedClasses, setExpandedLinkedClasses] = useState<string | null>(null);
   const [selectedClassForDetails, setSelectedClassForDetails] = useState<any>(null);
+  const [classDetailsModalOpen, setClassDetailsModalOpen] = useState(false);
   const [selectedRegistrationForEdit, setSelectedRegistrationForEdit] = useState<any>(null);
+  const [registrationEditModalOpen, setRegistrationEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const hasInitialized = useRef(false);
-
   // Check if data is complete
   const hasCompleteData = useMemo(() => {
     return data.classes && data.classes.length > 0 && 
            data.sessions && data.sessions.length > 0 && 
            data.registrations && data.registrations.length >= 0;
   }, [data.classes, data.sessions, data.registrations]);
-
-  // Data loading effect
-  useEffect(() => {
-    if (!hasInitialized.current && !hasCompleteData) {
-      hasInitialized.current = true;
-      fetchClasses();
-    } else if (hasCompleteData && !hasInitialized.current) {
-      hasInitialized.current = true;
-    }
-  }, [fetchClasses, hasCompleteData]);
 
   // Generate upcoming dates for a session
   const generateUpcomingDates = useCallback((weekdays: number[]): string[] => {
@@ -249,9 +240,13 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
     setSelectedRegistrationForEdit(registration);
   }, []);
 
-  const handleToggleSessionExpansion = useCallback((sessionKey: string) => {
-    setExpandedSession(expandedSession === sessionKey ? null : sessionKey);
-  }, [expandedSession]);
+  const handleToggleSessionExpansion = (sessionId: string) => {
+    setExpandedSession(expandedSession === sessionId ? null : sessionId);
+  };
+
+  const handleToggleLinkedClassesExpansion = (sessionId: string) => {
+    setExpandedLinkedClasses(expandedLinkedClasses === sessionId ? null : sessionId);
+  };
 
   const handleRefreshData = useCallback(() => {
     resetRateLimit();
@@ -423,44 +418,52 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                 <React.Fragment key={`${sessionData.id}_${sessionData.specificDate}`}>
                   <tr className="hover:bg-[#EC4899]/5 transition-colors">
                     <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] leading-tight">{sessionData.name}</div>
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] leading-tight truncate max-w-32 sm:max-w-40">{sessionData.name}</div>
                     </td>
                                         <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
                       <div className="text-xs sm:text-sm font-medium text-[#4B2E83] leading-tight">
                         {sessionData.specificDate ? (
                           <div className="space-y-1">
-                            <div className="font-semibold">
+                            <div className="font-semibold text-xs sm:text-sm">
                               {new Date(sessionData.specificDate).toLocaleDateString('he-IL')}
                             </div>
-                            <div className="flex justify-center">
-                              {(() => {
-                                // Get the specific day of week for this date
-                                const specificDate = new Date(sessionData.specificDate);
-                                const dayOfWeek = specificDate.getDay(); // 0=Sunday, 1=Monday, etc.
-                                
-                                // Convert day number to Hebrew name
-                                const dayName = getDayOfWeekName(dayOfWeek);
-                                
-                                return (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
-                                    יום {dayName}
-                                  </span>
-                                );
-                              })()}
-                            </div>
                             {(() => {
+                              // Get the specific day of week for this date
+                              const specificDate = new Date(sessionData.specificDate);
+                              const dayOfWeek = specificDate.getDay(); // 0=Sunday, 1=Monday, etc.
+                              
+                              // Convert day number to Hebrew name
+                              const dayName = getDayOfWeekName(dayOfWeek);
+                              
                               const date = new Date(sessionData.specificDate);
                               const today = new Date();
                               today.setHours(0,0,0,0);
                               const tomorrow = new Date(today);
                               tomorrow.setDate(today.getDate() + 1);
+                              
+                              let statusText = '';
+                              let statusColor = '';
+                              
                               if (date.getTime() === today.getTime()) {
-                                return <div className="text-xs font-semibold text-green-600">היום</div>;
+                                statusText = 'היום';
+                                statusColor = 'text-green-600';
+                              } else if (date.getTime() === tomorrow.getTime()) {
+                                statusText = 'מחר';
+                                statusColor = 'text-blue-600';
                               }
-                              if (date.getTime() === tomorrow.getTime()) {
-                                return <div className="text-xs font-semibold text-blue-600">מחר</div>;
-                              }
-                              return null;
+                              
+                              return (
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] whitespace-nowrap">
+                                    יום {dayName}
+                                  </span>
+                                  {statusText && (
+                                    <div className={`text-xs font-semibold ${statusColor}`}>
+                                      {statusText}
+                                    </div>
+                                  )}
+                                </div>
+                              );
                             })()}
                           </div>
                         ) : 'לא מוגדר'}
@@ -473,7 +476,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                             <div className="font-semibold">
                               {sessionData.start_time.substring(0, 5)}
                             </div>
-                            <div className="text-[#4B2E83]/70">עד</div>
+                            <div className="text-[#4B2E83]/70 text-xs">עד</div>
                             <div className="font-semibold">
                               {sessionData.end_time.substring(0, 5)}
                             </div>
@@ -499,26 +502,63 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                       </span>
                     </td>
                     <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10 text-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                         sessionData.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                          : 'bg-red-50 text-red-700 border border-red-200'
                       }`}>
-                        {sessionData.is_active ? 'פעיל' : 'לא פעיל'}
+                        {sessionData.is_active ? (
+                          <>
+                            <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            פעיל
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            לא פעיל
+                          </>
+                        )}
                       </span>
                     </td>
                                         <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1 max-h-12 overflow-hidden">
                         {sessionData.linkedClasses && sessionData.linkedClasses.length > 0 ? (
-                          sessionData.linkedClasses.map((className: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
-                              {className}
-                            </span>
-                          ))
+                          <>
+                            {sessionData.linkedClasses.slice(0, 2).map((className: string, index: number) => (
+                              <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate max-w-20 sm:max-w-24">
+                                {className}
+                              </span>
+                            ))}
+                            {sessionData.linkedClasses.length > 2 && (
+                              <button
+                                onClick={() => handleToggleLinkedClassesExpansion(`${sessionData.id}_${sessionData.specificDate}`)}
+                                className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] hover:bg-[#4B2E83]/20 transition-colors cursor-pointer"
+                              >
+                                +{sessionData.linkedClasses.length - 2}
+                              </button>
+                            )}
+                          </>
                         ) : (
                           <span className="text-xs text-[#4B2E83]/50">אין שיעורים מקושרים</span>
                         )}
                       </div>
+                      
+                      {/* Expanded Linked Classes */}
+                      {expandedLinkedClasses === `${sessionData.id}_${sessionData.specificDate}` && sessionData.linkedClasses && sessionData.linkedClasses.length > 2 && (
+                        <div className="mt-2 p-2 bg-white rounded-lg border border-[#EC4899]/20 shadow-sm">
+                          <div className="flex flex-wrap gap-1">
+                            {sessionData.linkedClasses.slice(2).map((className: string, index: number) => (
+                              <span key={index + 2} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate max-w-20 sm:max-w-24">
+                                {className}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
                       <button
@@ -546,11 +586,25 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                                     <div>
                                       <div className="flex justify-between items-start mb-1">
                                         <h4 className="font-semibold text-[#4B2E83] text-xs leading-tight line-clamp-2">{classData?.name || 'שיעור לא ידוע'}</h4>
-                                        <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                                          sessionClass.is_trial ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                                        <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                                          sessionClass.is_trial ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-green-100 text-green-800 border border-green-200'
                                         }`}>
-                                          {sessionClass.is_trial ? 'ניסיון' : 'רגיל'}
-            </span>
+                                          {sessionClass.is_trial ? (
+                                            <>
+                                              <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                              </svg>
+                                              ניסיון
+                                            </>
+                                          ) : (
+                                            <>
+                                              <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                              </svg>
+                                              רגיל
+                                            </>
+                                          )}
+                                        </span>
           </div>
                                       <div className="text-xs text-[#4B2E83]/70 space-y-0.5">
                                         <div>מחיר: ₪{sessionClass.price}</div>
@@ -620,14 +674,34 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                                                 <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm truncate">{registration.email}</td>
                                                 <td className="px-1 sm:px-2 py-1 sm:py-2 text-[#4B2E83] text-xs sm:text-sm">{registration.phone}</td>
                                                 <td className="px-1 sm:px-2 py-1 sm:py-2">
-                                                  <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
-                                                    registration.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                    registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
+                                                  <span className={`inline-flex items-center gap-1 px-1 py-0.5 rounded-full text-xs font-medium ${
+                                                    registration.status === 'active' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                                    registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
+                                                    'bg-red-50 text-red-700 border border-red-200'
                                                   }`}>
-                                                    {registration.status === 'active' ? 'פעיל' :
-                                                     registration.status === 'pending' ? 'ממתין' : 'בוטל'}
-            </span>
+                                                    {registration.status === 'active' ? (
+                                                      <>
+                                                        <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        פעיל
+                                                      </>
+                                                    ) : registration.status === 'pending' ? (
+                                                      <>
+                                                        <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                        </svg>
+                                                        ממתין
+                                                      </>
+                                                    ) : (
+                                                      <>
+                                                        <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                        </svg>
+                                                        בוטל
+                                                      </>
+                                                    )}
+                                                  </span>
                                                 </td>
                                                 <td className="px-1 sm:px-2 py-1 sm:py-2">
                                                   <button
