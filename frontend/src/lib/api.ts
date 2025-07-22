@@ -75,8 +75,21 @@ const fetchWithRetryAndQueue = async <T>(
         continue;
       }
       
-      console.error(`fetchWithRetryAndQueue: HTTP error ${response.status}: ${response.statusText}`);
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Try to get error details from response
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (e) {
+        // If we can't parse JSON, use the status text
+      }
+      
+      console.error(`fetchWithRetryAndQueue: HTTP error ${response.status}: ${errorMessage}`);
+      throw new Error(errorMessage);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
       console.error(`fetchWithRetryAndQueue: error on attempt ${i + 1}:`, lastError.message);

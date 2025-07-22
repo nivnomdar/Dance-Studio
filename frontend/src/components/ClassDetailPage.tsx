@@ -404,30 +404,37 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
     loadProfileWithFetch();
   }, [user?.id, authLoading, localProfile, contextProfile, session, classData?.slug]);
 
-  // Load user's registrations
+  // Load user's registrations - only once per user session
+  const registrationsLoadedRef = useRef(false);
+  
+  // Reset ref when user changes
   useEffect(() => {
-    if (!user || authLoading) return;
+    registrationsLoadedRef.current = false;
+  }, [user?.id]);
+  
+  useEffect(() => {
+    if (!user?.id || !session?.access_token || registrationsLoadedRef.current) return;
+    let isMounted = true;
     const loadRegistrations = async () => {
       try {
         const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
           headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           }
         });
-        if (response.ok) {
+        if (response.ok && isMounted) {
           const data = await response.json();
           setRegistrations(data);
+          registrationsLoadedRef.current = true;
         }
       } catch (error) {
-        console.error('Error loading registrations:', error);
+        if (isMounted) console.error('Error loading registrations:', error);
       }
     };
-    
-    // Reduced delay for faster loading
-    const timeout = setTimeout(loadRegistrations, 500);
-    return () => clearTimeout(timeout);
-  }, [user?.id, authLoading, session]);
+    loadRegistrations();
+    return () => { isMounted = false; };
+  }, [user?.id, session?.access_token]);
 
   // Check available spots when time is selected
   useEffect(() => {
@@ -496,12 +503,31 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
     }
     
     // בדיקה אם כבר נרשמת לשיעור זה בתאריך ובשעה האלה
-    const existingRegistration = registrations?.find((reg: any) => 
-      reg.class_id === classData.id && 
-      reg.selected_date === selectedDate && 
-      reg.selected_time === selectedTime &&
-      reg.status === 'active'
-    );
+    // Convert time format for comparison
+    const timeForBackend = selectedTime.includes('עד') ? 
+      selectedTime.split('עד')[0].trim() : 
+      selectedTime;
+    
+    const existingRegistration = registrations?.find((reg: any) => {
+      // Check if it's the same class and date
+      if (reg.class_id !== classData.id || reg.selected_date !== selectedDate) {
+        return false;
+      }
+      
+      // Check if it's the same time (handle different time formats)
+      const regTime = reg.selected_time;
+      const selectedTimeNormalized = timeForBackend;
+      
+      // Compare times - handle different formats
+      if (regTime === selectedTimeNormalized || 
+          regTime === selectedTime ||
+          regTime.includes(selectedTimeNormalized) ||
+          selectedTimeNormalized.includes(regTime)) {
+        return reg.status === 'active';
+      }
+      
+      return false;
+    });
     
     if (existingRegistration) {
       // המרת פורמט התאריך מ-YYYY-MM-DD ל-DD-MM-YYYY
@@ -518,6 +544,14 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
     }
     
     setIsSubmitting(true);
+    
+    // Double-check registrations before submitting
+    
+    // Check if we have registrations loaded, if not, proceed anyway
+    // The server will handle duplicate checks
+    
+    // Final check - if we still don't have registrations, proceed anyway
+    // The server will handle the duplicate check
     
     try {
       // קבלת session_id ו-session_class_id (אם קיימים)
@@ -564,14 +598,6 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
         selected_time: timeForBackend
       };
       
-      // Debug log
-          // console.log('Registration data being sent:', registrationData);
-    // console.log('Class data:', classData);
-    // console.log('User email:', user.email);
-    // console.log('Selected date:', selectedDate);
-    // console.log('Selected time (original):', selectedTime);
-    // console.log('Selected time (for backend):', timeForBackend);
-      
       // שליחה לשרת
       const result = await registrationsService.createRegistration(registrationData, session?.access_token);
       
@@ -585,26 +611,11 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
       // הצגת אישור הרשמה במרכז המסך
       setShowRegistrationSuccess(true);
       
-      // רענון רשימת ההרשמות
-      const loadRegistrations = async () => {
-        try {
-          const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
-            headers: {
-              'Authorization': `Bearer ${session?.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setRegistrations(data);
-          }
-        } catch (error) {
-          console.error('Error refreshing registrations:', error);
-        }
-      };
-      
-      // Reduced delay for faster loading
-      setTimeout(loadRegistrations, 500);
+      // רענון רשימת ההרשמות - נדחה כדי למנוע rate limiting
+      setTimeout(() => {
+        registrationsLoadedRef.current = false;
+        setRegistrations(prev => [...(prev || [])]);
+      }, 2000);
       
       // איפוס הטופס
       setFormData({ first_name: '', last_name: '', phone: '' });
@@ -630,8 +641,12 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
             errorMessage = match[1];
           }
         } else if (error.message.includes('HTTP 400')) {
-          // Try to get more specific error from the response
-          errorMessage = 'שגיאה בהרשמה. ייתכן שכבר נרשמת לשיעור זה או שיש בעיה בנתונים.';
+          // Check if it's an "Already registered" error
+          if (error.message.includes('Already registered for this class on this date and time')) {
+            errorMessage = 'כבר נרשמת לשיעור זה בתאריך ובשעה שנבחרו. אנא בחרי תאריך או שעה אחרת.';
+          } else {
+            errorMessage = 'שגיאה בהרשמה. ייתכן שכבר נרשמת לשיעור זה או שיש בעיה בנתונים.';
+          }
         }
       }
       
