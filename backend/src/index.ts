@@ -21,7 +21,7 @@ const app = express();
 // CORS configuration - MUST be before helmet
 const allowedOrigins = [
   'https://dancestudio-ecru.vercel.app', // הדומיין הקבוע
-  'https://ladancestudio-87bgm88rf-nivnomdars-projects.vercel.app', // ה-URL הזמני הנוכחי
+  'https://ladance-byavigail.vercel.app', // ה-URL הנוכחי
   'http://localhost:5173' // לפיתוח
 ];
 
