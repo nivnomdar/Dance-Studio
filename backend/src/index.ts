@@ -20,10 +20,16 @@ const app = express();
 
 // Middleware
 app.use(helmet());
+
+// CORS configuration
+logger.info(`CORS Origin configured as: ${config.cors.origin}`);
 app.use(cors({
   origin: config.cors.origin,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 app.use(morgan('dev'));
 
