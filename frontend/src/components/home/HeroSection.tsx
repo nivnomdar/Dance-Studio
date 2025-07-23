@@ -1,49 +1,93 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Preload the video for smoother playback
-    video.preload = 'auto';
+    // Mobile-specific optimizations
+    video.preload = 'metadata';
+    video.playsInline = true;
+    video.muted = true;
+    video.loop = true;
 
     // Handle video loading and buffering
-    const handleLoadedData = () => {
+    const handleLoadedMetadata = () => {
+      setIsVideoLoaded(true);
+      // Start playing when metadata is loaded
       video.play().catch(() => {
-        // Fallback for browsers that block autoplay
         console.log('Autoplay blocked, user interaction required');
       });
     };
 
     const handleCanPlay = () => {
-      // Ensure smooth looping by setting currentTime to 0 when video ends
-      if (video.currentTime >= video.duration - 0.1) {
+      // Ensure video is playing
+      if (video.paused) {
+        video.play().catch(() => {
+          console.log('Play failed');
+        });
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      // Smooth loop handling - restart before the end
+      if (video.duration && video.currentTime >= video.duration - 0.1) {
         video.currentTime = 0;
       }
     };
 
     const handleEnded = () => {
-      // Smooth restart for loop
+      // Immediate restart for loop
       video.currentTime = 0;
       video.play().catch(() => {
         console.log('Loop restart failed');
       });
     };
 
+    const handleSeeking = () => {
+      // Handle seeking events
+      console.log('Video seeking...');
+    };
+
+    const handleSeeked = () => {
+      // Handle seek completion
+      console.log('Video seeked');
+    };
+
     // Add event listeners
-    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
+    video.addEventListener('seeking', handleSeeking);
+    video.addEventListener('seeked', handleSeeked);
+
+    // Mobile-specific: Handle visibility change
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        video.pause();
+      } else {
+        video.play().catch(() => {
+          console.log('Resume failed');
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup
     return () => {
-      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('seeking', handleSeeking);
+      video.removeEventListener('seeked', handleSeeked);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -57,8 +101,16 @@ function HeroSection() {
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
+          webkit-playsinline="true"
+          x5-playsinline="true"
+          x5-video-player-type="h5"
+          x5-video-player-fullscreen="false"
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
+          style={{
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
         >
           <source src="/videos/Heronew.mp4" type="video/mp4" />
         </video>
