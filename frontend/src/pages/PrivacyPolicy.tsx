@@ -60,11 +60,11 @@ const PrivacyPolicy: React.FC = () => {
                   3. כיצד אנו משתמשים במידע
                 </h2>
                 <ul className="list-disc list-inside text-gray-700 space-y-2 mr-4">
-                  <li>לספק שירותי רישום לשיעורי ריקוד</li>
+                  <li>לספק שירותי רישום ותשלום לשיעורי ריקוד</li>
                   <li>לשלוח עדכונים על שיעורים ושינויים</li>
                   <li>לשפר את השירותים שלנו</li>
                   <li>לענות לפניות ותמיכה</li>
-                  <li>לשלוח הודעות שיווקיות (רקכמתכם)</li>
+                  <li>לשלוח הודעות שיווקיות (בהסכמה בלבד)</li>
                 </ul>
               </section>
 
@@ -78,7 +78,7 @@ const PrivacyPolicy: React.FC = () => {
                 <ul className="list-disc list-inside text-gray-700 space-y-2 mr-4">
                   <li>ספקי שירות חיוניים (כגון מערכות תשלום)</li>
                   <li>כאשר נדרש על פי חוק</li>
-                  <li>כמתכם המפורשת</li>
+                  <li>בהסכמה מפורשת</li>
                 </ul>
               </section>
 
@@ -128,7 +128,7 @@ const PrivacyPolicy: React.FC = () => {
                   8. שינויים במדיניות
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  אנו עשויים לעדכן מדיניות זו מעת לעת. שינויים משמעותיים יפורסמו באתר ויישלחו לכם בדוא"ל.
+                  אנו עשויים לעדכן מדיניות זו מעת לעת.
                 </p>
               </section>
 
@@ -142,8 +142,6 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-gray-700">
                     <strong>דוא"ל:</strong> privacy@ladance.co.il<br />
-                    <strong>טלפון:</strong> 03-1234567<br />
-                    <strong>כתובת:</strong> רחוב יוסף לישנסקי 6, ראשון לציון
                   </p>
                 </div>
               </section>
