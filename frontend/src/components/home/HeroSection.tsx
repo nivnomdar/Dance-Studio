@@ -1,16 +1,63 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Preload the video for smoother playback
+    video.preload = 'auto';
+
+    // Handle video loading and buffering
+    const handleLoadedData = () => {
+      video.play().catch(() => {
+        // Fallback for browsers that block autoplay
+        console.log('Autoplay blocked, user interaction required');
+      });
+    };
+
+    const handleCanPlay = () => {
+      // Ensure smooth looping by setting currentTime to 0 when video ends
+      if (video.currentTime >= video.duration - 0.1) {
+        video.currentTime = 0;
+      }
+    };
+
+    const handleEnded = () => {
+      // Smooth restart for loop
+      video.currentTime = 0;
+      video.play().catch(() => {
+        console.log('Loop restart failed');
+      });
+    };
+
+    // Add event listeners
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('ended', handleEnded);
+
+    // Cleanup
+    return () => {
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, []);
+
   return (
-    <section className="relative w-full h-[100vh] overflow-hidden pt-50">
+    <section className="relative w-full h-screen overflow-hidden">
       {/* Video Background */}
       <div className="absolute inset-0 w-full h-full">
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          preload="auto"
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
         >
           <source src="/videos/Heronew.mp4" type="video/mp4" />
@@ -21,7 +68,7 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/20" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-start h-full text-white pt-20">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white">
         {/* Hero Image + Buttons */}
         <div className="flex flex-col items-center">
           <img
