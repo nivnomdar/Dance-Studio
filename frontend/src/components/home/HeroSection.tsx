@@ -1,92 +1,67 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Mobile-specific optimizations
-    video.preload = 'metadata';
+    // Professional video setup
+    video.preload = 'auto';
     video.playsInline = true;
     video.muted = true;
     video.loop = true;
 
-    // Handle video loading and buffering
-    const handleLoadedMetadata = () => {
-      setIsVideoLoaded(true);
-      // Start playing when metadata is loaded
-      video.play().catch(() => {
-        console.log('Autoplay blocked, user interaction required');
-      });
+    const startVideo = async () => {
+      try {
+        await video.play();
+        console.log('Video started successfully');
+      } catch (error) {
+        console.log('Video play failed:', error);
+      }
     };
 
     const handleCanPlay = () => {
-      // Ensure video is playing
-      if (video.paused) {
-        video.play().catch(() => {
-          console.log('Play failed');
-        });
-      }
-    };
-
-    const handleTimeUpdate = () => {
-      // Smooth loop handling - restart before the end
-      if (video.duration && video.currentTime >= video.duration - 0.1) {
-        video.currentTime = 0;
-      }
+      startVideo();
     };
 
     const handleEnded = () => {
-      // Immediate restart for loop
+      // Ensure smooth restart
       video.currentTime = 0;
-      video.play().catch(() => {
-        console.log('Loop restart failed');
-      });
+      startVideo();
     };
 
-    const handleSeeking = () => {
-      // Handle seeking events
-      console.log('Video seeking...');
+    const handleTimeUpdate = () => {
+      // Ensure video keeps playing
+      if (video.paused && video.readyState >= 3) {
+        startVideo();
+      }
     };
 
-    const handleSeeked = () => {
-      // Handle seek completion
-      console.log('Video seeked');
-    };
-
-    // Add event listeners
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('ended', handleEnded);
-    video.addEventListener('seeking', handleSeeking);
-    video.addEventListener('seeked', handleSeeked);
-
-    // Mobile-specific: Handle visibility change
+    // Handle visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
         video.pause();
       } else {
-        video.play().catch(() => {
-          console.log('Resume failed');
-        });
+        if (video.paused) {
+          startVideo();
+        }
       }
     };
 
+    // Add event listeners
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('timeupdate', handleTimeUpdate);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('ended', handleEnded);
-      video.removeEventListener('seeking', handleSeeking);
-      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
@@ -101,7 +76,7 @@ function HeroSection() {
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           webkit-playsinline="true"
           x5-playsinline="true"
           x5-video-player-type="h5"
