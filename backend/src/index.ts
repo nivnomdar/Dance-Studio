@@ -19,9 +19,25 @@ import sessionsRoutes from './routes/sessions';
 const app = express();
 
 // CORS configuration - MUST be before helmet
-logger.info(`CORS Origin configured as: ${config.cors.origin}`);
+const allowedOrigins = [
+  'https://dancestudio-ecru.vercel.app', // הדומיין הקבוע
+  'https://ladancestudio-87bgm88rf-nivnomdars-projects.vercel.app', // ה-URL הזמני הנוכחי
+  'http://localhost:5173' // לפיתוח
+];
+
+logger.info(`CORS Origins configured: ${allowedOrigins.join(', ')}`);
 app.use(cors({
-  origin: config.cors.origin,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
