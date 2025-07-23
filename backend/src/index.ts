@@ -18,10 +18,7 @@ import sessionsRoutes from './routes/sessions';
 
 const app = express();
 
-// Middleware
-app.use(helmet());
-
-// CORS configuration
+// CORS configuration - MUST be before helmet
 logger.info(`CORS Origin configured as: ${config.cors.origin}`);
 app.use(cors({
   origin: config.cors.origin,
@@ -30,6 +27,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Middleware
+app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -38,6 +37,11 @@ app.use(rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max
 }));
+
+// Test route
+app.get('/', (req, res) => {
+  res.json({ message: 'Server is running!', corsOrigin: config.cors.origin });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
