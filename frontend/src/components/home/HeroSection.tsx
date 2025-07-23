@@ -1,25 +1,63 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Detect mobile device
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     const video = videoRef.current;
     if (!video) return;
 
-    // Professional video setup
-    video.preload = 'auto';
-    video.playsInline = true;
-    video.muted = true;
-    video.loop = true;
+    // Mobile-specific optimizations
+    if (isMobile) {
+      video.preload = 'metadata';
+      video.playsInline = true;
+      video.muted = true;
+      video.loop = true;
+      video.defaultPlaybackRate = 1.0;
+      video.playbackRate = 1.0;
+      
+      // Mobile-specific attributes
+      video.setAttribute('webkit-playsinline', 'true');
+      video.setAttribute('x5-playsinline', 'true');
+      video.setAttribute('x5-video-player-type', 'h5');
+      video.setAttribute('x5-video-player-fullscreen', 'false');
+      video.setAttribute('x5-video-orientation', 'portraint');
+    } else {
+      video.preload = 'auto';
+      video.playsInline = true;
+      video.muted = true;
+      video.loop = true;
+    }
 
     const startVideo = async () => {
       try {
-        await video.play();
-        console.log('Video started successfully');
+        if (video.paused) {
+          await video.play();
+          console.log('Video started successfully');
+        }
       } catch (error) {
         console.log('Video play failed:', error);
+        // Fallback for mobile browsers
+        if (isMobile) {
+          setTimeout(() => {
+            video.play().catch(() => {
+              console.log('Mobile fallback play failed');
+            });
+          }, 100);
+        }
       }
     };
 
@@ -27,15 +65,50 @@ function HeroSection() {
       startVideo();
     };
 
-    const handleEnded = () => {
-      // Ensure smooth restart
-      video.currentTime = 0;
-      startVideo();
+    const handleCanPlayThrough = () => {
+      // Ensure video is playing when fully loaded
+      if (video.paused) {
+        startVideo();
+      }
+    };
+
+    const handleLoadedData = () => {
+      // Start playing as soon as data is loaded
+      if (video.paused) {
+        startVideo();
+      }
     };
 
     const handleTimeUpdate = () => {
-      // Ensure video keeps playing
-      if (video.paused && video.readyState >= 3) {
+      // Ensure video keeps playing on mobile
+      if (isMobile && video.paused && video.readyState >= 2) {
+        startVideo();
+      }
+    };
+
+    const handleStalled = () => {
+      // Handle buffering issues on mobile
+      if (isMobile) {
+        console.log('Video stalled, attempting to resume');
+        setTimeout(() => {
+          if (video.paused) {
+            startVideo();
+          }
+        }, 500);
+      }
+    };
+
+    const handleWaiting = () => {
+      // Handle buffering on mobile
+      if (isMobile) {
+        console.log('Video waiting for data');
+      }
+    };
+
+    const handleEnded = () => {
+      // Ensure smooth restart
+      if (video.loop) {
+        video.currentTime = 0;
         startVideo();
       }
     };
@@ -43,7 +116,9 @@ function HeroSection() {
     // Handle visibility change
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        video.pause();
+        if (isMobile) {
+          video.pause();
+        }
       } else {
         if (video.paused) {
           startVideo();
@@ -53,18 +128,47 @@ function HeroSection() {
 
     // Add event listeners
     video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('ended', handleEnded);
+    video.addEventListener('canplaythrough', handleCanPlayThrough);
+    video.addEventListener('loadeddata', handleLoadedData);
     video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('stalled', handleStalled);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('ended', handleEnded);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Mobile-specific: Handle page focus/blur
+    const handlePageFocus = () => {
+      if (isMobile && video.paused) {
+        setTimeout(() => {
+          startVideo();
+        }, 100);
+      }
+    };
+
+    const handlePageBlur = () => {
+      if (isMobile) {
+        video.pause();
+      }
+    };
+
+    window.addEventListener('focus', handlePageFocus);
+    window.addEventListener('blur', handlePageBlur);
 
     // Cleanup
     return () => {
       video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('canplaythrough', handleCanPlayThrough);
+      video.removeEventListener('loadeddata', handleLoadedData);
       video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('stalled', handleStalled);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('ended', handleEnded);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handlePageFocus);
+      window.removeEventListener('blur', handlePageBlur);
+      window.removeEventListener('resize', checkMobile);
     };
-  }, []);
+  }, [isMobile]);
 
   return (
     <section className="relative w-full h-screen overflow-hidden">
@@ -76,11 +180,12 @@ function HeroSection() {
           loop
           muted
           playsInline
-          preload="auto"
+          preload={isMobile ? "metadata" : "auto"}
           webkit-playsinline="true"
           x5-playsinline="true"
           x5-video-player-type="h5"
           x5-video-player-fullscreen="false"
+          x5-video-orientation="portraint"
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
           style={{
             objectFit: 'cover',
