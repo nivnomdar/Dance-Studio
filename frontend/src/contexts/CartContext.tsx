@@ -64,10 +64,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return;
       }
 
-      // Check rate limiting - minimum 5 seconds between saves
+      // Check rate limiting - minimum 10 seconds between saves
       const now = Date.now();
       const timeSinceLastSave = now - lastSaveTimeRef.current;
-      if (timeSinceLastSave < 5000) {
+      if (timeSinceLastSave < 10000) {
         return;
       }
 
@@ -101,8 +101,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Debounce the save operation - wait 3 seconds after last change
-    saveTimeoutRef.current = setTimeout(saveCart, 3000);
+    // Debounce the save operation - wait 5 seconds after last change
+    saveTimeoutRef.current = setTimeout(saveCart, 5000);
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -149,7 +149,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                 console.error('Error saving cart after sign in:', error);
                 // Keep in session storage if save fails
               }
-            }, 5000); // Wait 5 seconds before saving
+            }, 10000); // Wait 10 seconds before saving
             
           } catch (error) {
             console.error('Error transferring cart from session to user metadata:', error);

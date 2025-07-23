@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Rate limiting check
     const now = Date.now();
-    if (now - lastProfileUpdateRef.current < 10000) {
+    if (now - lastProfileUpdateRef.current < 15000) {
       // console.log('Skipping profile update - too recent at:', new Date().toISOString());
       return;
     }
@@ -236,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error handling profile operations:', error);
       }
-    }, 5000);
+    }, 10000);
   }, []); // Remove dependencies to prevent infinite re-renders
 
   // Initialize auth state
