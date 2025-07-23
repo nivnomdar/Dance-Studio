@@ -2,4 +2,4 @@
 // import { Order, ClassRegistration, Product, DanceClass } from './types';
 
 // Re-export for backward compatibility
-export { Order, ClassRegistration, Product, DanceClass } from './types/models'; 
+export { Order, ClassRegistration, Product, Class as DanceClass } from './types/models'; 
