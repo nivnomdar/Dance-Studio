@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { supabase } from '../database';
 import { logger } from '../utils/logger';
 import { auth, admin } from '../middleware/auth';
@@ -111,7 +111,7 @@ const countRegistrations = async (sessionId: string, date: string, time: string)
 };
 
 // Get all sessions (public)
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     logger.info('Public sessions endpoint called');
     
@@ -135,7 +135,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get all session classes (public)
-router.get('/session-classes', async (req, res) => {
+router.get('/session-classes', async (req: Request, res: Response) => {
   try {
     logger.info('Public session-classes endpoint called');
     
@@ -160,7 +160,7 @@ router.get('/session-classes', async (req, res) => {
 });
 
 // Get all sessions (admin only)
-router.get('/admin', admin, async (req, res) => {
+router.get('/admin', admin, async (req: Request, res: Response) => {
   try {
     logger.info('Admin sessions endpoint called by user:', req.user?.id);
     
