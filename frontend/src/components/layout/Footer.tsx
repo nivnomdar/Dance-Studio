@@ -264,11 +264,11 @@ const Footer: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-1.5 text-sm">
-                <Link to="/privacy" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
+                <Link to="/privacy-policy" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
                   מדיניות פרטיות
                 </Link>
                 <span className="text-gray-500 text-xs">•</span>
-                <Link to="/terms" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
+                <Link to="/terms-of-service" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
                   תנאי שימוש
                 </Link>
               
