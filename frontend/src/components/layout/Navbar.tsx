@@ -343,31 +343,31 @@ function Navbar() {
 
       {/* Mobile menu */}
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-[#FFF5F9] shadow-lg`}>
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <div className="px-2 pt-1 pb-2 space-y-0.5 sm:px-3 sm:pt-2 sm:pb-3 sm:space-y-1">
           <Link
             to="/"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
             דף הבית
           </Link>
           <Link
             to="/classes"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
             שיעורים
           </Link>
           <Link
             to="/shop"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
             חנות
           </Link>
           <Link
             to="/contact"
-            className="block px-3 py-2 rounded-md text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
+            className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
           >
             צור קשר
