@@ -71,6 +71,24 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
+          // Update profile with marketing consent and terms acceptance
+          try {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .update({
+                marketing_consent: true,
+                terms_accepted: true,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', data.session.user.id)
+            
+            if (profileError) {
+              console.error('Error updating profile:', profileError)
+            }
+          } catch (profileError) {
+            console.error('Error updating profile:', profileError)
+          }
+          
           // Set authenticated state and navigate
           if (!hasNavigated) {
             setIsAuthenticated(true);
@@ -95,8 +113,26 @@ export default function AuthCallback() {
     };
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session && !hasNavigated) {
+        // Update profile with marketing consent and terms acceptance
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              marketing_consent: true,
+              terms_accepted: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id)
+          
+          if (profileError) {
+            console.error('Error updating profile:', profileError)
+          }
+        } catch (profileError) {
+          console.error('Error updating profile:', profileError)
+        }
+        
         setIsAuthenticated(true);
         setHasNavigated(true);
         navigate('/', { replace: true });

@@ -7,12 +7,14 @@ import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfile } from '../../hooks/useProfile';
 import SecondaryNavbar from './SecondaryNavbar';
+import { GoogleLoginModal } from '../GoogleLogin';
 
 function Navbar() {
   // console.log('Navbar render at:', new Date().toISOString()); // Debug log
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { cartCount, clearCart } = useCart();
@@ -45,33 +47,8 @@ function Navbar() {
     return () => subscription.unsubscribe();
   }, [showPopup]);
 
-  const handleGoogleLogin = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-      
-      // console.log('Navbar OAuth sign in result:', { data, error });
-      
-      if (error) {
-        showPopup({
-          title: 'שגיאת התחברות',
-          message: 'אירעה שגיאה בניסיון להתחבר. אנא נסה שוב.',
-          type: 'error',
-          duration: 3000
-        });
-        throw error;
-      }
-    } catch (error) {
-      // Handle login error silently
-    }
+  const handleLoginClick = () => {
+    setShowLoginModal(true);
   };
 
   /**
@@ -181,7 +158,7 @@ function Navbar() {
               </div>
             ) : (
               <button
-                onClick={handleGoogleLogin}
+                onClick={handleLoginClick}
                 className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
                 title="התחבר"
               >
@@ -278,7 +255,7 @@ function Navbar() {
               </div>
             ) : (
               <button
-                onClick={handleGoogleLogin}
+                onClick={handleLoginClick}
                 className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
                 title="התחבר"
               >
@@ -417,6 +394,12 @@ function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Login Modal */}
+      <GoogleLoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </nav>
   );
 }

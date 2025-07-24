@@ -22,6 +22,7 @@ const app = express();
 const allowedOrigins = [
   'https://dancestudio-ecru.vercel.app', // הדומיין הקבוע
   'https://ladance-byavigail.vercel.app', // ה-URL הנוכחי
+  'https://www.ladances.com', // הדומיין הרשמי
   'http://localhost:5173' // לפיתוח
 ];
 
