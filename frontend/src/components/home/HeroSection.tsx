@@ -1,14 +1,82 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Basic video setup - let HTML handle the loop
+    video.preload = 'auto';
+    video.playsInline = true;
+    video.muted = true;
+    video.loop = true;
+
+    const startVideo = async () => {
+      try {
+        if (video.paused) {
+          await video.play();
+          console.log('Video started successfully');
+        }
+      } catch (error) {
+        console.log('Video play failed:', error);
+      }
+    };
+
+    const handleCanPlay = () => {
+      startVideo();
+    };
+
+    // Handle visibility change only
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        video.pause();
+      } else {
+        if (video.paused) {
+          startVideo();
+        }
+      }
+    };
+
+    // Add only essential event listeners
+    video.addEventListener('canplay', handleCanPlay);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      video.removeEventListener('canplay', handleCanPlay);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <section className="relative w-full h-screen overflow-hidden">
-      {/* GIF Background */}
-      <div className="absolute inset-0 w-full h-full">
+      {/* Video Background - Hidden on small screens, visible on medium and up */}
+      <div className="absolute inset-0 w-full h-full hidden md:block">
+        <video
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
+          style={{
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
+        >
+          <source src="/videos/Heronew.mp4" type="video/mp4" />
+        </video>
+      </div>
+
+      {/* GIF Background - Visible on small screens, hidden on medium and up */}
+      <div className="absolute inset-0 w-full h-full md:hidden">
         <img
           src="/videos/Heronew.gif"
-          alt="Studio Dance - סטודיו להעצמה נשית וחיבור לגוף"
+          alt="Studio Dance Background"
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
           style={{
             objectFit: 'cover',
