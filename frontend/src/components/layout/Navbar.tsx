@@ -194,7 +194,7 @@ function Navbar() {
           </div>
 
           {/* Mobile Layout */}
-          <div className="md:hidden flex items-center space-x-2 overflow-visible">
+          <div className="md:hidden flex items-center -space-x-2 overflow-visible">
             {/* Menu Button */}
             <button
               onClick={() => {
@@ -296,7 +296,7 @@ function Navbar() {
               <img
                 src="/images/LOGOladance.png"
                 alt="Ladance Avigail"
-                className="sm:mb-4 h-25 w-auto -mt-1 sm:mt-4"
+                className="h-17 sm:h-22 w-auto -mt-1 sm:mt-4 sm:mb-4"
               />
             </Link>
           </div>
