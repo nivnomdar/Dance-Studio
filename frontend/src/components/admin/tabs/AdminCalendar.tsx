@@ -117,18 +117,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
                reg.selected_time === session.start_time.substring(0, 5);
       }) || [];
       
-      console.log('Session registrations:', sessionRegistrations.map(r => ({
-        id: r.id,
-        status: r.status,
-        statusType: typeof r.status,
-        name: `${r.first_name} ${r.last_name}`,
-        date: r.selected_date,
-        time: r.selected_time
-      })));
-      
-      // Log all unique statuses to see what we're dealing with
-      const uniqueStatuses = [...new Set(sessionRegistrations.map(r => r.status))];
-      console.log('Unique statuses in session:', uniqueStatuses);
+
       
       const activeRegistrations = data.registrations?.filter((reg: any) => {
         // Create date with timezone consideration
