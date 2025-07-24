@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -7,37 +7,49 @@ export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
+    // Prevent multiple executions
+    if (hasNavigated || isProcessing || hasRunRef.current) {
+      return;
+    }
+    
+    hasRunRef.current = true;
+
     // Add a timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (!hasNavigated) {
         setHasNavigated(true);
         navigate('/', { replace: true });
       }
-    }, 10000); // 10 seconds timeout
+    }, 8000); // Reduced to 8 seconds
 
     const handleAuthCallback = async () => {
       try {
-        // First, check if user is already authenticated
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession && !hasNavigated) {
-          setIsAuthenticated(true);
-          setHasNavigated(true);
-          navigate('/', { replace: true });
-          return;
-        }
-
+        setIsProcessing(true);
+        
         // Get the current URL and extract the code parameter
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
 
+        // Quick check if we already have a session
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        if (existingSession && !hasNavigated) {
+          setIsAuthenticated(true);
+          setHasNavigated(true);
+          navigate('/', { replace: true });
+          return;
+        }
+
         // If there's an error in the URL, handle it
         if (error) {
           console.error('OAuth error:', error, errorDescription);
           setError('שגיאה בהתחברות. אנא נסה שוב.');
+          setHasNavigated(true);
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
@@ -46,15 +58,8 @@ export default function AuthCallback() {
 
         // If there's no code, redirect to home
         if (!code) {
-          // Check session again before redirecting
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            setIsAuthenticated(true);
-            setHasNavigated(true);
-            navigate('/', { replace: true });
-          } else {
-            navigate('/', { replace: true });
-          }
+          setHasNavigated(true);
+          navigate('/', { replace: true });
           return;
         }
 
@@ -64,6 +69,7 @@ export default function AuthCallback() {
         if (exchangeError) {
           console.error('Error exchanging code for session:', exchangeError);
           setError('שגיאה בהתחברות. אנא נסה שוב.');
+          setHasNavigated(true);
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
@@ -71,33 +77,31 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          // Update profile with marketing consent and terms acceptance
-          try {
-            const { error: profileError } = await supabase
-              .from('profiles')
-              .update({
-                marketing_consent: true,
-                terms_accepted: true,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', data.session.user.id)
-            
-            if (profileError) {
-              console.error('Error updating profile:', profileError)
-            }
-          } catch (profileError) {
-            console.error('Error updating profile:', profileError)
-          }
-          
-          // Set authenticated state and navigate
+          // Set authenticated state and navigate immediately
           if (!hasNavigated) {
             setIsAuthenticated(true);
             setHasNavigated(true);
             navigate('/', { replace: true });
           }
+          
+          // Update profile in background (non-blocking)
+          supabase
+            .from('profiles')
+            .update({
+              marketing_consent: true,
+              terms_accepted: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', data.session.user.id)
+            .then(({ error }) => {
+              if (error) {
+                console.error('Error updating profile:', error);
+              }
+            });
         } else {
           console.error('No session returned from code exchange');
           setError('שגיאה בהתחברות. אנא נסה שוב.');
+          setHasNavigated(true);
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
@@ -106,47 +110,20 @@ export default function AuthCallback() {
       } catch (error) {
         console.error('Unexpected error in auth callback:', error);
         setError('שגיאה לא צפויה. אנא נסה שוב.');
+        setHasNavigated(true);
         setTimeout(() => {
           navigate('/', { replace: true });
         }, 3000);
       }
     };
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session && !hasNavigated) {
-        // Update profile with marketing consent and terms acceptance
-        try {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              marketing_consent: true,
-              terms_accepted: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', session.user.id)
-          
-          if (profileError) {
-            console.error('Error updating profile:', profileError)
-          }
-        } catch (profileError) {
-          console.error('Error updating profile:', profileError)
-        }
-        
-        setIsAuthenticated(true);
-        setHasNavigated(true);
-        navigate('/', { replace: true });
-      }
-    });
-
-    // Handle the callback
+    // Handle the callback immediately
     handleAuthCallback();
 
     return () => {
       clearTimeout(timeout);
-      subscription.unsubscribe();
     };
-  }, [navigate, hasNavigated]);
+  }, [navigate]); // Removed hasNavigated from dependencies
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FDF9F6]">

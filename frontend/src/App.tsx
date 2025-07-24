@@ -42,7 +42,7 @@ function AppContent() {
           <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/v1/callback" element={<AuthCallback />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
         </Routes>

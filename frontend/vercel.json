@@ -7,7 +7,7 @@
   ],
   "headers": [
     {
-      "source": "/auth/callback",
+              "source": "/auth/v1/callback",
       "headers": [
         {
           "key": "Cache-Control",

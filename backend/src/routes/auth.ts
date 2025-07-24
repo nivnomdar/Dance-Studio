@@ -27,7 +27,7 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${config.cors.origin}/auth/callback`
+        redirectTo: `${config.cors.origin}/auth/v1/callback`
       }
     });
 

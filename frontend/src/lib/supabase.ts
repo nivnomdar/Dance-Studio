@@ -77,7 +77,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true, // חידוש אוטומטי של token
     detectSessionInUrl: true, // זיהוי session מה-URL
     flowType: 'pkce', // סוג הזרימה - PKCE (Proof Key for Code Exchange)
-    debug: true // הוספת לוגים לדיבוג
+    debug: false // כיבוי לוגים לדיבוג כדי להאיץ
   }
 });
 
