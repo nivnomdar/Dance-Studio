@@ -8,102 +8,33 @@ interface MyOrdersTabProps {
 }
 
 const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
-  console.log('MyOrdersTab: Rendering with userId:', userId, 'session:', !!session);
-  
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
 
   useEffect(() => {
-    console.log('MyOrdersTab: useEffect triggered with userId:', userId, 'session:', !!session);
-    
     const fetchOrders = async () => {
       try {
-        console.log('MyOrdersTab: Starting to fetch orders...');
         setLoading(true);
         setError(null);
         
         // TODO: Implement orders service
         // const userOrders = await ordersService.getUserOrders(userId, session?.access_token);
         
-        // For now, we'll use mock data
-        const mockOrders: Order[] = [
-          {
-            id: '1',
-            user_id: userId,
-            items: [
-              {
-                product_id: '1',
-                name: 'חולצת ריקוד אלגנטית',
-                price: 120,
-                quantity: 1,
-                image_url: '/images/product1.jpg'
-              }
-            ],
-            total_amount: 120,
-            status: 'pending',
-            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            shipping_address: {
-              street: 'רחוב הרצל 123',
-              city: 'תל אביב',
-              postal_code: '12345',
-              country: 'ישראל'
-            },
-            payment_method: 'credit_card',
-            payment_status: 'pending'
-          },
-          {
-            id: '2',
-            user_id: userId,
-            items: [
-              {
-                product_id: '2',
-                name: 'מכנסי ריקוד נוחים',
-                price: 150,
-                quantity: 1,
-                image_url: '/images/product2.jpg'
-              },
-              {
-                product_id: '3',
-                name: 'נעלי ריקוד מקצועיות',
-                price: 200,
-                quantity: 1,
-                image_url: '/images/product3.jpg'
-              }
-            ],
-            total_amount: 350,
-            status: 'completed',
-            created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-            updated_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            shipping_address: {
-              street: 'רחוב הרצל 123',
-              city: 'תל אביב',
-              postal_code: '12345',
-              country: 'ישראל'
-            },
-            payment_method: 'credit_card',
-            payment_status: 'completed'
-          }
-        ];
-        
-        setOrders(mockOrders);
-        console.log('MyOrdersTab: Orders loaded successfully:', mockOrders.length, 'orders');
+        // For now, no orders - empty array
+        setOrders([]);
       } catch (err) {
         console.error('Error fetching orders:', err);
         setError('שגיאה בטעינת ההזמנות שלך');
       } finally {
         setLoading(false);
-        console.log('MyOrdersTab: Loading finished');
       }
     };
 
     if (userId && session) {
-      console.log('MyOrdersTab: Calling fetchOrders...');
       fetchOrders();
     } else {
-      console.log('MyOrdersTab: Skipping fetchOrders - missing userId or session');
       setLoading(false);
     }
   }, [userId, session]);
@@ -188,10 +119,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
     }
   };
 
-  console.log('MyOrdersTab: Rendering with loading:', loading, 'error:', error, 'orders count:', orders.length);
-  
   if (loading) {
-    console.log('MyOrdersTab: Showing loading state');
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
@@ -213,7 +141,6 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
   }
 
   if (error) {
-    console.log('MyOrdersTab: Showing error state:', error);
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
@@ -243,8 +170,6 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
     );
   }
 
-  console.log('MyOrdersTab: Rendering main content with', sortedOrders.length, 'orders');
-  
   return (
     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
       {/* Header */}
@@ -258,43 +183,43 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
               צפי בהיסטוריית ההזמנות שלך
             </p>
           </div>
-          <div className="flex space-x-2 space-x-reverse">
+          <div className="flex items-center bg-white/10 rounded-xl p-1 backdrop-blur-sm">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                 filter === 'all'
-                  ? 'bg-white text-[#4B2E83]'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-white text-[#4B2E83] shadow-md'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               הכל
             </button>
             <button
               onClick={() => setFilter('pending')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                 filter === 'pending'
-                  ? 'bg-white text-[#4B2E83]'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-white text-[#4B2E83] shadow-md'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               בהמתנה
             </button>
             <button
               onClick={() => setFilter('completed')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                 filter === 'completed'
-                  ? 'bg-white text-[#4B2E83]'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-white text-[#4B2E83] shadow-md'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               הושלמו
             </button>
             <button
               onClick={() => setFilter('cancelled')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                 filter === 'cancelled'
-                  ? 'bg-white text-[#4B2E83]'
-                  : 'bg-white/20 text-white hover:bg-white/30'
+                  ? 'bg-white text-[#4B2E83] shadow-md'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
               בוטלו
@@ -307,22 +232,29 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
       <div className="p-8">
         {sortedOrders.length === 0 ? (
           <div className="text-center py-12">
-            <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-              <FaShoppingBag className="w-8 h-8 text-gray-400" />
+            {/* Empty State Icon */}
+            <div className="mx-auto mb-6 w-20 h-20 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center">
+              <FaShoppingBag className="w-10 h-10 text-[#EC4899]" />
             </div>
-            <h3 className="text-xl font-bold text-[#4B2E83] mb-2">
-              {filter === 'all' ? 'אין לך הזמנות עדיין' : 
+            
+            {/* Title */}
+            <h3 className="text-xl font-bold text-[#4B2E83] mb-3 font-agrandir-grand">
+              {filter === 'all' ? 'אין הזמנות עדיין' : 
                filter === 'pending' ? 'אין הזמנות בהמתנה' : 
                filter === 'completed' ? 'אין הזמנות שהושלמו' : 'אין הזמנות שבוטלו'}
             </h3>
-            <p className="text-[#4B2E83]/70 mb-6">
-              {filter === 'all' ? 'הזמיני מוצר ראשון מהחנות!' : 
+            
+            {/* Description */}
+            <p className="text-[#4B2E83]/70 mb-6 text-base max-w-sm mx-auto">
+              {filter === 'all' ? 'הזמיני מוצר ראשון מהחנות ותהני מחוויית קנייה מעולה!' : 
                filter === 'pending' ? 'ההזמנות בהמתנה יופיעו כאן' : 
                filter === 'completed' ? 'ההזמנות שהושלמו יופיעו כאן' : 'ההזמנות שבוטלו יופיעו כאן'}
             </p>
+            
+            {/* Action Button */}
             <a
               href="/shop"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-md hover:shadow-lg"
             >
               <FaShoppingBag className="w-4 h-4 ml-2" />
               לקנייה בחנות
