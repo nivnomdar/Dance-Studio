@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaShoppingBag, FaCalendarAlt, FaCreditCard, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner, FaBox } from 'react-icons/fa';
+import { FaShoppingBag, FaCalendarAlt, FaCreditCard, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner, FaBox, FaClock } from 'react-icons/fa';
 import type { Order } from '../../types/order';
 
 interface MyOrdersTabProps {
@@ -8,14 +8,19 @@ interface MyOrdersTabProps {
 }
 
 const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
+  console.log('MyOrdersTab: Rendering with userId:', userId, 'session:', !!session);
+  
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
 
   useEffect(() => {
+    console.log('MyOrdersTab: useEffect triggered with userId:', userId, 'session:', !!session);
+    
     const fetchOrders = async () => {
       try {
+        console.log('MyOrdersTab: Starting to fetch orders...');
         setLoading(true);
         setError(null);
         
@@ -84,16 +89,22 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
         ];
         
         setOrders(mockOrders);
+        console.log('MyOrdersTab: Orders loaded successfully:', mockOrders.length, 'orders');
       } catch (err) {
         console.error('Error fetching orders:', err);
         setError('שגיאה בטעינת ההזמנות שלך');
       } finally {
         setLoading(false);
+        console.log('MyOrdersTab: Loading finished');
       }
     };
 
     if (userId && session) {
+      console.log('MyOrdersTab: Calling fetchOrders...');
       fetchOrders();
+    } else {
+      console.log('MyOrdersTab: Skipping fetchOrders - missing userId or session');
+      setLoading(false);
     }
   }, [userId, session]);
 
@@ -177,7 +188,10 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
     }
   };
 
+  console.log('MyOrdersTab: Rendering with loading:', loading, 'error:', error, 'orders count:', orders.length);
+  
   if (loading) {
+    console.log('MyOrdersTab: Showing loading state');
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
@@ -199,6 +213,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
   }
 
   if (error) {
+    console.log('MyOrdersTab: Showing error state:', error);
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
@@ -228,6 +243,8 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
     );
   }
 
+  console.log('MyOrdersTab: Rendering main content with', sortedOrders.length, 'orders');
+  
   return (
     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
       {/* Header */}

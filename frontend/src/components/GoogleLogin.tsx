@@ -18,7 +18,7 @@ export const GoogleLogin = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: import.meta.env.VITE_CALLBACK_URL || `https://www.ladances.com/auth/v1/callback`,
+          redirectTo: `${window.location.origin}/auth/v1/callback`,
           queryParams: {
             access_type: 'offline', // נשאר לקבלת refresh token
           },
@@ -77,7 +77,7 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: import.meta.env.VITE_CALLBACK_URL || `https://www.ladances.com/auth/v1/callback`,
+          redirectTo: `${window.location.origin}/auth/v1/callback`,
           queryParams: {
             access_type: 'offline', // נשאר לקבלת refresh token
           },
