@@ -26,9 +26,12 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${config.cors.origin}/auth/v1/callback`
-      }
+              options: {
+          redirectTo: `${config.cors.origin}/auth/v1/callback`,
+          queryParams: {
+            access_type: 'offline', // נשאר לקבלת refresh token
+          }
+        }
     });
 
     if (error) {

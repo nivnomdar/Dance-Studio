@@ -690,8 +690,7 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
         options: {
           redirectTo: `${window.location.origin}/auth/v1/callback`,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+            access_type: 'offline', // נשאר לקבלת refresh token
           },
         }
       });
