@@ -29,6 +29,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isFetching, setIsFetching] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
   useEffect(() => {
     const fetchRegistrations = async (retryCount = 0) => {
@@ -39,59 +40,50 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         setLoading(true);
         setError(null);
         
-        // קבלת כל ההרשמות של המשתמש ישירות מה-API
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`
-          }
-        });
+        // קבלת כל ההרשמות של המשתמש באמצעות השירות המשופר
+        const userRegistrations = await registrationsService.getMyRegistrations(userId);
         
-        if (!response.ok) {
-          if (response.status === 429 && retryCount < 3) {
-            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s, 8s
-    
-            setError(`יותר מדי בקשות. מנסה שוב בעוד ${retryDelay/1000} שניות...`);
-            setTimeout(() => fetchRegistrations(retryCount + 1), retryDelay);
-            return;
-          }
-          if (response.status === 429) {
-            setError('יותר מדי בקשות, אנא נסי שוב בעוד כמה שניות');
-            return;
-          }
-          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
+        // קבלת כל השיעורים בבת אחת במקום בנפרד
+        const classIds = [...new Set(userRegistrations.map((r: any) => r.class_id).filter(Boolean))];
         
-        const userRegistrations = await response.json();
-  
+        // קבלת כל השיעורים בבת אחת עם Promise.all
+        const classesPromises = classIds.map((id: any) => classesService.getClassById(id));
+        const classes = await Promise.all(classesPromises);
         
-        // קבלת פרטי השיעורים לכל הרשמה
-        const registrationsWithClasses = await Promise.all(
-          userRegistrations.map(async (registration: any) => {
-            if (!registration.class_id) {
-      
-              return null;
-            }
-            const classData = await classesService.getClassById(registration.class_id);
-            if (!classData) {
-      
+        // יצירת מפה של שיעורים לפי ID
+        const classesData = classes.reduce((acc: any, cls: any) => {
+          if (cls) acc[cls.id] = cls;
+          return acc;
+        }, {});
+        
+        // יצירת הרשמות עם פרטי השיעורים המלאים
+        const registrationsWithClasses = userRegistrations
+          .map((registration: any) => {
+            if (!registration.class_id || !classesData[registration.class_id]) {
               return null;
             }
             return {
               ...registration,
-              class: classData
+              class: classesData[registration.class_id]
             };
           })
-        );
-        
-        // הסרת רשומות null
-        const validRegistrations = registrationsWithClasses.filter(Boolean);
-        
+          .filter(Boolean);
 
-        setRegistrations(validRegistrations);
+        setRegistrations(registrationsWithClasses);
       } catch (err) {
         console.error('Error fetching registrations:', err);
-        setError('שגיאה בטעינת ההרשמות שלך');
+        // Handle rate limiting gracefully
+        if (err instanceof Error && err.message.includes('429')) {
+          if (retryCount < 2) {
+            const retryDelay = Math.pow(2, retryCount) * 2000;
+            setError(`יותר מדי בקשות. מנסה שוב בעוד ${retryDelay/1000} שניות...`);
+            setTimeout(() => fetchRegistrations(retryCount + 1), retryDelay);
+            return;
+          }
+          setError('יותר מדי בקשות, אנא נסי שוב בעוד כמה שניות');
+        } else {
+          setError('שגיאה בטעינת ההרשמות שלך');
+        }
       } finally {
         setLoading(false);
         setIsFetching(false);
@@ -99,16 +91,20 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
     };
 
     if (userId && session) {
-      // Add debouncing to prevent too many requests
-      const timeoutId = setTimeout(() => {
-        fetchRegistrations();
-      }, 2000); // 2 second debounce
-
-      // Cleanup function
-      return () => {
-        clearTimeout(timeoutId);
-        setIsFetching(false);
-      };
+      // בדיקה אם עברו פחות מ-60 שניות מהטעינה האחרונה (increased from 30)
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTime;
+      const CACHE_DURATION = 60 * 1000; // 60 שניות
+      
+      if (timeSinceLastFetch < CACHE_DURATION && registrations.length > 0) {
+        // השתמש בנתונים הקיימים
+        setLoading(false);
+        return;
+      }
+      
+      // טען נתונים חדשים
+      setLastFetchTime(now);
+      fetchRegistrations();
     }
   }, [userId, session]);
 
@@ -295,6 +291,8 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       
       const result = await registrationsService.cancelRegistration(selectedRegistration.id, session?.access_token);
 
+      // Clear cache after successful cancellation
+      registrationsService.clearUserCache(userId);
       
       setShowModal(false);
       setSelectedRegistration(null);
@@ -337,18 +335,18 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   if (loading) {
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
-        <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
-          <h3 className="text-2xl font-bold text-white font-agrandir-grand">
+        <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-4 sm:px-8 py-6">
+          <h3 className="text-xl sm:text-2xl font-bold text-white font-agrandir-grand">
             השיעורים שלי
           </h3>
           <p className="text-white/80 text-sm mt-1">
             צפי בהיסטוריית השיעורים שלך
           </p>
         </div>
-        <div className="p-8">
-          <div className="flex items-center justify-center py-12">
-            <FaSpinner className="animate-spin text-4xl text-[#EC4899]" />
-            <span className="mr-4 text-lg text-[#4B2E83]">טוען שיעורים...</span>
+        <div className="p-4 sm:p-8">
+          <div className="flex items-center justify-center py-8 sm:py-12">
+            <FaSpinner className="animate-spin text-3xl sm:text-4xl text-[#EC4899]" />
+            <span className="mr-4 text-base sm:text-lg text-[#4B2E83]">טוען שיעורים...</span>
           </div>
         </div>
       </div>
@@ -358,24 +356,24 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   if (error) {
     return (
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
-        <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
-          <h3 className="text-2xl font-bold text-white font-agrandir-grand">
+        <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-4 sm:px-8 py-6">
+          <h3 className="text-xl sm:text-2xl font-bold text-white font-agrandir-grand">
             השיעורים שלי
           </h3>
           <p className="text-white/80 text-sm mt-1">
             צפי בהיסטוריית השיעורים שלך
           </p>
         </div>
-        <div className="p-8">
-          <div className="text-center py-12">
+        <div className="p-4 sm:p-8">
+          <div className="text-center py-8 sm:py-12">
             <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
               <FaTimesCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-bold text-[#4B2E83] mb-2">שגיאה בטעינת השיעורים</h3>
-            <p className="text-[#4B2E83]/70 mb-6">{error}</p>
+            <h3 className="text-lg sm:text-xl font-bold text-[#4B2E83] mb-2">שגיאה בטעינת השיעורים</h3>
+            <p className="text-[#4B2E83]/70 mb-4 sm:mb-6 text-sm sm:text-base">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm sm:text-base"
             >
               נסה שוב
             </button>
@@ -388,20 +386,20 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   return (
     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-8 py-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-4 sm:px-8 py-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-bold text-white font-agrandir-grand">
+            <h3 className="text-xl sm:text-2xl font-bold text-white font-agrandir-grand">
               השיעורים שלי
             </h3>
             <p className="text-white/80 text-sm mt-1">
               צפי בהיסטוריית השיעורים שלך
             </p>
           </div>
-          <div className="flex items-center bg-white/10 rounded-xl p-1 backdrop-blur-sm">
+          <div className="flex flex-wrap items-center bg-white/10 rounded-xl p-0.5 sm:p-1 backdrop-blur-sm gap-0.5 sm:gap-1 w-fit">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'all'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -411,7 +409,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
             </button>
             <button
               onClick={() => setFilter('upcoming')}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'upcoming'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -421,7 +419,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
             </button>
             <button
               onClick={() => setFilter('past')}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'past'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -431,7 +429,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
             </button>
             <button
               onClick={() => setFilter('cancelled')}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'cancelled'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -444,19 +442,19 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       </div>
 
       {/* Content */}
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         {sortedRegistrations.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-              <FaCalendarAlt className="w-8 h-8 text-gray-400" />
+          <div className="text-center py-8 sm:py-12">
+            <div className="mx-auto mb-4 sm:mb-6 w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center">
+              <FaCalendarAlt className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-bold text-[#4B2E83] mb-2">
+            <h3 className="text-lg sm:text-xl font-bold text-[#4B2E83] mb-2 sm:mb-3">
               {filter === 'all' ? 'אין לך הרשמות לשיעורים עדיין' : 
                filter === 'upcoming' ? 'אין לך שיעורים עתידיים' : 
                filter === 'past' ? 'אין לך שיעורים שהסתיימו' :
                'אין לך שיעורים שבוטלו'}
             </h3>
-            <p className="text-[#4B2E83]/70 mb-6">
+            <p className="text-[#4B2E83]/70 mb-4 sm:mb-6 text-sm sm:text-base">
               {filter === 'all' ? 'הרשמי לשיעור ראשון ותתחילי לרקוד!' : 
                filter === 'upcoming' ? 'הרשמי לשיעור חדש כדי לראות אותו כאן' : 
                filter === 'past' ? 'השיעורים שהסתיימו יופיעו כאן' :
@@ -464,14 +462,14 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
             </p>
             <a
               href="/classes"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+              className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm sm:text-base"
             >
-              <FaCalendarAlt className="w-4 h-4 ml-2" />
+              <FaCalendarAlt className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
               הרשמה לשיעור
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {sortedRegistrations.map((registration) => {
               const colors = getColorScheme(registration.class.category || 'default');
               const registrationDate = new Date(registration.selected_date);
@@ -480,24 +478,24 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                 <div
                   key={registration.id}
                   onClick={() => openModal(registration)}
-                  className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer group hover:border-[#EC4899]/30 hover:scale-[1.02]"
+                  className="bg-white rounded-2xl p-4 sm:p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer group hover:border-[#EC4899]/30 hover:scale-[1.02]"
                 >
                   {/* Header with name and status */}
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4 gap-3">
                     <div className="flex-1">
-                      <h4 className="text-xl font-bold text-[#4B2E83] font-agrandir-grand group-hover:text-[#EC4899] transition-colors">
+                      <h4 className="text-lg sm:text-xl font-bold text-[#4B2E83] font-agrandir-grand group-hover:text-[#EC4899] transition-colors">
                         {registration.class.name}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {getDateLabel(registration)}
                       {getStatusBadge(registration)}
                     </div>
                   </div>
 
                   {/* Date and Time - Main Info */}
-                  <div className="flex items-center justify-between mb-4 p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
-                    <div className="flex items-center text-[#4B2E83] font-semibold">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 p-3 sm:p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl gap-2">
+                    <div className="flex items-center text-[#4B2E83] font-semibold text-sm sm:text-base">
                       <FaCalendarAlt className="w-4 h-4 ml-2 text-[#EC4899]" />
                       <span>
                         {registration.selected_date && typeof registration.selected_date === 'string' ? new Date(registration.selected_date).toLocaleDateString('he-IL', {
@@ -507,14 +505,14 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                         }) : ''}
                       </span>
                     </div>
-                    <div className="flex items-center text-[#4B2E83] font-semibold">
+                    <div className="flex items-center text-[#4B2E83] font-semibold text-sm sm:text-base">
                       <FaClock className="w-4 h-4 ml-2 text-[#EC4899]" />
                       <span>{typeof registration.selected_time === 'string' ? registration.selected_time : ''}</span>
                     </div>
                   </div>
 
                   {/* Footer with category and click hint */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 border-t border-gray-100 gap-2">
                     <div className="text-sm text-[#4B2E83]/70 font-medium">
                       {translateCategory(registration.class.category || '')}
                     </div>

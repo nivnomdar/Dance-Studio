@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../hooks/useProfile';
 import ProfileTabs from '../components/profile/ProfileTabs';
 import type { UserProfile } from '../types/auth';
+import { registrationsService } from '../lib/registrations';
 
 function UserProfile() {
   const { user, loading: authLoading, session, profile: contextProfile, profileLoading, loadProfile } = useAuth();
@@ -199,17 +201,18 @@ function UserProfile() {
     }
   }, [user?.id, session, authLoading]);
 
+  // Remove the redundant focus event listener that was causing additional API calls
   // useEffect לעדכון הספירה כאשר הדף נטען מחדש
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user && session && !authLoading) {
-        fetchClassesCount();
-      }
-    };
+  // useEffect(() => {
+  //   const handleFocus = () => {
+  //     if (user && session && !authLoading) {
+  //       fetchClassesCount();
+  //     }
+  //   };
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user?.id, session, authLoading]);
+  //   window.addEventListener('focus', handleFocus);
+  //   return () => window.removeEventListener('focus', handleFocus);
+  // }, [user?.id, session, authLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -223,34 +226,27 @@ function UserProfile() {
   const fetchClassesCount = async (retryCount = 0) => {
     if (!user || !session || isFetchingCount) return;
     
+    // Add cache check to prevent unnecessary requests
+    const cacheKey = `classesCount_${user.id}`;
+    const cachedData = sessionStorage.getItem(cacheKey);
+    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+    
+    // Check if we have recent cached data (less than 5 minutes old)
+    if (cachedData && cacheTime) {
+      const now = Date.now();
+      const cacheAge = now - parseInt(cacheTime);
+      if (cacheAge < 5 * 60 * 1000) { // 5 minutes
+        setClassesCount(parseInt(cachedData));
+        return;
+      }
+    }
+    
     setIsFetchingCount(true);
     
     // Add debouncing to prevent too many requests
     const timeoutId = setTimeout(async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`
-          }
-        });
-        
-        if (!response.ok) {
-          if (response.status === 429 && retryCount < 3) {
-    
-            const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-            setTimeout(() => fetchClassesCount(retryCount + 1), retryDelay);
-            return;
-          }
-          if (response.status === 429) {
-    
-            return;
-          }
-          console.error('Failed to fetch registrations for count');
-          return;
-        }
-        
-        const registrations = await response.json();
+        const registrations = await registrationsService.getMyRegistrations(user.id);
         
         // ספירת הרשמות פעילות ועבר (לא בוטלות)
         const validRegistrations = registrations.filter((registration: any) => {
@@ -266,13 +262,29 @@ function UserProfile() {
           return true;
         });
         
-        setClassesCount(validRegistrations.length);
+        const count = validRegistrations.length;
+        setClassesCount(count);
+        
+        // Cache the result
+        sessionStorage.setItem(cacheKey, count.toString());
+        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+        
       } catch (error) {
         console.error('Error fetching classes count:', error);
+        // Handle rate limiting gracefully
+        if (error instanceof Error && error.message.includes('429')) {
+          if (retryCount < 2) {
+            const retryDelay = Math.pow(2, retryCount) * 2000;
+            console.log(`Rate limited, retrying in ${retryDelay/1000} seconds...`);
+            setTimeout(() => fetchClassesCount(retryCount + 1), retryDelay);
+            return;
+          }
+          console.log('Rate limit exceeded, stopping retries');
+        }
       } finally {
         setIsFetchingCount(false);
       }
-    }, 1000); // 1 second debounce
+    }, 2000); // Increased debounce to 2 seconds
 
     // Cleanup function
     return () => {

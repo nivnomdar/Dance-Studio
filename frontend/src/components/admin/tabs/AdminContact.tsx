@@ -104,12 +104,12 @@ export default function AdminContact({ profile }: AdminContactProps) {
 
       {/* Contact Messages List */}
       <div className="bg-white p-6 rounded-2xl border border-[#EC4899]/10">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <h3 className="text-lg font-semibold text-[#4B2E83]">רשימת פניות</h3>
-          <div className="flex space-x-2 rtl:space-x-reverse">
+          <div className="flex flex-wrap gap-2">
             <button 
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 ${
                 filter === 'all'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white hover:from-[#EC4899] hover:to-[#4B2E83]'
@@ -119,7 +119,7 @@ export default function AdminContact({ profile }: AdminContactProps) {
             </button>
             <button 
               onClick={() => setFilter('new')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-300 ${
                 filter === 'new'
                   ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                   : 'bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white hover:from-[#EC4899] hover:to-[#4B2E83]'

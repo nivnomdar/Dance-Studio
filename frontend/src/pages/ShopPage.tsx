@@ -87,12 +87,12 @@ const ShopPage = () => {
         </div>
 
         {/* Categories */}
-        <div className="flex justify-center space-x-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
           {categories.map(category => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-6 py-2 rounded-full text-lg font-medium transition-all duration-300 ${
+              className={`px-3 sm:px-6 py-2 rounded-full text-sm sm:text-lg font-medium transition-all duration-300 ${
                 selectedCategory === category.id
                   ? 'bg-[#EC4899] text-white shadow-lg'
                   : 'bg-white text-gray-700 hover:bg-[#EC4899]/10'
