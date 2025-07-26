@@ -117,6 +117,7 @@ export interface Class {
   image_url?: string;
   video_url?: string;
   category?: string;
+  registration_type?: 'standard' | 'appointment_only';
   is_active: boolean;
   start_time?: string;
   end_time?: string;
@@ -140,6 +141,7 @@ export interface CreateClassRequest {
   image_url?: string;
   video_url?: string;
   category?: string;
+  registration_type?: 'standard' | 'appointment_only';
   is_active?: boolean;
   start_time?: string;
   end_time?: string;

@@ -2,6 +2,8 @@
 
 export type AvailableColorScheme = 'pink' | 'purple' | 'emerald' | 'blue' | 'orange' | 'teal' | 'indigo' | 'rose';
 
+export type RegistrationType = 'standard' | 'appointment_only';
+
 export interface Class {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ export interface Class {
   video_url?: string;
   category?: string;
   color_scheme?: AvailableColorScheme; // פשוט שם הצבע
+  registration_type?: RegistrationType; // סוג ההרשמה: standard או appointment_only
   is_active: boolean;
   start_time?: string;
   end_time?: string;
