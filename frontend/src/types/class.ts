@@ -22,6 +22,8 @@ export interface Class {
   category?: string;
   color_scheme?: AvailableColorScheme; // פשוט שם הצבע
   registration_type?: RegistrationType; // סוג ההרשמה: standard או appointment_only
+  group_credits?: number;
+  private_credits?: number;
   is_active: boolean;
   start_time?: string;
   end_time?: string;

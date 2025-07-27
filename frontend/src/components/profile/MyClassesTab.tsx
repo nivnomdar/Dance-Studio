@@ -10,13 +10,14 @@ interface MyClassesTabProps {
   userId: string;
   session: any;
   onClassesCountUpdate?: () => void;
+  onCreditsUpdate?: () => void;
 }
 
 interface RegistrationWithClass extends Registration {
   class: Class;
 }
 
-const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesCountUpdate }) => {
+const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesCountUpdate, onCreditsUpdate }) => {
   const [registrations, setRegistrations] = useState<RegistrationWithClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -310,12 +311,23 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         onClassesCountUpdate();
       }
       
+      // עדכן את הקרדיטים אם זה שיעור מנוי
+      if (selectedRegistration.used_credit && selectedRegistration.credit_type && onCreditsUpdate) {
+        onCreditsUpdate();
+      }
+      
       // הצג הודעת הצלחה
       let successMsg = `ההרשמה ל"${selectedRegistration.class.name}" בוטלה בהצלחה!`;
       
       // אם זה שיעור ניסיון, הוסף הודעה נוספת
       if (selectedRegistration.class.slug === 'trial-class') {
         successMsg += '\n\nכעת תוכלי להזמין שוב שיעור ניסיון במועד חדש!';
+      }
+      
+      // אם זה שיעור מנוי ששולם בקרדיט, הוסף הודעה על החזרת הקרדיט
+      if (selectedRegistration.used_credit && selectedRegistration.credit_type) {
+        const creditTypeText = selectedRegistration.credit_type === 'group' ? 'קבוצתי' : 'פרטי';
+        successMsg += `\n\nקרדיט ${creditTypeText} אחד הוחזר לחשבונך!`;
       }
       
       setSuccessMessage(successMsg);
@@ -753,6 +765,14 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <p className="text-green-800 text-sm">
                       <strong>בנוסף:</strong> לאחר הביטול תוכלי להזמין שוב שיעור ניסיון במועד חדש.
+                    </p>
+                  </div>
+                )}
+                
+                {selectedRegistration.used_credit && selectedRegistration.credit_type && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <p className="text-blue-800 text-sm">
+                      <strong>בנוסף:</strong> קרדיט {selectedRegistration.credit_type === 'group' ? 'קבוצתי' : 'פרטי'} אחד יוחזר לחשבונך.
                     </p>
                   </div>
                 )}

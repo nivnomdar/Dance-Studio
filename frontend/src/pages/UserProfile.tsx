@@ -6,6 +6,7 @@ import { useProfile } from '../hooks/useProfile';
 import ProfileTabs from '../components/profile/ProfileTabs';
 import type { UserProfile } from '../types/auth';
 import { registrationsService } from '../lib/registrations';
+import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 
 function UserProfile() {
   const { user, loading: authLoading, session, profile: contextProfile, profileLoading, loadProfile } = useAuth();
@@ -27,6 +28,7 @@ function UserProfile() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [classesCount, setClassesCount] = useState(0);
+  const [subscriptionCredits, setSubscriptionCredits] = useState(0);
   const [isFetchingCount, setIsFetchingCount] = useState(false);
   const navigate = useNavigate();
 
@@ -194,10 +196,11 @@ function UserProfile() {
     }
   }, [contextProfile, isLoadingProfile, user]);
 
-  // useEffect לטעינת ספירת השיעורים
+  // useEffect לטעינת ספירת השיעורים ויתרת מנויים
   useEffect(() => {
     if (user && session && !authLoading) {
       fetchClassesCount();
+      fetchSubscriptionCredits();
     }
   }, [user?.id, session, authLoading]);
 
@@ -220,6 +223,19 @@ function UserProfile() {
       ...prev,
       [name]: value
     }));
+  };
+
+  // פונקציה לטעינת יתרת subscription credits
+  const fetchSubscriptionCredits = async () => {
+    if (!user || !session) return;
+    
+    try {
+      const userCredits = await subscriptionCreditsService.getUserCredits(user.id);
+      const totalCredits = userCredits.total_group_credits + userCredits.total_private_credits + userCredits.total_zoom_credits;
+      setSubscriptionCredits(totalCredits);
+    } catch (error) {
+      console.error('Error fetching subscription credits:', error);
+    }
   };
 
   // פונקציה לספירת השיעורים של המשתמש עם debouncing ו-retry
@@ -485,13 +501,13 @@ function UserProfile() {
                     </button>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-2xl relative group">
-                    <div className="text-2xl font-bold text-[#4B2E83]">0</div>
-                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">הזמנות שהזמנתי</div>
+                    <div className="text-2xl font-bold text-[#4B2E83]">{subscriptionCredits}</div>
+                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">שיעורים זמינים</div>
                     <button
-                      onClick={() => window.open(`${window.location.origin}/shop`, '_blank')}
+                      onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
                       className="w-full px-3 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
-                      לקנייה בחנות
+                      הרשמה לשיעור
                     </button>
                   </div>
                 </div>
@@ -538,6 +554,23 @@ function UserProfile() {
                       </span>
                     </div>
                   </div>
+
+                  {/* יתרת שיעורים */}
+                  <div className="p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-[#4B2E83]/70">יתרת שיעורים:</span>
+                      <span className="text-sm font-semibold text-[#4B2E83]">{subscriptionCredits} שיעורים</span>
+                    </div>
+                    {subscriptionCredits > 0 ? (
+                      <div className="text-xs text-green-600">
+                        ✓ יש לך שיעורים זמינים להרשמה
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-600">
+                        ⚠️ אין לך שיעורים זמינים
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -556,6 +589,7 @@ function UserProfile() {
               onToggleEdit={() => setIsEditing(!isEditing)}
               session={session}
               onClassesCountUpdate={fetchClassesCount}
+              onCreditsUpdate={fetchSubscriptionCredits}
             />
           </div>
         </div>

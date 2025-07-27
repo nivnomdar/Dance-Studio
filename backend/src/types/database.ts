@@ -26,4 +26,6 @@ export interface QueryResult<T = any> {
   data: T[];
   count: number;
   error?: string;
-} 
+}
+
+ 

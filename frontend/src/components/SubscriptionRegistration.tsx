@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaClock, FaCalendarAlt, FaSignInAlt } from 'react-icons/fa';
+import { FaClock, FaCalendarAlt, FaSignInAlt, FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
 import { registrationsService } from '../lib/registrations';
 import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,15 +15,17 @@ import {
   clearSessionsCache
 } from '../utils/sessionsUtils';
 import { getColorScheme } from '../utils/colorUtils';
+import { subscriptionCreditsService } from '../lib/subscriptionCredits';
+import { UserSubscriptionCredits, CreditGroup, CREDIT_GROUP_LABELS, CREDIT_GROUP_COLORS } from '../types/subscription';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
 import { throttledApiFetch } from '../utils/api';
 
-interface StandardRegistrationProps {
+interface SubscriptionRegistrationProps {
   classData: Class;
 }
 
-const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }) => {
+const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ classData }) => {
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
@@ -48,8 +50,40 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
   const [loadingSpots, setLoadingSpots] = useState<{ [key: string]: boolean }>({});
   const [registrations, setRegistrations] = useState<any[]>([]);
 
+  // Subscription credits state
+  const [userCredits, setUserCredits] = useState<UserSubscriptionCredits | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(true);
+
   // Derived - memoized for performance
   const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
+
+  const colors = getColorScheme('pink');
+
+  // Determine which credit group this class uses
+  const getCreditGroupForClass = (classData: Class): CreditGroup => {
+    // If the class has specific credit types defined, use them
+    if (classData.group_credits && classData.group_credits > 0) {
+      return 'group';
+    }
+    if (classData.private_credits && classData.private_credits > 0) {
+      return 'private';
+    }
+    
+    // Fallback to category-based logic
+    if (classData.category === 'subscription') {
+      return 'group';
+    }
+    
+    // For non-subscription classes, determine based on registration type
+    switch (classData.registration_type) {
+      case 'appointment_only':
+        return 'private';
+      default:
+        return 'group';
+    }
+  };
+
+  const creditGroup = getCreditGroupForClass(classData);
 
   // Function to load all data at once for better performance
   const loadAllData = useCallback(async (classId: string) => {
@@ -98,116 +132,72 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
 
   // Fetch available times (with cache) - only when date is selected and not already cached
   useEffect(() => {
-    if (!classData || !selectedDate) return;
-    const classId = classData.id;
-    const key = classId + '_' + selectedDate;
-    if (timesCache[key]) return; // already cached
-    
-    setLoadingTimes(true);
-    const fetchTimes = async () => {
-      try {
-        const times = await getAvailableTimesForDateFromSessions(classId, selectedDate);
-        setTimesCache(prev => ({ ...prev, [key]: times }));
-      } catch (error: any) {
-        if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
-          clearSessionsCache();
-          setUsingFallbackMode(true);
-          setSpotsCache({});
-          setLoadingSpots({});
-        }
-        setTimesCache(prev => ({ ...prev, [key]: [] }));
-      } finally {
-        setLoadingTimes(false);
+    if (selectedDate && classData.id) {
+      const key = classData.id + '_' + selectedDate;
+      if (!timesCache[key] && !loadingTimes) {
+        fetchTimes();
       }
-    };
-    
-    fetchTimes();
-  }, [classData, selectedDate, usingFallbackMode, timesCache]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, classData.id]);
 
-  // Fetch available spots for all times when date is selected (with batch API)
+  // Fetch available spots (with cache) - only when date is selected and not already cached
   useEffect(() => {
-    if (!classData || !selectedDate) return;
-    const classId = classData.id;
-    const key = classId + '_' + selectedDate;
-    if (spotsCache[key]) return; // Already cached
-    
-    setLoadingSpots(prev => ({ ...prev, [key]: true }));
-    
-    const fetchAllSpots = async (retryCount = 0) => {
-      try {
-        let spotsData;
-        if (usingFallbackMode) {
-          // Fallback: fetch spots individually for each time
-          const times = timesCache[key] || [];
-          const spotsPromises = times.map(async (time) => {
-            try {
-              const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
-              return { time, ...spots };
-            } catch (spotsError) {
-              console.error('Error fetching spots for time:', time, spotsError);
-              return { time, available: classData.max_participants || 10, message: 'זמין' };
-            }
-          });
-          const spotsArray = await Promise.all(spotsPromises);
-          spotsData = spotsArray.reduce((acc, spot) => {
-            acc[spot.time] = { available: spot.available, message: spot.message };
-            return acc;
-          }, {} as any);
-        } else {
-          // Use new batch API
-          spotsData = await getAvailableSpotsBatchFromSessions(classId, selectedDate);
-        }
-        
-        setSpotsCache(prev => ({ ...prev, [key]: spotsData }));
-      } catch (error: any) {
-        console.error('Error in fetchAllSpots:', error);
-        
-        // Handle rate limiting
-        if (error?.message?.includes('429') || error?.message?.includes('Too Many Requests')) {
-          if (retryCount < 2) {
-            setTimeout(() => fetchAllSpots(retryCount + 1), 5000 * (retryCount + 1));
-            return;
-          }
-          
-          // Switch to fallback mode after max retries
-          clearSessionsCache();
-          setUsingFallbackMode(true);
-          setSpotsCache({});
-          setLoadingSpots({});
-          
-          // Retry with fallback mode
-          const times = timesCache[key] || [];
-          const spotsPromises = times.map(async (time) => {
-            try {
-              const spots = await getAvailableSpotsFromSessions(classId, selectedDate, time);
-              return { time, ...spots };
-            } catch (spotsError) {
-              console.error('Error fetching spots for time:', time, spotsError);
-              return { time, available: classData.max_participants || 10, message: 'זמין' };
-            }
-          });
-          const spotsArray = await Promise.all(spotsPromises);
-          const spotsData = spotsArray.reduce((acc, spot) => {
-            acc[spot.time] = { available: spot.available, message: spot.message };
-            return acc;
-          }, {} as any);
-          setSpotsCache(prev => ({ ...prev, [key]: spotsData }));
-        } else {
-          // On other errors, show as available
-          const times = timesCache[key] || [];
-          const spotsData = times.reduce((acc, time) => {
-            acc[time] = { available: classData.max_participants || 10, message: 'זמין' };
-            return acc;
-          }, {} as any);
-          setSpotsCache(prev => ({ ...prev, [key]: spotsData }));
-        }
-      } finally {
-        setLoadingSpots(prev => ({ ...prev, [key]: false }));
+    if (selectedDate && classData.id) {
+      const key = classData.id + '_' + selectedDate;
+      if (!spotsCache[key] && !loadingSpots[key]) {
+        fetchAllSpots();
       }
-    };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, classData.id]);
+
+  const fetchTimes = async () => {
+    if (!selectedDate || !classData.id) return;
     
-    fetchAllSpots();
-  }, [classData, selectedDate, usingFallbackMode, spotsCache, timesCache]);
+    try {
+      setLoadingTimes(true);
+      const times = await getAvailableTimesForDateFromSessions(classData.id, selectedDate);
+      const key = classData.id + '_' + selectedDate;
+      setTimesCache(prev => ({ ...prev, [key]: times }));
+    } catch (error: any) {
+      if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+        clearSessionsCache();
+        setUsingFallbackMode(true);
+      }
+      const key = classData.id + '_' + selectedDate;
+      setTimesCache(prev => ({ ...prev, [key]: [] }));
+    } finally {
+      setLoadingTimes(false);
+    }
+  };
+
+  const fetchAllSpots = async (retryCount = 0) => {
+    if (!selectedDate || !classData.id) return;
+    
+    const spotsKey = classData.id + '_' + selectedDate;
+    
+    try {
+      setLoadingSpots(prev => ({ ...prev, [spotsKey]: true }));
+      
+      const spots = await getAvailableSpotsBatchFromSessions(classData.id, selectedDate);
+      setSpotsCache(prev => ({ ...prev, [spotsKey]: spots }));
+      
+    } catch (error: any) {
+      if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+        if (retryCount < 2) {
+          const retryDelay = Math.pow(2, retryCount) * 2000;
+          setTimeout(() => fetchAllSpots(retryCount + 1), retryDelay);
+          return;
+        }
+        clearSessionsCache();
+        setUsingFallbackMode(true);
+      }
+      setSpotsCache(prev => ({ ...prev, [spotsKey]: {} }));
+    } finally {
+      setLoadingSpots(prev => ({ ...prev, [spotsKey]: false }));
+    }
+  };
 
   // Load profile data
   useEffect(() => {
@@ -220,155 +210,144 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
           phone: contextProfile.phone_number || ''
         });
       } else {
-        const loadProfileWithFetch = async () => {
-          try {
-            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
-              headers: {
-                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${session?.access_token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (response.ok) {
-              const profileData = await response.json();
-              if (profileData.length > 0) {
-                const profile = profileData[0];
-                setLocalProfile(profile);
-                setFormData({
-                  first_name: profile.first_name || '',
-                  last_name: profile.last_name || '',
-                  phone: profile.phone_number || ''
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Error loading profile:', error);
-          }
-        };
         loadProfileWithFetch();
       }
     }
-  }, [user, authLoading, contextProfile, session?.access_token]);
+  }, [user, authLoading, contextProfile]);
 
-
-
-  // Load user's registrations - only once per user session
-  const registrationsLoadedRef = useRef(false);
-  
-  // Reset ref when user changes
-  useEffect(() => {
-    registrationsLoadedRef.current = false;
-  }, [user?.id]);
-  
-  useEffect(() => {
-    if (!user?.id || !session?.access_token || registrationsLoadedRef.current) return;
-    let isMounted = true;
-    const loadRegistrations = async () => {
-      try {
-        const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (response.ok && isMounted) {
-          const data = await response.json();
-          setRegistrations(data);
-          registrationsLoadedRef.current = true;
+  const loadProfileWithFetch = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user!.id}`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        if (isMounted) console.error('Error loading registrations:', error);
+      });
+      
+      if (response.ok) {
+        const profileData = await response.json();
+        if (profileData.length > 0) {
+          const profile = profileData[0];
+          setLocalProfile(profile);
+          setFormData({
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            phone: profile.phone_number || ''
+          });
+        }
       }
-    };
-    loadRegistrations();
-    return () => { isMounted = false; };
-  }, [user?.id, session?.access_token]);
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  // Load registrations
+  useEffect(() => {
+    if (user && session) {
+      loadRegistrations();
+    }
+  }, [user, session]);
+
+  const loadRegistrations = async () => {
+    try {
+      const userRegistrations = await registrationsService.getMyRegistrations(user!.id);
+      setRegistrations(userRegistrations);
+    } catch (error) {
+      console.error('Error loading registrations:', error);
+    }
+  };
+
+  // Load subscription credits
+  useEffect(() => {
+    if (user && session) {
+      loadUserCredits();
+    }
+  }, [user, session]);
+
+  const loadUserCredits = async () => {
+    try {
+      setLoadingCredits(true);
+      const credits = await subscriptionCreditsService.getUserCredits(user!.id);
+      setUserCredits(credits);
+    } catch (err) {
+      console.error('Error loading user credits:', err);
+      setRegistrationError('שגיאה בטעינת יתרת השיעורים');
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
+
+  const getAvailableCredits = (): number => {
+    if (!userCredits) return 0;
+    
+    switch (creditGroup) {
+      case 'group':
+        return userCredits.total_group_credits;
+      case 'private':
+        return userCredits.total_private_credits;
+      case 'zoom':
+        return userCredits.total_zoom_credits;
+      default:
+        return 0;
+    }
+  };
+
+  // Helper function to calculate total credits for new subscription
+  const calculateTotalCredits = (): number => {
+    // Use class-specific credits if available
+    if (creditGroup === 'group' && classData.group_credits) {
+      return classData.group_credits;
+    }
+    if (creditGroup === 'private' && classData.private_credits) {
+      return classData.private_credits;
+    }
+    
+    // Fallback to price-based calculation
+    return Math.max(4, Math.ceil(classData.price / 50));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!classData) return;
-    
-    // Clear any previous errors
-    setRegistrationError(null);
-    
-    // Client-side validation
-    if (!formData.first_name.trim()) {
-      setRegistrationError('שם פרטי הוא שדה חובה');
+    if (!user || !session) {
+      showPopup({ type: 'error', message: 'עליך להתחבר כדי להירשם לשיעור' });
       return;
     }
-    
-    if (!formData.last_name.trim()) {
-      setRegistrationError('שם משפחה הוא שדה חובה');
+
+    if (!selectedDate || !selectedTime) {
+      showPopup({ type: 'error', message: 'אנא בחרי תאריך ושעה לשיעור' });
       return;
     }
-    
-    if (!formData.phone.trim()) {
-      setRegistrationError('מספר טלפון הוא שדה חובה');
+
+    if (!formData.first_name || !formData.last_name || !formData.phone) {
+      showPopup({ type: 'error', message: 'אנא מלאי את כל השדות הנדרשים' });
       return;
     }
-    
-    const phoneDigits = formData.phone.replace(/\D/g, '');
-    if (phoneDigits.length < 8) {
-      setRegistrationError('מספר הטלפון חייב להכיל לפחות 8 ספרות');
-      return;
-    }
-    
-    if (!user?.email) {
-      setRegistrationError('אין אימייל תקין לחשבון שלך. אנא ודאי שהחשבון שלך מקושר לאימייל תקין.');
-      return;
-    }
-    
-    if (!selectedDate) {
-      setRegistrationError('יש לבחור תאריך לשיעור');
-      return;
-    }
-    
-    if (!selectedTime) {
-      setRegistrationError('יש לבחור שעה לשיעור');
-      return;
-    }
-    
-    // בדיקה אם כבר נרשמת לשיעור זה בתאריך ובשעה האלה
+
+    // Format time for backend (handle cases with "עד" - until)
     const timeForBackend = selectedTime.includes('עד') ? 
       selectedTime.split('עד')[0].trim() : 
       selectedTime;
-    
-    const existingRegistration = registrations?.find((reg: any) => {
-      if (reg.class_id !== classData.id || reg.selected_date !== selectedDate) {
-        return false;
-      }
-      
-      const regTime = reg.selected_time;
-      const selectedTimeNormalized = timeForBackend;
-      
-      if (regTime === selectedTimeNormalized || 
-          regTime === selectedTime ||
-          regTime.includes(selectedTimeNormalized) ||
-          selectedTimeNormalized.includes(regTime)) {
-        return reg.status === 'active';
-      }
-      
-      return false;
-    });
-    
+
+    // Check if user is already registered for this class at this time
+    const existingRegistration = registrations.find(reg => 
+      reg.class_id === classData.id && 
+      reg.selected_date === selectedDate && 
+      (reg.selected_time === selectedTime || reg.selected_time === timeForBackend) &&
+      reg.status !== 'cancelled'
+    );
+
     if (existingRegistration) {
-      const dateParts = selectedDate.split('-');
-      const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-      setRegistrationError(`כבר נרשמת לשיעור זה בתאריך ${formattedDate} בשעה ${selectedTime}. אנא בחרי תאריך או שעה אחרת.`);
+      setRegistrationError('כבר נרשמת לשיעור זה בתאריך ובשעה שנבחרו. אנא בחרי תאריך או שעה אחרת.');
       return;
     }
-    
-    // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו
-    if (classData.slug === 'trial-class' && profile?.has_used_trial_class) {
-      setRegistrationError('כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.');
-      return;
-    }
-    
+
     setIsSubmitting(true);
-    
+    setRegistrationError(null);
+
     try {
+      // Get spots info for session data
       const spotsKey = classData.id + '_' + selectedDate;
       const spotsData = spotsCache[spotsKey] || {};
       let spotsInfo = spotsData[selectedTime];
@@ -386,54 +365,54 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
         }
       }
       
-      if (!user?.email) {
-        setRegistrationError('אין אימייל תקין לחשבון שלך. אנא ודאי שהחשבון שלך מקושר לאימייל תקין.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const timeForBackend = selectedTime.includes('עד') ? 
-        selectedTime.split('עד')[0].trim() : 
-        selectedTime;
-      
+      // Create registration first
       const registrationData = {
         class_id: classData.id,
+        user_id: user.id, // Add user_id explicitly
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
         ...(spotsInfo?.sessionClassId && { session_class_id: spotsInfo.sessionClassId }),
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
-        email: user.email,
+        email: user.email || '',
         selected_date: selectedDate,
         selected_time: timeForBackend,
-        used_credit: false, // Standard registration doesn't use credits
-        credit_type: undefined, // No credit type for standard registrations
+        notes: '',
+        used_credit: true, // This is a subscription class, so credit is always used
+        credit_type: creditGroup, // 'group' or 'private'
         purchase_price: classData.price // Store the actual price paid
       };
+
+      await registrationsService.createRegistration(registrationData, session?.access_token);
+
+      // Handle credits logic
+      const availableCredits = getAvailableCredits();
       
-      const result = await registrationsService.createRegistration(registrationData, session?.access_token);
-      
-      if (classData.slug === 'trial-class') {
-        updateProfileTrialClass().catch(error => {
-          console.error('Error updating trial class status:', error);
+      if (availableCredits > 0) {
+        // Use existing credit
+        await subscriptionCreditsService.useCredit(user.id, creditGroup);
+      } else {
+        // Create new subscription with credits based on class data
+        const totalCredits = calculateTotalCredits();
+        
+        await subscriptionCreditsService.addCredits({
+          user_id: user.id,
+          credit_group: creditGroup,
+          remaining_credits: totalCredits - 1,
+          expires_at: undefined
         });
       }
-      
+
       setShowRegistrationSuccess(true);
       
-      setTimeout(() => {
-        registrationsLoadedRef.current = false;
-        setRegistrations(prev => [...(prev || [])]);
-      }, 2000);
-      
-      setFormData({ first_name: '', last_name: '', phone: '' });
-      setSelectedDate('');
-      setSelectedTime('');
-      
-      setIsSubmitting(false);
-      
-    } catch (error) {
-      console.error('StandardRegistration: Registration error:', error);
+      // Reload data
+      await Promise.all([
+        loadRegistrations(),
+        loadUserCredits()
+      ]);
+
+    } catch (error: any) {
+      console.error('Error registering for class:', error);
       
       let errorMessage = 'אירעה שגיאה בעת ביצוע ההרשמה. אנא נסי שוב.';
       
@@ -451,83 +430,49 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
           } else {
             errorMessage = 'שגיאה בהרשמה. ייתכן שכבר נרשמת לשיעור זה או שיש בעיה בנתונים.';
           }
+        } else if (error.message.includes('פורמט שעה לא תקין')) {
+          errorMessage = 'שגיאה בפורמט השעה. אנא נסי שוב או בחרי שעה אחרת.';
+        } else if (error.message.includes('No authorization token provided')) {
+          errorMessage = 'בעיית הרשאה. אנא התחברי מחדש ונסי שוב.';
         }
       }
       
       setRegistrationError(errorMessage);
+    } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const updateProfileTrialClass = async () => {
-    if (!user || !session) return;
-    
-    try {
-      const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          has_used_trial_class: true
-        })
-      });
-      
-      if (updateResponse.ok) {
-        await loadProfile();
-      }
-    } catch (error) {
-      console.error('Error updating trial class status:', error);
     }
   };
 
   const handleLogin = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/v1/callback`,
-          queryParams: {
-            access_type: 'offline',
-          },
+          redirectTo: `${window.location.origin}/class/${classData.slug}`
         }
       });
       
-      if (error) throw error;
-    } catch (error) {
-      // Handle login error silently or show user-friendly message
+      if (error) {
+        showPopup({ type: 'error', message: 'שגיאה בהתחברות: ' + error.message });
+      }
+    } catch (error: any) {
+      showPopup({ type: 'error', message: 'שגיאה בהתחברות: ' + error.message });
     }
   };
 
-  // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו - חסימת גישה
-  if (classData?.slug === 'trial-class' && user && !authLoading && profile?.has_used_trial_class) {
+  if (loadingCredits) {
     return (
       <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
         <div className="text-center">
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-red-600 mb-4 font-agrandir-grand">
-              גישה נחסמה
-            </h1>
-            <p className="text-red-700 mb-6 font-agrandir-regular">
-              כבר השתמשת בשיעור ניסיון. לא ניתן לגשת לשיעור ניסיון נוסף.
-            </p>
-            <Link 
-              to="/classes" 
-              className="inline-flex items-center bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium"
-            >
-              חזרה לשיעורים
-            </Link>
-          </div>
+          <FaSpinner className="animate-spin w-8 h-8 mx-auto mb-4 text-[#EC4899]" />
+          <p className="text-[#4B2E83]/70">טוען יתרת שיעורים...</p>
         </div>
       </div>
     );
   }
 
-  const colors = getColorScheme('pink');
+  const availableCredits = getAvailableCredits();
+  const hasCredits = availableCredits > 0;
 
   return (
     <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
@@ -535,27 +480,66 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
         <>
           <h2 className={`text-3xl font-bold ${colors.textColor} mb-6 font-agrandir-grand`}>
             הרשמה ל{classData.name}
-          </h2>
-          
-          {registrationError && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="mr-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    שגיאה בהרשמה
-                  </h3>
-                  <div className="mt-2 text-sm text-red-700">
-                    {registrationError}
+      </h2>
+
+          {/* Credits Display */}
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6 mb-4">
+              <h3 className="text-lg font-semibold text-[#4B2E83] mb-3">יתרת שיעורים שלך</h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#4B2E83]/70">{CREDIT_GROUP_LABELS[creditGroup]}:</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${CREDIT_GROUP_COLORS[creditGroup]}`}>
+                      {availableCredits} שיעורים
+                    </span>
+                    {hasCredits ? (
+                      <FaCheckCircle className="text-green-500 w-5 h-5" />
+                    ) : (
+                      <FaTimesCircle className="text-red-500 w-5 h-5" />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+          
+          {registrationError && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-6 animate-pulse">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <FaExclamationTriangle className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="mr-4 flex-1">
+                  <h3 className="text-lg font-bold text-red-800 mb-2">
+                    שגיאה בהרשמה
+        </h3>
+                  <div className="text-sm text-red-700 leading-relaxed">
+                    {registrationError}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setRegistrationError(null)}
+                      className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium transition-colors duration-200"
+                    >
+                      סגור
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRegistrationError(null);
+                        setSelectedDate('');
+                        setSelectedTime('');
+                      }}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+                    >
+                      בחרי תאריך/שעה אחרת
+                    </button>
+                  </div>
+                </div>
+            </div>
+          </div>
+        )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Date Selection */}
@@ -587,6 +571,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                           setSelectedTime('');
                           setSpotsCache({});
                           setLoadingSpots({});
+                          setRegistrationError(null);
                         }}
                         className={`
                           p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
@@ -599,12 +584,12 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                         {isToday && (
                           <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
                             היום
-                          </div>
+      </div>
                         )}
                         {isTomorrow && (
                           <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
                             מחר
-                          </div>
+          </div>
                         )}
                         <div className="text-center leading-tight">
                           <div className="text-xs lg:text-sm">
@@ -614,16 +599,16 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                                 month: 'numeric', 
                                 year: 'numeric' 
                               })} - {dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}
-                            </div>
+          </div>
                             <div className="sm:hidden">
                               <div>{dateObj.toLocaleDateString('he-IL', { 
                                 day: 'numeric', 
                                 month: 'numeric' 
                               })}</div>
                               <div className="text-xs">{dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}</div>
-                            </div>
-                          </div>
-                        </div>
+          </div>
+        </div>
+      </div>
                       </button>
                     );
                   })
@@ -657,11 +642,12 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                       const isLoading = loadingSpots[spotsKey];
                       
                       return (
-                        <button
+      <button
                           key={time}
                           type="button"
                           onClick={() => {
                             setSelectedTime(time);
+                            setRegistrationError(null);
                           }}
                           disabled={spotsInfo?.available === 0}
                           title={spotsInfo?.message || ''}
@@ -698,7 +684,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                           <div className="text-center leading-tight">
                             <div className="text-xs lg:text-sm">{time}</div>
                           </div>
-                        </button>
+      </button>
                       );
                     })
                   ) : (
@@ -708,8 +694,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 {selectedTime && (
                   <p className="text-sm text-gray-600 mt-2 font-agrandir-regular">
                     השעה שנבחרה: {selectedTime}
-                  </p>
-                )}
+        </p>
+      )}
               </div>
             )}
 
@@ -772,9 +758,9 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 </div>
                 <p className="text-xs text-gray-500 mt-1 font-agrandir-regular">
                   האימייל שלך מהחשבון המקושר
-                </p>
-              </div>
-            </div>
+        </p>
+      </div>
+    </div>
 
             {/* Price Summary */}
             <div className={`${colors.lightBg} rounded-xl p-4`}>
@@ -782,9 +768,28 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 <span className="text-lg font-bold text-[#2B2B2B]">מחיר {classData.name}:</span>
                 <span className={`text-2xl font-bold ${colors.textColor}`}>{classData.price} ש"ח</span>
               </div>
-              <p className="text-sm text-gray-600 mt-2">
-                התשלום יתבצע בדף הבא
-              </p>
+              
+              <div className={`mt-3 p-3 rounded-lg border-r-4 ${hasCredits ? 'bg-green-50 border-green-400' : 'bg-orange-50 border-orange-400'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  {hasCredits ? (
+                    <>
+                      <FaCheckCircle className="text-green-600 w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-green-800">קיים קרדיט זמין</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaExclamationTriangle className="text-orange-600 w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm font-semibold text-orange-800">תשלום חדש נדרש</span>
+                    </>
+                  )}
+                </div>
+                <p className={`text-sm ${hasCredits ? 'text-green-700' : 'text-orange-700'}`}>
+                  {hasCredits 
+                    ? 'השיעור ינוכה מיתרת השיעורים שלך'
+                    : 'תצטרכי לשלם מחדש ותקבלי מנוי חדש'
+                  }
+                </p>
+              </div>
             </div>
 
             {/* Submit Button */}
@@ -824,10 +829,11 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
             </button>
           </form>
 
-          {/* Additional Info */}
+      {/* Additional Info */}
           <div className="mt-6 text-sm text-gray-600 space-y-2">
             <p>✓ ביטול חינם עד 48 שעות לפני השיעור</p>
             <p>✓ גמישות בבחירת התאריך והשעה</p>
+            <p>✓ {hasCredits ? 'שימוש בקרדיט זמין' : 'תשלום חדש + יצירת מנוי'}</p>
           </div>
         </>
       ) : (
@@ -850,7 +856,17 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               <span className="text-lg font-bold text-[#2B2B2B]">מחיר {classData.name}:</span>
               <span className={`text-2xl font-bold ${colors.textColor}`}>{classData.price} ש"ח</span>
             </div>
-          </div>
+            
+            <div className="mt-3 p-3 rounded-lg border-r-4 bg-blue-50 border-blue-400">
+              <div className="flex items-center gap-2 mb-1">
+                <FaSignInAlt className="text-blue-600 w-4 h-4 flex-shrink-0" />
+                <span className="text-sm font-semibold text-blue-800">שיעור מנוי</span>
+              </div>
+              <p className="text-sm text-blue-700">
+                ישולם באמצעות קרדיטים זמינים או תשלום חדש
+        </p>
+      </div>
+    </div>
 
           <button
             onClick={handleLogin}
@@ -877,21 +893,24 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       {showRegistrationSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all">
-            <div className="text-center">
+        <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
               
               <h2 className="text-2xl font-bold text-gray-900 mb-4 font-agrandir-grand">
                 ההרשמה בוצעה בהצלחה! 🎉
-              </h2>
+          </h2>
               
               <p className="text-gray-600 mb-8 font-agrandir-regular leading-relaxed">
                 ההרשמה שלך ל{classData?.name} נשמרה בהצלחה. 
                 <br />
-                פרטי ההזמנה שלך יהיו זמינים בדף הפרופיל האישי שלך.
+                {hasCredits 
+                  ? 'שיעור אחד יורד מיתרת השיעורים שלך.'
+                  : `נוצר מנוי חדש עם ${calculateTotalCredits()} שיעורים זמינים.`
+                }
               </p>
               
               <div className="space-y-3">
@@ -916,11 +935,11 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+                  </div>
+                </div>
+              )}
+      </div>
+    );
 };
 
-export default StandardRegistration; 
+export default SubscriptionRegistration; 

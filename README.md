@@ -150,6 +150,9 @@ create table public.classes (
   video_url text,
   category text,
   color_scheme text,
+  group_credits integer default 0,
+  private_credits integer default 0,
+  registration_type text default 'standard',
   is_active boolean default true,
   start_time time,
   end_time time,
@@ -211,8 +214,23 @@ create table public.registrations (
   experience text,
   notes text,
   status text default 'active',
+  used_credit boolean default false,
+  credit_type text check (credit_type in ('group', 'private')),
+  purchase_price decimal(10,2),
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
+);
+```
+
+#### **טבלת `subscription_credits`** - יתרת שיעורים למנויים
+```sql
+create table public.subscription_credits (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  credit_group text not null, -- 'group', 'private', 'zoom', etc.
+  remaining_credits integer not null default 0,
+  expires_at timestamp with time zone default null,
+  created_at timestamp with time zone default now()
 );
 ```
 
@@ -241,6 +259,27 @@ npm run lint    # בדיקת קוד
 - **צבעים דינמיים** - כל שיעור עם צבע ייחודי
 - **אנימציות חלקות** - חווית משתמש מעולה
 - **Loading states** - אינדיקטורים ברורים לטעינה
+
+## 💳 מערכת מנויים ויתרת שיעורים
+
+### איך זה עובד:
+1. **שיעורי מנוי** - שיעורים עם `category='subscription'` מציגים ממשק הרשמה מיוחד
+2. **יתרת קרדיטים** - כל משתמש יכול לראות כמה שיעורים נשארו לו מכל סוג
+3. **הרשמה פשוטה** - הרשמה לשיעור מנוי משתמשת בקרדיט אחד אוטומטית
+4. **ניהול שקוף** - המשתמש רואה את כל הקרדיטים שלו בפרופיל
+5. **מעקב קרדיטים** - כל הרשמה מסומנת עם `used_credit` ו-`credit_type` לדוחות ומעקב
+
+### שדות מעקב קרדיטים:
+- **`used_credit`** - `TRUE` אם ההרשמה שולמה באמצעות קרדיט, `FALSE` אם שולמה רגיל
+- **`credit_type`** - סוג הקרדיט שנעשה בו שימוש: `'group'` או `'private'`
+- **`purchase_price`** - המחיר ששולם בפועל עבור ההרשמה (יכול להיות שונה ממחיר השיעור עקב הנחות, קרדיטים וכו')
+
+### סוגי קרדיטים:
+- **שיעורים קבוצתיים** (`group`) - שיעורים רגילים בקבוצה
+- **שיעורים פרטיים** (`private`) - שיעורים אחד על אחד
+- **שיעורי זום** (`zoom`) - שיעורים מקוונים
+- **סדנאות** (`workshop`) - סדנאות מיוחדות
+- **אינטנסיב** (`intensive`) - קורסים מרוכזים
 
 ## 🔒 אבטחה
 

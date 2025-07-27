@@ -139,7 +139,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       selected_date,
       selected_time,
       notes,
-      payment_id
+      payment_id,
+      used_credit,
+      credit_type,
+      purchase_price
     } = req.body;
 
     // Check if class exists and is active
@@ -221,6 +224,9 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         selected_time,
         notes,
         payment_id,
+        used_credit,
+        credit_type,
+        purchase_price,
         status: 'active'
       }])
       .select(`
@@ -325,6 +331,35 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
         // Don't fail the status update, just log the error
       } else {
         logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
+      }
+    }
+
+    // If this is a subscription class being cancelled and used a credit, return the credit
+    if (registrationData.used_credit && registrationData.credit_type && status === 'cancelled') {
+      logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+      
+      try {
+        // Add back one credit to the user's subscription
+        const { data: creditData, error: creditError } = await supabase
+          .from('subscription_credits')
+          .insert([{
+            user_id: registrationData.user_id,
+            credit_group: registrationData.credit_type,
+            remaining_credits: 1,
+            expires_at: null
+          }])
+          .select()
+          .single();
+
+        if (creditError) {
+          logger.error('Failed to return credit on status update:', creditError);
+          // Don't fail the status update, just log the error
+        } else {
+          logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+        }
+      } catch (error) {
+        logger.error('Error returning credit on status update:', error);
+        // Don't fail the status update, just log the error
       }
     }
 
@@ -442,6 +477,35 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
         } else {
           logger.info(`Profile after update - has_used_trial_class: ${profileAfter?.has_used_trial_class}`);
         }
+      }
+    }
+
+    // If this is a subscription class being cancelled and used a credit, return the credit
+    if (registrationData.used_credit && registrationData.credit_type) {
+      logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+      
+      try {
+        // Add back one credit to the user's subscription
+        const { data: creditData, error: creditError } = await supabase
+          .from('subscription_credits')
+          .insert([{
+            user_id: registrationData.user_id,
+            credit_group: registrationData.credit_type,
+            remaining_credits: 1,
+            expires_at: null
+          }])
+          .select()
+          .single();
+
+        if (creditError) {
+          logger.error('Failed to return credit on cancellation:', creditError);
+          // Don't fail the cancellation, just log the error
+        } else {
+          logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+        }
+      } catch (error) {
+        logger.error('Error returning credit on cancellation:', error);
+        // Don't fail the cancellation, just log the error
       }
     }
 

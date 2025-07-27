@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers } from 'react-icons/fa';
+import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
@@ -8,6 +8,10 @@ import { getColorScheme } from '../utils/colorUtils';
 import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
 import StandardRegistration from './StandardRegistration';
 import RegistrationByAppointment from './RegistrationByAppointment';
+import SubscriptionRegistration from './SubscriptionRegistration';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+
 
 // Class Detail Skeleton Components
 const ClassDetailHeaderSkeleton = () => (
@@ -158,6 +162,24 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
   const [loading, setLoading] = useState(!initialClass);
   const [error, setError] = useState<string | null>(null);
 
+  const { user } = useAuth();
+
+  const handleLogin = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/class/${classData?.slug}`
+        }
+      });
+      
+      if (error) {
+        console.error('Error signing in:', error);
+      }
+    } catch (error) {
+      console.error('Error signing in:', error);
+    }
+  }, [classData?.slug]);
 
 
   // Fetch class data
@@ -337,7 +359,52 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
           </div>
 
           {/* Registration Component */}
-          {classData.registration_type === 'appointment_only' ? (
+          {!user ? (
+            <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
+              <div className="text-center py-8">
+                <div className={`w-16 h-16 ${colors.bgColor} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                  <FaSignInAlt className="w-8 h-8 text-white" />
+                </div>
+                
+                <h2 className={`text-2xl font-bold ${colors.textColor} mb-4 font-agrandir-grand`}>
+                  התחברי להזמנת שיעור
+                </h2>
+                
+                <p className="text-[#2B2B2B] mb-6 font-agrandir-regular leading-relaxed">
+                  כדי להזמין שיעור, עלייך להתחבר למערכת תחילה. 
+                  ההתחברות מהירה ובטוחה באמצעות Google.
+                </p>
+
+                <div className={`${colors.lightBg} rounded-xl p-4 mb-6`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-[#2B2B2B]">מחיר {classData.name}:</span>
+                    <span className="text-2xl font-bold text-[#EC4899]">{classData.price} ש"ח</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleLogin}
+                  className={`w-full ${colors.bgColor} ${colors.hoverColor} text-white py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-3`}
+                >
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    alt="Google"
+                    className="w-5 h-5"
+                  />
+                  התחברי עם Google להזמנה
+                </button>
+
+                <div className="mt-6 text-sm text-gray-600 space-y-2">
+                  <p>✓ התחברות מהירה ובטוחה</p>
+                  <p>✓ שמירת פרטי ההזמנה שלך</p>
+                  <p>✓ גישה להיסטוריית השיעורים</p>
+                  <p>✓ עדכונים על שיעורים חדשים</p>
+                </div>
+              </div>
+            </div>
+          ) : classData.category === 'subscription' ? (
+            <SubscriptionRegistration classData={classData} />
+          ) : classData.registration_type === 'appointment_only' ? (
             <RegistrationByAppointment classData={classData} />
           ) : (
             <StandardRegistration classData={classData} />

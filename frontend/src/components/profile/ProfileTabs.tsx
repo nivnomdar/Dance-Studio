@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FaUser, FaCalendarAlt, FaShoppingBag } from 'react-icons/fa';
+import { FaUser, FaCalendarAlt, FaShoppingBag, FaCreditCard } from 'react-icons/fa';
 import PersonalDetailsTab from './PersonalDetailsTab';
 import MyClassesTab from './MyClassesTab';
 import MyOrdersTab from './MyOrdersTab';
+
 import type { UserProfile } from '../../types/auth';
 
 interface ProfileTabsProps {
@@ -24,6 +25,7 @@ interface ProfileTabsProps {
   onToggleEdit: () => void;
   session: any;
   onClassesCountUpdate?: () => void;
+  onCreditsUpdate?: () => void;
 }
 
 type TabType = 'personal' | 'classes' | 'orders';
@@ -38,7 +40,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   onSubmit,
   onToggleEdit,
   session,
-  onClassesCountUpdate
+  onClassesCountUpdate,
+  onCreditsUpdate
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal');
 
@@ -68,7 +71,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
       label: 'הזמנות',
       icon: FaShoppingBag,
       count: null // TODO: Add actual count from orders
-    }
+    },
+
   ];
 
   const renderTabContent = () => {
@@ -92,6 +96,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             userId={user?.id || ''}
             session={session}
             onClassesCountUpdate={onClassesCountUpdate}
+            onCreditsUpdate={onCreditsUpdate}
           />
         );
       case 'orders':
@@ -101,7 +106,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             session={session}
           />
         );
-      default:
+
+            default:
         return null;
     }
   };

@@ -30,6 +30,9 @@ export interface Registration {
   notes?: string;
   status: string;
   payment_id?: string;
+  used_credit?: boolean;
+  credit_type?: 'group' | 'private';
+  purchase_price?: number;
   created_at: string;
   updated_at: string;
 }
@@ -51,8 +54,12 @@ export interface RegistrationWithDetails extends Registration {
   };
 }
 
+export interface RegistrationWithFullDetails extends RegistrationWithDetails {
+}
+
 export interface CreateRegistrationRequest {
   class_id: string;
+  user_id?: string; // Add user_id as optional since it's set by the server
   session_id?: string;
   session_class_id?: string;
   first_name: string;
@@ -64,10 +71,43 @@ export interface CreateRegistrationRequest {
   selected_time: string;
   notes?: string;
   payment_id?: string;
+  used_credit?: boolean;
+  credit_type?: 'group' | 'private';
+  purchase_price?: number;
 }
 
 export interface UpdateRegistrationRequest extends Partial<CreateRegistrationRequest> {
   status?: string;
+}
+
+// Subscription Credits Types
+export interface SubscriptionCredit {
+  id: string;
+  user_id: string;
+  credit_group: string; // 'group' | 'private' | 'zoom' etc.
+  remaining_credits: number;
+  expires_at?: string;
+  created_at: string;
+}
+
+export interface CreateSubscriptionCreditRequest {
+  user_id: string;
+  credit_group: string;
+  remaining_credits: number;
+  expires_at?: string;
+}
+
+export interface UpdateSubscriptionCreditRequest {
+  remaining_credits?: number;
+  expires_at?: string;
+}
+
+export interface UserSubscriptionCredits {
+  user_id: string;
+  credits: SubscriptionCredit[];
+  total_group_credits: number;
+  total_private_credits: number;
+  total_zoom_credits: number;
 }
 
 export interface Product {
@@ -118,6 +158,9 @@ export interface Class {
   video_url?: string;
   category?: string;
   registration_type?: 'standard' | 'appointment_only';
+  color_scheme?: string;
+  group_credits?: number;
+  private_credits?: number;
   is_active: boolean;
   start_time?: string;
   end_time?: string;
