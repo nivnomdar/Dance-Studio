@@ -558,7 +558,7 @@ function UserProfile() {
                   {/* יתרת שיעורים */}
                   <div className="p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-[#4B2E83]/70">יתרת שיעורים:</span>
+                      <span className="text-sm text-[#4B2E83]/70">יתרת שיעורים במנוי:</span>
                       <span className="text-sm font-semibold text-[#4B2E83]">{subscriptionCredits} שיעורים</span>
                     </div>
                     {subscriptionCredits > 0 ? (

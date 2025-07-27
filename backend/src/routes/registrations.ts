@@ -334,7 +334,7 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
       }
     }
 
-    // If this is a subscription class being cancelled and used a credit, return the credit
+    // If this is a subscription class being cancelled and was paid with credit, return the credit
     if (registrationData.used_credit && registrationData.credit_type && status === 'cancelled') {
       logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
       
@@ -480,7 +480,7 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
       }
     }
 
-    // If this is a subscription class being cancelled and used a credit, return the credit
+    // If this is a subscription class being cancelled and was paid with credit, return the credit
     if (registrationData.used_credit && registrationData.credit_type) {
       logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
       

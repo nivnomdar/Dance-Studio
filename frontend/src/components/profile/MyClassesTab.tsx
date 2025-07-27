@@ -772,7 +772,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                 {selectedRegistration.used_credit && selectedRegistration.credit_type && (
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <p className="text-blue-800 text-sm">
-                      <strong>בנוסף:</strong> קרדיט {selectedRegistration.credit_type === 'group' ? 'קבוצתי' : 'פרטי'} אחד יוחזר לחשבונך.
+                      <strong>בנוסף:</strong> קרדיט {selectedRegistration.credit_type === 'group' ? 'קבוצתי' : 'פרטי'} אחד יוחזר לחשבונך (כי שילמת בקרדיט).
                     </p>
                   </div>
                 )}

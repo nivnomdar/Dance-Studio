@@ -20,6 +20,13 @@ import { UserSubscriptionCredits, CreditGroup, CREDIT_GROUP_LABELS, CREDIT_GROUP
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon, SkeletonInput, SkeletonButton } from './skeleton/SkeletonComponents';
 import { throttledApiFetch } from '../utils/api';
+import { 
+  getCreditGroupForClass, 
+  getCreditAmountFromClass, 
+  getAvailableCreditsForGroup,
+  formatCreditMessage,
+  formatSuccessMessage
+} from '../lib/creditLogic';
 
 interface SubscriptionRegistrationProps {
   classData: Class;
@@ -58,30 +65,6 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
   const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
 
   const colors = getColorScheme('pink');
-
-  // Determine which credit group this class uses
-  const getCreditGroupForClass = (classData: Class): CreditGroup => {
-    // If the class has specific credit types defined, use them
-    if (classData.group_credits && classData.group_credits > 0) {
-      return 'group';
-    }
-    if (classData.private_credits && classData.private_credits > 0) {
-      return 'private';
-    }
-    
-    // Fallback to category-based logic
-    if (classData.category === 'subscription') {
-      return 'group';
-    }
-    
-    // For non-subscription classes, determine based on registration type
-    switch (classData.registration_type) {
-      case 'appointment_only':
-        return 'private';
-      default:
-        return 'group';
-    }
-  };
 
   const creditGroup = getCreditGroupForClass(classData);
 
@@ -279,32 +262,11 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
   };
 
   const getAvailableCredits = (): number => {
-    if (!userCredits) return 0;
-    
-    switch (creditGroup) {
-      case 'group':
-        return userCredits.total_group_credits;
-      case 'private':
-        return userCredits.total_private_credits;
-      case 'zoom':
-        return userCredits.total_zoom_credits;
-      default:
-        return 0;
-    }
+    return getAvailableCreditsForGroup(userCredits, creditGroup);
   };
 
-  // Helper function to calculate total credits for new subscription
-  const calculateTotalCredits = (): number => {
-    // Use class-specific credits if available
-    if (creditGroup === 'group' && classData.group_credits) {
-      return classData.group_credits;
-    }
-    if (creditGroup === 'private' && classData.private_credits) {
-      return classData.private_credits;
-    }
-    
-    // Fallback to price-based calculation
-    return Math.max(4, Math.ceil(classData.price / 50));
+  const getCreditAmount = (): number => {
+    return getCreditAmountFromClass(classData, creditGroup);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -378,8 +340,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
         selected_date: selectedDate,
         selected_time: timeForBackend,
         notes: '',
-        used_credit: true, // This is a subscription class, so credit is always used
-        credit_type: creditGroup, // 'group' or 'private'
+        used_credit: hasCredits, // Only true if user has credits
+        credit_type: hasCredits ? creditGroup : undefined, // Only set if using credits
         purchase_price: classData.price // Store the actual price paid
       };
 
@@ -393,14 +355,19 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
         await subscriptionCreditsService.useCredit(user.id, creditGroup);
       } else {
         // Create new subscription with credits based on class data
-        const totalCredits = calculateTotalCredits();
+        // User pays for the class and gets credits for future use
+        const totalCredits = getCreditAmount();
         
+        // First, create the subscription with full credits
         await subscriptionCreditsService.addCredits({
           user_id: user.id,
           credit_group: creditGroup,
-          remaining_credits: totalCredits - 1,
+          remaining_credits: totalCredits, // Full amount - they paid for all credits
           expires_at: undefined
         });
+        
+        // Then, immediately use one credit for this registration
+        await subscriptionCreditsService.useCredit(user.id, creditGroup);
       }
 
       setShowRegistrationSuccess(true);
@@ -478,32 +445,30 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
     <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
       {user ? (
         <>
-          <h2 className={`text-3xl font-bold ${colors.textColor} mb-6 font-agrandir-grand`}>
-            הרשמה ל{classData.name}
+                      <h2 className={`text-3xl font-bold ${colors.textColor} mb-6 font-agrandir-grand`}>
+              {hasCredits ? 'קביעת שיעור' : 'הרשמה למנוי חודשי'}
       </h2>
 
-          {/* Credits Display */}
-          <div className="mb-6">
-            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6 mb-4">
-              <h3 className="text-lg font-semibold text-[#4B2E83] mb-3">יתרת שיעורים שלך</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#4B2E83]/70">{CREDIT_GROUP_LABELS[creditGroup]}:</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${CREDIT_GROUP_COLORS[creditGroup]}`}>
-                      {availableCredits} שיעורים
-                    </span>
-                    {hasCredits ? (
+          {/* Credits Display - Only show if user has credits */}
+          {hasCredits && (
+            <div className="mb-6">
+              <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-6 mb-4">
+                <h3 className="text-lg font-semibold text-[#4B2E83] mb-3">יתרת שיעורים שלך</h3>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#4B2E83]/70">{CREDIT_GROUP_LABELS[creditGroup]}:</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${CREDIT_GROUP_COLORS[creditGroup]}`}>
+                        {availableCredits} שיעורים
+                      </span>
                       <FaCheckCircle className="text-green-500 w-5 h-5" />
-                    ) : (
-                      <FaTimesCircle className="text-red-500 w-5 h-5" />
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
           
           {registrationError && (
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-6 animate-pulse">
@@ -762,35 +727,25 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       </div>
     </div>
 
-            {/* Price Summary */}
-            <div className={`${colors.lightBg} rounded-xl p-4`}>
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-bold text-[#2B2B2B]">מחיר {classData.name}:</span>
-                <span className={`text-2xl font-bold ${colors.textColor}`}>{classData.price} ש"ח</span>
-              </div>
-              
-              <div className={`mt-3 p-3 rounded-lg border-r-4 ${hasCredits ? 'bg-green-50 border-green-400' : 'bg-orange-50 border-orange-400'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  {hasCredits ? (
-                    <>
-                      <FaCheckCircle className="text-green-600 w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-green-800">קיים קרדיט זמין</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaExclamationTriangle className="text-orange-600 w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-orange-800">תשלום חדש נדרש</span>
-                    </>
-                  )}
+            {/* Price Summary - Only show if user needs to pay */}
+            {!hasCredits && (
+              <div className={`${colors.lightBg} rounded-xl p-4`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-[#2B2B2B]">מחיר {classData.name}:</span>
+                  <span className={`text-2xl font-bold ${colors.textColor}`}>{classData.price} ש"ח</span>
                 </div>
-                <p className={`text-sm ${hasCredits ? 'text-green-700' : 'text-orange-700'}`}>
-                  {hasCredits 
-                    ? 'השיעור ינוכה מיתרת השיעורים שלך'
-                    : 'תצטרכי לשלם מחדש ותקבלי מנוי חדש'
-                  }
-                </p>
+                
+                <div className="mt-3 p-3 rounded-lg border-r-4 bg-orange-50 border-orange-400">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FaExclamationTriangle className="text-orange-600 w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-semibold text-orange-800">תשלום חדש נדרש</span>
+                  </div>
+                  <p className="text-sm text-orange-700">
+                    {formatCreditMessage(hasCredits, classData, creditGroup, getCreditAmount())}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -824,17 +779,22 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                 if (spotsInfo?.available === 0) {
                   return 'מלא - אין מקומות זמינים';
                 }
-                return `הזמיני ${classData.name}`;
+                return hasCredits ? 'הרשמה' : `הזמיני ${classData.name}`;
               })()}
             </button>
           </form>
 
-      {/* Additional Info */}
-          <div className="mt-6 text-sm text-gray-600 space-y-2">
-            <p>✓ ביטול חינם עד 48 שעות לפני השיעור</p>
-            <p>✓ גמישות בבחירת התאריך והשעה</p>
-            <p>✓ {hasCredits ? 'שימוש בקרדיט זמין' : 'תשלום חדש + יצירת מנוי'}</p>
-          </div>
+                {/* Additional Info */}
+            <div className="mt-6 text-sm space-y-2">
+              {hasCredits && (
+                <p className="text-green-700 font-semibold text-base">✓ שימוש בקרדיט זמין</p>
+              )}
+              <p className="text-gray-600">✓ ביטול חינם עד 48 שעות לפני השיעור</p>
+              <p className="text-gray-600">✓ גמישות בבחירת התאריך והשעה</p>
+              {!hasCredits && (
+                <p className="text-gray-600">✓ קבלת מנוי {creditGroup === 'group' ? 'קבוצתי' : 'פרטי'} עם {getCreditAmount()} שיעורים</p>
+              )}
+            </div>
         </>
       ) : (
         <div className="text-center py-8">
@@ -862,8 +822,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                 <FaSignInAlt className="text-blue-600 w-4 h-4 flex-shrink-0" />
                 <span className="text-sm font-semibold text-blue-800">שיעור מנוי</span>
               </div>
-              <p className="text-sm text-blue-700">
-                ישולם באמצעות קרדיטים זמינים או תשלום חדש
+                            <p className="text-sm text-blue-700">
+                ישולם באמצעות קרדיטים זמינים או תשלום {classData.price} ש"ח + קבלת מנוי {creditGroup === 'group' ? 'קבוצתי' : 'פרטי'} עם {getCreditAmount()} שיעורים
         </p>
       </div>
     </div>
@@ -907,10 +867,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
               <p className="text-gray-600 mb-8 font-agrandir-regular leading-relaxed">
                 ההרשמה שלך ל{classData?.name} נשמרה בהצלחה. 
                 <br />
-                {hasCredits 
-                  ? 'שיעור אחד יורד מיתרת השיעורים שלך.'
-                  : `נוצר מנוי חדש עם ${calculateTotalCredits()} שיעורים זמינים.`
-                }
+                {formatSuccessMessage(hasCredits, classData, creditGroup, getCreditAmount())}
               </p>
               
               <div className="space-y-3">
