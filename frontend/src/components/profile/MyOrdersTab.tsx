@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaShoppingBag, FaCalendarAlt, FaCreditCard, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner, FaBox, FaClock } from 'react-icons/fa';
 import type { Order } from '../../types/order';
+import { LoadingSpinner } from '../common';
 
 interface MyOrdersTabProps {
   userId: string;
@@ -132,8 +133,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
         </div>
         <div className="p-8">
           <div className="flex items-center justify-center py-12">
-            <FaSpinner className="animate-spin text-4xl text-[#EC4899]" />
-            <span className="mr-4 text-lg text-[#4B2E83]">טוען הזמנות...</span>
+            <LoadingSpinner message="טוען הזמנות..." size="md" />
           </div>
         </div>
       </div>

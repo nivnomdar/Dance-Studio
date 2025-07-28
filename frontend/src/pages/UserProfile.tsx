@@ -7,6 +7,7 @@ import ProfileTabs from '../components/profile/ProfileTabs';
 import type { UserProfile } from '../types/auth';
 import { registrationsService } from '../lib/registrations';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
+import { LoadingPage, ErrorPage, StatusModal } from '../components/common';
 
 function UserProfile() {
   const { user, loading: authLoading, session, profile: contextProfile, profileLoading, loadProfile } = useAuth();
@@ -365,16 +366,7 @@ function UserProfile() {
 
   // Auth loading state
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-24 pb-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-            <p className="text-lg text-[#4B2E83]/70">טוען...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingPage message="טוען..." />;
   }
 
   // No user state - redirect to home
@@ -385,40 +377,18 @@ function UserProfile() {
 
   // Loading state
   if (isLoadingProfile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-24 pb-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
-            <p className="text-lg text-[#4B2E83]/70">טוען פרופיל...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingPage message="טוען פרופיל..." />;
   }
 
   // Error state
   if (profileError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-24 pb-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-[#4B2E83] mb-2">שגיאה בטעינת הפרופיל</h3>
-            <p className="text-[#4B2E83]/70 mb-6">{profileError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
-            >
-              נסה שוב
-            </button>
-          </div>
-        </div>
-      </div>
+      <ErrorPage
+        title="שגיאה בטעינת הפרופיל"
+        message={profileError}
+        onRetry={() => window.location.reload()}
+        retryText="נסה שוב"
+      />
     );
   }
 
@@ -481,8 +451,11 @@ function UserProfile() {
                   <h2 className="text-2xl font-bold text-white mb-2 font-agrandir-grand">
                     {`${formData.firstName} ${formData.lastName}`.trim() || 'משתמשת חדשה'}
                   </h2>
-                  <p className="text-white/80 text-sm">
+                  <p className="text-white/80 text-sm mb-1">
                     {formData.email}
+                  </p>
+                  <p className="text-white/60 text-xs">
+                    חברה מאז {user ? new Date(user.created_at).toLocaleDateString('he-IL') : ''}
                   </p>
                 </div>
               </div>
@@ -528,48 +501,55 @@ function UserProfile() {
                 )}
 
                 {/* Additional Info */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
-                    <span className="text-sm text-[#4B2E83]/70">תאריך הצטרפות:</span>
-                    <span className="text-sm font-semibold text-[#4B2E83]">
-                      {user ? new Date(user.created_at).toLocaleDateString('he-IL') : ''}
-                    </span>
-                  </div>
-                  
-                  {/* הוספת סטטוס שיעור ניסיון */}
-                  <div className="relative p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
-                    {/* כפתור הרשמה בפינה השמאלית העליונה */}
-                    {!localProfile?.has_used_trial_class && user && (
-                      <Link
-                        to="/class/trial-class"
-                        className="absolute top-2 left-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 text-xs font-medium shadow-md hover:shadow-lg transform hover:scale-105"
-                      >
-                        הרשמה לשיעור ניסיון                       </Link>
-                    )}
+                <div className="space-y-3">
+                  {/* Trial Class Status */}
+                  <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">שיעור ניסיון</span>
+                    </div>
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#4B2E83]/70">שיעור ניסיון:</span>
-                      <span className={`text-sm font-semibold ${localProfile?.has_used_trial_class ? 'text-red-600' : 'text-green-600'}`}>
-                        {localProfile?.has_used_trial_class ? 'נוצל' : 'לא נוצל עדיין'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${localProfile?.has_used_trial_class ? 'bg-red-400' : 'bg-green-400'}`}></div>
+                        <span className="text-sm text-[#4B2E83]/80">סטטוס שיעור ניסיון</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-semibold ${localProfile?.has_used_trial_class ? 'text-red-500' : 'text-green-500'}`}>
+                          {localProfile?.has_used_trial_class ? 'נוצל' : 'זמין לך'}
+                        </span>
+                        {!localProfile?.has_used_trial_class && user && (
+                          <Link
+                            to="/class/trial-class"
+                            className="bg-green-500 text-white px-2 py-0.5 rounded-md hover:bg-green-600 transition-colors text-xs font-medium"
+                          >
+                            הרשמה
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* יתרת שיעורים */}
-                  <div className="p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl">
+                  {/* Credits Status */}
+                  <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/20">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-[#4B2E83]/70">יתרת שיעורים במנוי:</span>
-                      <span className="text-sm font-semibold text-[#4B2E83]">{subscriptionCredits} שיעורים</span>
+                      <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">יתרה</span>
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${subscriptionCredits > 0 ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                        <span className="text-xs text-[#4B2E83]/70">
+                          {subscriptionCredits > 0 ? 'פעיל' : 'לא זמין'}
+                        </span>
+                      </div>
                     </div>
-                    {subscriptionCredits > 0 ? (
-                      <div className="text-xs text-green-600">
-                        ✓ יש לך שיעורים זמינים להרשמה
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#4B2E83]/80">שיעורים זמינים</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-[#4B2E83]">{subscriptionCredits}</span>
+                        {subscriptionCredits > 0 && (
+                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-xs text-red-600">
-                        ⚠️ אין לך שיעורים זמינים
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -596,50 +576,22 @@ function UserProfile() {
       </div>
 
       {/* Success Popup */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-[#EC4899]/10">
-            <div className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#4B2E83] mb-2">הצלחה!</h3>
-              <p className="text-[#4B2E83]/70 mb-6">הפרופיל עודכן בהצלחה</p>
-              <button
-                onClick={() => setShowSuccessPopup(false)}
-                className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
-              >
-                אישור
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        type="success"
+        title="הצלחה!"
+        message="הפרופיל עודכן בהצלחה"
+      />
 
       {/* Error Popup */}
-      {showErrorPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-red-200">
-            <div className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#4B2E83] mb-2">שגיאה</h3>
-              <p className="text-[#4B2E83]/70 mb-6">{errorMessage}</p>
-              <button
-                onClick={() => setShowErrorPopup(false)}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-300"
-              >
-                אישור
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={showErrorPopup}
+        onClose={() => setShowErrorPopup(false)}
+        type="error"
+        title="שגיאה"
+        message={errorMessage}
+      />
     </div>
   );
 }

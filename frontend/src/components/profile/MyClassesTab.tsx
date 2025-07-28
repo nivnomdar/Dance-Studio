@@ -5,6 +5,7 @@ import { classesService } from '../../lib/classes';
 import { translateCategory } from '../../utils/categoryUtils';
 import type { Registration } from '../../types/registration';
 import type { Class } from '../../types/class';
+import { LoadingSpinner, StatusModal } from '../common';
 
 interface MyClassesTabProps {
   userId: string;
@@ -357,8 +358,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         </div>
         <div className="p-4 sm:p-8">
           <div className="flex items-center justify-center py-8 sm:py-12">
-            <FaSpinner className="animate-spin text-3xl sm:text-4xl text-[#EC4899]" />
-            <span className="mr-4 text-base sm:text-lg text-[#4B2E83]">טוען שיעורים...</span>
+            <LoadingSpinner message="טוען שיעורים..." size="md" />
           </div>
         </div>
       </div>
@@ -802,68 +802,22 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       )}
 
       {/* Success Popup */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowSuccessPopup(false)}>
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-green-200 relative" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowSuccessPopup(false)}
-              className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-            <div className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#4B2E83] mb-4">הביטול הושלם בהצלחה!</h3>
-              <div className="text-[#4B2E83]/70 mb-6 text-sm leading-relaxed">
-                {successMessage.split('\n').map((line, index) => (
-                  <p key={index} className={index > 0 ? 'mt-2' : ''}>
-                    {line}
-                  </p>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowSuccessPopup(false)}
-                className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
-              >
-                אישור
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        type="success"
+        title="הביטול הושלם בהצלחה!"
+        message={successMessage}
+      />
 
       {/* Error Popup */}
-      {showErrorPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn" onClick={() => setShowErrorPopup(false)}>
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl border border-red-200 relative" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowErrorPopup(false)}
-              className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-            <div className="text-center">
-              <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-[#4B2E83] mb-4">שגיאה</h3>
-              <p className="text-[#4B2E83]/70 mb-6">{errorMessage}</p>
-              <button
-                onClick={() => setShowErrorPopup(false)}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-medium hover:from-red-600 hover:to-red-700 transition-all duration-300"
-              >
-                אישור
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={showErrorPopup}
+        onClose={() => setShowErrorPopup(false)}
+        type="error"
+        title="שגיאה"
+        message={errorMessage}
+      />
     </div>
   );
 };
