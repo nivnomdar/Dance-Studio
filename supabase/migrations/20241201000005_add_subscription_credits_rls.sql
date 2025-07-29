@@ -65,6 +65,17 @@ CREATE INDEX idx_subscription_credits_user_id ON subscription_credits(user_id);
 CREATE INDEX idx_subscription_credits_credit_group ON subscription_credits(credit_group);
 CREATE INDEX idx_subscription_credits_expires_at ON subscription_credits(expires_at);
 
+-- Create composite index for user_id and credit_group
+CREATE INDEX IF NOT EXISTS idx_subscription_credits_user_credit_group ON subscription_credits(user_id, credit_group);
+
+-- Create index for active credits (not expired)
+CREATE INDEX IF NOT EXISTS idx_subscription_credits_active ON subscription_credits(user_id, credit_group) 
+WHERE expires_at IS NULL;
+
+-- Create index for expired credits
+CREATE INDEX IF NOT EXISTS idx_subscription_credits_expired ON subscription_credits(user_id, credit_group) 
+WHERE expires_at IS NOT NULL;
+
 -- Add comments to explain the table structure
 COMMENT ON TABLE subscription_credits IS 'Stores subscription credits for users. Each credit represents one class session that can be used.';
 COMMENT ON COLUMN subscription_credits.credit_group IS 'Type of credit: group, private, zoom, workshop, intensive';
