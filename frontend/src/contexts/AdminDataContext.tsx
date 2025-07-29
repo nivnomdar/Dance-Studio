@@ -150,6 +150,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // טעינת נתוני שיעורים
   const fetchClasses = useCallback(async (forceRefresh = false) => {
     if (!session) {
+      console.log('fetchClasses: No session available');
       return;
     }
     if (isRateLimited()) {
@@ -157,20 +158,43 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (!forceRefresh && dataRef.current.classes.length > 0 && isDataFresh()) {
+      console.log('fetchClasses: Using cached data');
       return;
     }
 
+    console.log('fetchClasses: Starting to fetch data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
+    
     try {
+      console.log('fetchClasses: Making API calls...');
       const [classes, registrations, sessions, session_classes] = await Promise.all([
-        apiService.admin.getClasses(),
-        apiService.admin.getRegistrations(),
-        apiService.admin.getSessions(),
-        apiService.sessions.getSessionClasses()
+        apiService.admin.getClasses().catch(error => {
+          console.error('fetchClasses: Error fetching classes:', error);
+          return [];
+        }),
+        apiService.admin.getRegistrations().catch(error => {
+          console.error('fetchClasses: Error fetching registrations:', error);
+          return [];
+        }),
+        apiService.admin.getSessions().catch(error => {
+          console.error('fetchClasses: Error fetching sessions:', error);
+          return [];
+        }),
+        apiService.sessions.getSessionClasses().catch(error => {
+          console.error('fetchClasses: Error fetching session classes:', error);
+          return [];
+        })
       ]);
+      
+      console.log('fetchClasses: API calls completed:', {
+        classes: classes?.length || 0,
+        registrations: registrations?.length || 0,
+        sessions: sessions?.length || 0,
+        session_classes: session_classes?.length || 0
+      });
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -187,7 +211,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       globalHasInitializedRef.current = true; // Mark as initialized
       setError(null);
     } catch (error) {
-      console.error('fetchClasses: error:', error);
+      console.error('fetchClasses: General error:', error);
       setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
     } finally {
       setIsLoading(false);
@@ -209,19 +233,28 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתוני חנות
   const fetchShop = useCallback(async () => {
-    if (!session || isFetchingRef.current) return;
+    if (!session || isFetchingRef.current) {
+      console.log('fetchShop: No session or already fetching');
+      return;
+    }
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.products.length > 0 && isDataFresh()) return;
+    if (dataRef.current.products.length > 0 && isDataFresh()) {
+      console.log('fetchShop: Using cached data');
+      return;
+    }
 
+    console.log('fetchShop: Starting to fetch shop data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
+    
     try {
       // אין כרגע apiService.shop, נחזיר מערכים ריקים
+      console.log('fetchShop: Setting empty shop data');
       setData(prev => ({
         ...prev,
         products: [],
@@ -230,6 +263,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       }));
       setError(null);
     } catch (error) {
+      console.error('fetchShop: Error:', error);
       setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
     } finally {
       setIsLoading(false);
@@ -240,19 +274,28 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתוני צור קשר
   const fetchContact = useCallback(async () => {
-    if (!session || isFetchingRef.current) return;
+    if (!session || isFetchingRef.current) {
+      console.log('fetchContact: No session or already fetching');
+      return;
+    }
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.messages.length > 0 && isDataFresh()) return;
+    if (dataRef.current.messages.length > 0 && isDataFresh()) {
+      console.log('fetchContact: Using cached data');
+      return;
+    }
 
+    console.log('fetchContact: Starting to fetch contact data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
+    
     try {
       // אין כרגע apiService.contact, נחזיר מערך ריק
+      console.log('fetchContact: Setting empty contact data');
       setData(prev => ({
         ...prev,
         messages: [],
@@ -260,6 +303,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       }));
       setError(null);
     } catch (error) {
+      console.error('fetchContact: Error:', error);
       setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
     } finally {
       setIsLoading(false);
@@ -300,19 +344,32 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתוני סקירה כללית
   const fetchOverview = useCallback(async () => {
-    if (!session) return;
+    if (!session) {
+      console.log('fetchOverview: No session available');
+      return;
+    }
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.overview && isDataFresh()) return;
+    if (dataRef.current.overview && isDataFresh()) {
+      console.log('fetchOverview: Using cached data');
+      return;
+    }
 
+    console.log('fetchOverview: Starting to fetch overview...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
+    
     try {
-      const overview = await apiService.admin.getOverview();
+      const overview = await apiService.admin.getOverview().catch(error => {
+        console.error('fetchOverview: Error fetching overview:', error);
+        return { totalClasses: 0, totalRegistrations: 0, totalSessions: 0 };
+      });
+      
+      console.log('fetchOverview: Overview data received:', overview);
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -325,7 +382,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       });
       setError(null);
     } catch (error) {
-      console.error('fetchOverview: error:', error);
+      console.error('fetchOverview: General error:', error);
       setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
     } finally {
       setIsLoading(false);
@@ -374,15 +431,37 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתונים ראשונית כשהדשבורד נטען
   useEffect(() => {
-    if (!session) return;
+    console.log('AdminDataContext: useEffect triggered', {
+      session: !!session,
+      globalHasInitialized: globalHasInitializedRef.current,
+      fetchFunctionsRef: !!fetchFunctionsRef.current
+    });
+    
+    if (!session) {
+      console.log('AdminDataContext: No session, returning');
+      return;
+    }
     
     // טען נתונים רק אם אין נתונים קיימים
     if (!globalHasInitializedRef.current && fetchFunctionsRef.current) {
+      console.log('AdminDataContext: Starting initial data fetch');
       globalHasInitializedRef.current = true;
-      fetchFunctionsRef.current.fetchOverview();
-      fetchFunctionsRef.current.fetchClasses();
-      fetchFunctionsRef.current.fetchShop();
-      fetchFunctionsRef.current.fetchContact();
+      
+      // טען נתונים עם timeout כדי למנוע blocking
+      setTimeout(() => {
+        if (fetchFunctionsRef.current) {
+          console.log('AdminDataContext: Executing fetch functions');
+          fetchFunctionsRef.current.fetchOverview();
+          fetchFunctionsRef.current.fetchClasses();
+          fetchFunctionsRef.current.fetchShop();
+          fetchFunctionsRef.current.fetchContact();
+        }
+      }, 100);
+    } else {
+      console.log('AdminDataContext: Skipping initial fetch', {
+        globalHasInitialized: globalHasInitializedRef.current,
+        fetchFunctionsRef: !!fetchFunctionsRef.current
+      });
     }
   }, [session]);
 

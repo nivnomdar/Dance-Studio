@@ -6,37 +6,31 @@ import {
   UserProfile, 
   SafeUser, 
   SafeSession, 
-  SafeUserMetadata,
   AuthState,
   AuthEvent 
 } from '../types/auth';
 import {
-  createSafeUser,
   createSafeSession,
-  getSafeUserMetadata,
-  getSafeFullName,
-  getSafeAvatarUrl,
-  getSafeEmail,
-  validateUserForOperation,
   handleAuthError
 } from '../utils/authUtils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Utility functions are now imported from authUtils
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   
+  // State
   const [user, setUser] = useState<SafeUser | null>(null);
   const [session, setSession] = useState<SafeSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [authState, setAuthState] = useState<AuthState>(AuthState.LOADING);
+  
+  // Refs for rate limiting and timeouts
   const lastProfileUpdateRef = useRef<number>(0);
   const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Store functions in refs to prevent re-renders
+  // Function refs to prevent re-renders
   const loadProfileSafelyRef = useRef<((userId: string) => Promise<UserProfile | null>) | null>(null);
   const createProfileForUserRef = useRef<((safeUser: SafeUser) => Promise<UserProfile | null>) | null>(null);
   const updateProfileLoginTimeRef = useRef<((userId: string) => Promise<void>) | null>(null);
@@ -44,18 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Computed properties
   const isAuthenticated = Boolean(user && session);
   const isAdmin = profile?.role === 'admin';
-  
-  // Debug: Track state changes
-  useEffect(() => {
-    // console.log('Auth state changed at:', new Date().toISOString(), { 
-    //   user: user?.id, 
-    //   session: !!session, 
-    //   profile: profile?.id,
-    //   authState 
-    // });
-  }, [user?.id, session, profile?.id, authState]);
 
-  // Safe profile creation function
+  // Profile creation function
   const createProfileForUser = useCallback(async (safeUser: SafeUser): Promise<UserProfile | null> => {
     if (!safeUser?.id) {
       console.error('Cannot create profile: user ID is missing');
@@ -126,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Store function in ref immediately
   createProfileForUserRef.current = createProfileForUser;
 
-  // Safe profile loading function
+  // Profile loading function
   const loadProfileSafely = useCallback(async (userId: string): Promise<UserProfile | null> => {
     if (!userId) {
       console.error('Cannot load profile: user ID is missing');
@@ -155,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to handle empty results
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading profile:', error);
@@ -183,15 +167,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return profileData;
     } catch (error) {
-      console.error('Error in loadProfileSafely at:', new Date().toISOString(), error);
+      console.error('Error in loadProfileSafely:', error);
       return null;
     }
-  }, []); // Remove dependencies to prevent infinite re-renders
+  }, []);
 
   // Store function in ref immediately
   loadProfileSafelyRef.current = loadProfileSafely;
 
-  // Safe profile update function
+  // Profile update function
   const updateProfileLoginTime = useCallback(async (userId: string): Promise<void> => {
     if (!userId) return;
 
@@ -202,23 +186,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId);
 
       if (error) {
-        console.error('Error updating last login at:', new Date().toISOString(), error);
+        console.error('Error updating last login time:', error);
       }
     } catch (error) {
-      console.error('Error in updateProfileLoginTime at:', new Date().toISOString(), error);
+      console.error('Error in updateProfileLoginTime:', error);
     }
-  }, []); // No dependencies needed
+  }, []);
 
   // Store function in ref immediately
   updateProfileLoginTimeRef.current = updateProfileLoginTime;
-
-  // Update all refs when functions are created - REMOVED TO PREVENT RE-RENDERS
-  // useEffect(() => {
-  //   console.log('Updating all function refs at:', new Date().toISOString()); // Debug log
-  //   createProfileForUserRef.current = createProfileForUser;
-  //   loadProfileSafelyRef.current = loadProfileSafely;
-  //   updateProfileLoginTimeRef.current = updateProfileLoginTime;
-  // }, [createProfileForUser, loadProfileSafely, updateProfileLoginTime]);
 
   // Handle profile operations with rate limiting
   const handleProfileOperations = useCallback(async (safeUser: SafeUser, event: AuthEvent) => {
@@ -293,52 +269,104 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Error in handleProfileOperations:', error);
       }
-    }, 1000); // Reduced delay to 1 second
+    }, 1000);
   }, []);
 
   // Initialize auth state
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        setLoading(true);
-        setAuthState(AuthState.LOADING);
+  const initializeAuth = useCallback(async () => {
+    try {
+      setLoading(true);
+      setAuthState(AuthState.LOADING);
 
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          setAuthState(AuthState.ERROR);
-          return;
-        }
-
-        const safeSession = createSafeSession(session);
-        const safeUser = safeSession?.user || null;
-
-        setSession(safeSession);
-        setUser(safeUser);
-
-        if (safeUser) {
-          setAuthState(AuthState.AUTHENTICATED);
-          // Load profile
-          const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
-          setProfile(profileData || null);
-        } else {
-          setAuthState(AuthState.UNAUTHENTICATED);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error getting session:', error);
         setAuthState(AuthState.ERROR);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
+      const safeSession = createSafeSession(session);
+      const safeUser = safeSession?.user || null;
+
+      setSession(safeSession);
+      setUser(safeUser);
+
+      if (safeUser) {
+        setAuthState(AuthState.AUTHENTICATED);
+        // Load profile
+        const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+        setProfile(profileData || null);
+      } else {
+        setAuthState(AuthState.UNAUTHENTICATED);
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      setAuthState(AuthState.ERROR);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Sign out function
+  const signOut = useCallback(async () => {
+    try {
+      // Immediate state cleanup with setTimeout to avoid setState during render
+      setTimeout(() => {
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+        setAuthState(AuthState.UNAUTHENTICATED);
+      }, 0);
+      
+      // Clear timeouts
+      if (profileUpdateTimeoutRef.current) {
+        clearTimeout(profileUpdateTimeoutRef.current);
+      }
+
+      // Clear storage
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
+            localStorage.removeItem(key);
+          }
+        });
+        sessionStorage.clear();
+      } catch (e) {
+        console.error('Could not clear storage:', e);
+      }
+
+      // Background sign out
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error in signOut:', error);
+      throw error;
+    }
+  }, []);
+
+  // Load profile function
+  const loadProfile = useCallback(async () => {
+    if (!user?.id) {
+      console.error('Cannot load profile: no authenticated user');
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      const profileData = await loadProfileSafelyRef.current?.(user.id);
+      setProfile(profileData || null);
+    } catch (error) {
+      console.error('Error in loadProfile:', error);
+      setProfile(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user]);
+
+  // Initialize auth on mount
+  useEffect(() => {
     initializeAuth();
-    
-    return () => {
-      // console.log('Cleaning up auth initialization at:', new Date().toISOString()); // Debug log
-    };
-  }, []); // Only run once on mount
+  }, [initializeAuth]);
 
   // Handle auth state changes
   useEffect(() => {
@@ -401,69 +429,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
-      // console.log('Cleaning up auth state change subscription at:', new Date().toISOString()); // Debug log
       subscription.unsubscribe();
       if (profileUpdateTimeoutRef.current) {
         clearTimeout(profileUpdateTimeoutRef.current);
       }
     };
-  }, []); // Only run once on mount
+  }, [handleProfileOperations]);
 
-  // Safe sign out function
-  const signOut = useCallback(async () => {
-    try {
-      // Immediate state cleanup with setTimeout to avoid setState during render
-      setTimeout(() => {
-        setProfile(null);
-        setUser(null);
-        setSession(null);
-        setAuthState(AuthState.UNAUTHENTICATED);
-      }, 0);
-      
-      // Clear timeouts
-      if (profileUpdateTimeoutRef.current) {
-        clearTimeout(profileUpdateTimeoutRef.current);
-      }
-
-      // Clear storage
-      try {
-        Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
-            localStorage.removeItem(key);
-          }
-        });
-        sessionStorage.clear();
-      } catch (e) {
-        console.error('Could not clear storage:', e);
-      }
-
-      // Background sign out
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error in signOut:', error);
-      throw error;
-    }
-  }, []);
-
-  // Safe profile loading function
-  const loadProfile = useCallback(async () => {
-    if (!user?.id) {
-      console.error('Cannot load profile: no authenticated user');
-      return;
-    }
-
-    setProfileLoading(true);
-    try {
-      const profileData = await loadProfileSafelyRef.current?.(user.id);
-      setProfile(profileData || null);
-    } catch (error) {
-      console.error('Error in loadProfile:', error);
-      setProfile(null);
-    } finally {
-      setProfileLoading(false);
-    }
-  }, [user]); // Only depend on user, not loadProfileSafely
-
+  // Context value
   const value: AuthContextType = useMemo(() => {
     return {
       user,

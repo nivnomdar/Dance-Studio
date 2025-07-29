@@ -11,15 +11,25 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { profile, isLoading, error, isAdmin } = useAdminProfile();
 
+  // Handle navigation in useEffect to avoid React errors
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        navigate('/', { replace: true });
+      } else if (!isLoading && !isAdmin) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, authLoading, isLoading, isAdmin, navigate]);
+
   // Auth loading state
   if (authLoading) {
     return <AdminLoadingState message="טוען..." />;
   }
 
-  // No user state - redirect to home
+  // No user state - show loading while redirecting
   if (!user && !authLoading) {
-    navigate('/', { replace: true });
-    return null;
+    return <AdminLoadingState message="מפנה לדף הבית..." />;
   }
 
   // Profile loading state
@@ -32,10 +42,9 @@ export default function AdminDashboard() {
     return <AdminErrorState message={error} />;
   }
 
-  // Check if user is admin - redirect to home if not
+  // Check if user is admin - show loading while redirecting
   if (!isAdmin) {
-    navigate('/', { replace: true });
-    return null;
+    return <AdminLoadingState message="מפנה לדף הבית..." />;
   }
 
   // Check if profile exists

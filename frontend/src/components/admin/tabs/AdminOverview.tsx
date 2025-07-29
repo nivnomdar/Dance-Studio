@@ -72,12 +72,37 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
   const [registrationEditModalOpen, setRegistrationEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  
+  // Debug logs
+  console.log('AdminOverview: Component rendered', {
+    hasData: !!data,
+    classesCount: data?.classes?.length || 0,
+    sessionsCount: data?.sessions?.length || 0,
+    registrationsCount: data?.registrations?.length || 0,
+    isLoading,
+    error
+  });
+  
   // Check if data is complete
   const hasCompleteData = useMemo(() => {
-    return data.classes && data.classes.length > 0 && 
+    const hasData = data.classes && data.classes.length > 0 && 
            data.sessions && data.sessions.length > 0 && 
            data.registrations && data.registrations.length >= 0;
+    console.log('AdminOverview: hasCompleteData:', hasData);
+    return hasData;
   }, [data.classes, data.sessions, data.registrations]);
+
+  // Fallback data if no data is available
+  const fallbackData = useMemo(() => ({
+    classes: data.classes || [],
+    sessions: data.sessions || [],
+    registrations: data.registrations || [],
+    session_classes: data.session_classes || [],
+    overview: data.overview || { totalClasses: 0, totalRegistrations: 0, totalSessions: 0 }
+  }), [data]);
+
+  // Use fallback data if no complete data
+  const displayData = hasCompleteData ? data : fallbackData;
 
   // Generate upcoming dates for a session
   const generateUpcomingDates = useCallback((weekdays: number[]): string[] => {
@@ -98,129 +123,98 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
     return [...new Set(upcomingDates)]; // Remove duplicates
   }, []);
 
-  // Process sessions data
+  // Process sessions with additional data
   const processedSessions = useMemo(() => {
-    if (!data.sessions) return [];
+    if (!displayData.sessions || displayData.sessions.length === 0) {
+      console.log('AdminOverview: No sessions data available');
+      return [];
+    }
 
-    return data.sessions.map((sessionData: SessionData) => {
-      const sessionClasses = data.session_classes?.filter((sc: any) => sc.session_id === sessionData.id) || [];
-      const sessionRegistrations = data.registrations?.filter((reg: any) => reg.session_id === sessionData.id) || [];
-      const activeRegistrations = sessionRegistrations.filter((reg: any) => reg.status === 'active');
-      
-      // Filter for upcoming week
-      const upcomingActiveRegistrations = activeRegistrations.filter((reg: any) => {
-        const registrationDate = new Date(reg.selected_date);
-        const today = new Date();
-        const nextWeek = new Date(today.getTime() + DAYS_IN_WEEK * MILLISECONDS_IN_DAY);
-        return registrationDate >= today && registrationDate <= nextWeek;
-      });
-      
-      const linkedClasses = sessionClasses.map((sc: any) => {
-        const classData = data.classes?.find((c: any) => c.id === sc.class_id);
-        return classData ? classData.name : 'שיעור לא ידוע';
-      });
+    return displayData.sessions.map((session: SessionData) => {
+      const linkedClasses = displayData.session_classes?.filter(
+        (sc: any) => sc.session_id === session.id
+      ) || [];
 
-      // Convert weekdays to numbers
-      const weekdayNumbers = sessionData.weekdays
-        ?.map(convertWeekdayToNumber)
-        .filter((num): num is number => num !== undefined) || [];
+      const sessionRegistrations = displayData.registrations?.filter(
+        (reg: any) => reg.session_id === session.id
+      ) || [];
 
-      const allUpcomingDates = generateUpcomingDates(weekdayNumbers);
+      const activeRegistrations = sessionRegistrations.filter(
+        (reg: any) => reg.status === 'active'
+      );
 
-      // Create entries for each date
-      return allUpcomingDates.map((date: string) => {
-        const dateRegistrations = upcomingActiveRegistrations.filter((reg: any) => reg.selected_date === date);
-        
-        const totalRevenue = sessionClasses.reduce((sum: number, sc: any) => {
-          const classRegistrations = dateRegistrations.filter((reg: any) => reg.session_class_id === sc.id);
-          return sum + (classRegistrations.length * sc.price);
-        }, 0);
+      const totalRevenue = sessionRegistrations.reduce(
+        (sum: number, reg: any) => sum + (reg.purchase_price || 0), 0
+      );
 
-        const occupancyRate = sessionData.max_capacity > 0 ? (dateRegistrations.length / sessionData.max_capacity) * 100 : 0;
+      const occupancyRate = session.max_capacity > 0 
+        ? (activeRegistrations.length / session.max_capacity) * 100 
+        : 0;
 
-        return {
-          ...sessionData,
-          specificDate: date,
-          linkedClassesCount: sessionClasses.length,
-          registrationsCount: sessionRegistrations.length,
-          activeRegistrationsCount: dateRegistrations.length,
-          totalRevenue,
-          occupancyRate,
-          sessionClasses,
-          registrations: sessionRegistrations,
-          linkedClasses,
-          upcomingActiveRegistrations: dateRegistrations
-        };
-      });
-    }).flat();
-  }, [data.sessions, data.session_classes, data.registrations, data.classes, generateUpcomingDates]);
+      return {
+        ...session,
+        linkedClassesCount: linkedClasses.length,
+        registrationsCount: sessionRegistrations.length,
+        activeRegistrationsCount: activeRegistrations.length,
+        totalRevenue,
+        occupancyRate,
+        sessionClasses: linkedClasses,
+        registrations: sessionRegistrations,
+        linkedClasses: linkedClasses.map((sc: any) => sc.class_id),
+        upcomingActiveRegistrations: activeRegistrations.filter((reg: any) => {
+          const regDate = new Date(reg.created_at);
+          const today = new Date();
+          return regDate >= today;
+        })
+      };
+    });
+  }, [displayData.sessions, displayData.session_classes, displayData.registrations]);
 
   // Filter and sort sessions
-  const filteredSessions = useMemo(() => {
-    return processedSessions
-      .filter((sessionData: SessionData) => {
-        const matchesSearch = sessionData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             sessionData.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesStatus = filterStatus === 'all' || 
-                             (filterStatus === 'active' && sessionData.is_active) ||
-                             (filterStatus === 'inactive' && !sessionData.is_active);
-        
-        const hasUpcomingDates = sessionData.specificDate && sessionData.is_active;
-        
-        return matchesSearch && matchesStatus && hasUpcomingDates;
-      })
-      .sort((a: SessionData, b: SessionData) => {
-        const aDate = a.specificDate ? new Date(a.specificDate) : new Date(9999, 11, 31);
-        const bDate = b.specificDate ? new Date(b.specificDate) : new Date(9999, 11, 31);
-        
-        if (aDate.getTime() !== bDate.getTime()) {
-          return aDate.getTime() - bDate.getTime();
-        }
-        
-        return a.name.localeCompare(b.name);
+  const filteredAndSortedSessions = useMemo(() => {
+    let filtered = processedSessions;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter((session: SessionData) =>
+        session.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        session.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter((session: SessionData) => {
+        if (filterStatus === 'active') return session.is_active;
+        if (filterStatus === 'inactive') return !session.is_active;
+        return true;
       });
+    }
+
+    // Sort by occupancy rate (descending)
+    return filtered.sort((a: SessionData, b: SessionData) => 
+      (b.occupancyRate || 0) - (a.occupancyRate || 0)
+    );
   }, [processedSessions, searchTerm, filterStatus]);
 
-  // Calculate statistics
-  const statistics = useMemo(() => {
+  // Calculate summary statistics
+  const summaryStats = useMemo(() => {
     const totalSessions = processedSessions.length;
     const activeSessions = processedSessions.filter((s: SessionData) => s.is_active).length;
-    const totalClasses = data.classes?.length || 0;
-    const totalActiveRegistrations = processedSessions.reduce((sum: number, s: SessionData) => sum + (s.activeRegistrationsCount || 0), 0);
-    const totalExpectedRevenue = processedSessions.reduce((sum: number, s: SessionData) => sum + (s.totalRevenue || 0), 0);
-    
-    const totalRegistrations = data.registrations?.length || 0;
-    const cancelledRegistrations = data.registrations?.filter((reg: any) => reg.status === 'cancelled').length || 0;
-    const pendingRegistrations = data.registrations?.filter((reg: any) => reg.status === 'pending').length || 0;
-    
-    const oneWeekAgo = new Date(Date.now() - DAYS_IN_WEEK * MILLISECONDS_IN_DAY);
-    const registrationsThisWeek = data.registrations?.filter((reg: any) => 
-      new Date(reg.created_at) > oneWeekAgo
-    ).length || 0;
-    
-    const cancellationsThisWeek = data.registrations?.filter((reg: any) => 
-      reg.status === 'cancelled' && new Date(reg.updated_at || reg.created_at) > oneWeekAgo
-    ).length || 0;
-    
-    const averageOccupancyRate = processedSessions.length > 0 
-      ? processedSessions.reduce((sum: number, s: SessionData) => sum + (s.occupancyRate || 0), 0) / processedSessions.length 
+    const totalRegistrations = processedSessions.reduce((sum: number, s: SessionData) => sum + (s.registrationsCount || 0), 0);
+    const totalRevenue = processedSessions.reduce((sum: number, s: SessionData) => sum + (s.totalRevenue || 0), 0);
+    const avgOccupancy = totalSessions > 0 
+      ? processedSessions.reduce((sum: number, s: SessionData) => sum + (s.occupancyRate || 0), 0) / totalSessions 
       : 0;
 
     return {
       totalSessions,
       activeSessions,
-      totalClasses,
-      totalActiveRegistrations,
-      totalExpectedRevenue,
       totalRegistrations,
-      cancelledRegistrations,
-      pendingRegistrations,
-      registrationsThisWeek,
-      cancellationsThisWeek,
-      averageOccupancyRate
+      totalRevenue,
+      avgOccupancy: Math.round(avgOccupancy * 100) / 100
     };
-  }, [processedSessions, data.classes, data.registrations]);
+  }, [processedSessions]);
 
   // Event handlers
   const handleViewClassDetails = useCallback((classData: any) => {
@@ -322,36 +316,36 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
       {/* Key Statistics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-4">
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{statistics.totalSessions}</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.totalSessions}</div>
           <div className="text-xs text-[#4B2E83]/70">סה"כ קבוצות</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{statistics.totalClasses}</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.classes?.length || 0}</div>
           <div className="text-xs text-[#4B2E83]/70">סה"כ שיעורים</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{statistics.totalActiveRegistrations}</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.totalRegistrations}</div>
           <div className="text-xs text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">₪{statistics.totalExpectedRevenue.toLocaleString()}</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">₪{summaryStats.totalRevenue.toLocaleString()}</div>
           <div className="text-xs text-[#4B2E83]/70">הכנסות צפויות</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{statistics.activeSessions}</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.activeSessions}</div>
           <div className="text-xs text-[#4B2E83]/70">קבוצות פעילות</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{statistics.registrationsThisWeek}</div>
-          <div className="text-xs text-[#4B2E83]/70">הרשמות השבוע</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.registrations?.filter((reg: any) => new Date(reg.created_at).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).length || 0}</div>
+          <div className="text-xs text-[#4B2E83]/70">הרשמות היום</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{statistics.averageOccupancyRate.toFixed(1)}%</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.avgOccupancy.toFixed(1)}%</div>
           <div className="text-xs text-[#4B2E83]/70">תפוסה ממוצעת</div>
         </div>
         <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{statistics.cancelledRegistrations}</div>
-          <div className="text-xs text-[#4B2E83]/70">הרשמות בוטלו</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.registrations?.filter((reg: any) => new Date(reg.created_at).toISOString().split('T')[0] === new Date(Date.now() - DAYS_IN_WEEK * MILLISECONDS_IN_DAY).toISOString().split('T')[0]).length || 0}</div>
+          <div className="text-xs text-[#4B2E83]/70">הרשמות השבוע</div>
         </div>
       </div>
 
@@ -405,7 +399,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
-              {filteredSessions.map((sessionData: SessionData) => (
+              {filteredAndSortedSessions.map((sessionData: SessionData) => (
                 <React.Fragment key={`${sessionData.id}_${sessionData.specificDate}`}>
                   <tr className="hover:bg-[#EC4899]/5 transition-colors">
                     <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 border-l border-[#EC4899]/10">
@@ -571,7 +565,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
                             <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">שיעורים מקושרים</h3>
                             <div className="flex flex-wrap gap-2 justify-start">
                               {sessionData.sessionClasses && sessionData.sessionClasses.map((sessionClass: any) => {
-                                const classData = data.classes?.find((c: any) => c.id === sessionClass.class_id);
+                                const classData = displayData.classes?.find((c: any) => c.id === sessionClass.class_id);
                                 return (
                                   <div key={sessionClass.id} className="bg-white p-1.5 sm:p-2 rounded-lg border border-[#EC4899]/10 w-40 sm:w-48 flex flex-col justify-between">
                                     <div>
@@ -725,7 +719,7 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
       </div>
 
       {/* No Results */}
-      {filteredSessions.length === 0 && (
+      {filteredAndSortedSessions.length === 0 && (
         <div className="bg-white rounded-2xl p-12 text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
 
@@ -15,8 +15,10 @@ export function useProfile(): UseProfileReturn {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  const loadProfileWithFetch = async () => {
-    if (!user || !session?.access_token) return;
+  const loadProfileWithFetch = useCallback(async () => {
+    if (!user || !session?.access_token) {
+      return;
+    }
 
     try {
       // Check if we're already creating a profile to prevent race condition
@@ -64,9 +66,9 @@ export function useProfile(): UseProfileReturn {
     } finally {
       setIsLoadingProfile(false);
     }
-  };
+  }, [user, session]);
 
-  const createProfile = async () => {
+  const createProfile = useCallback(async () => {
     if (!user || !session?.access_token) return;
 
     try {
@@ -163,7 +165,7 @@ export function useProfile(): UseProfileReturn {
       console.error('Error in createProfile:', error);
       setProfileError(`שגיאה ביצירת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
     }
-  };
+  }, [user, session]);
 
   useEffect(() => {
     if (!user || authLoading) {
@@ -176,11 +178,6 @@ export function useProfile(): UseProfileReturn {
     // If we already have a profile for this user, don't fetch again
     if (localProfile && localProfile.id === user.id) {
       setIsLoadingProfile(false);
-      return;
-    }
-
-    // If we're already loading, don't start another request
-    if (isLoadingProfile) {
       return;
     }
 
@@ -206,13 +203,13 @@ export function useProfile(): UseProfileReturn {
       postal_code: ''
     };
 
-    // Set temporary profile immediately
+    // Set temporary profile immediately and set loading to false
     setLocalProfile(tempProfile);
     setIsLoadingProfile(false);
     
     // Load real profile in background
     loadProfileWithFetch();
-  }, [user?.id, authLoading, session]);
+  }, [user?.id, authLoading, session, loadProfileWithFetch]);
 
   return {
     profile: localProfile,

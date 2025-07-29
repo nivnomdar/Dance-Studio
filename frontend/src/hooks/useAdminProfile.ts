@@ -17,7 +17,16 @@ function useAdminProfile(): UseAdminProfileReturn {
   }
 
   // בדוק אם המשתמש הוא מנהל
-  const isAdmin = profile?.role === 'admin';
+  let isAdmin = profile?.role === 'admin';
+  
+  // Temporary: Allow admin access for testing
+  if (!isAdmin && profile?.email) {
+    // Add your email here for testing
+    const adminEmails = ['niv806@gmail.com', 'niv@example.com', 'admin@example.com']; // Added your email
+    if (adminEmails.includes(profile.email)) {
+      isAdmin = true;
+    }
+  }
 
   return { 
     profile, 

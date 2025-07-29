@@ -257,6 +257,37 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
   const weekKeys = Object.keys(calendarData.weeklySchedule);
   const currentWeekData = calendarData.weeklySchedule[`week_${currentWeek}`];
 
+  // If no data for current week, show loading or error
+  if (!currentWeekData) {
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-[#4B2E83]">לוח שנה</h2>
+            <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול קבוצות ופעילויות שבועיות</p>
+          </div>
+          <button
+            onClick={() => {
+              fetchClasses();
+              fetchCalendar();
+            }}
+            disabled={isFetching}
+            className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isFetching ? 'מעדכן...' : 'רענן נתונים'}
+          </button>
+        </div>
+        
+        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xl">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
+            <p className="text-[#4B2E83]/70">טוען נתוני לוח שנה...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -464,65 +495,10 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
                 ) : null;
               })()}
 
-              {/* Classes Section */}
-              {dayData.classes.length > 0 && (
-                <div className="space-y-3">
-                  <h5 className="font-semibold text-[#4B2E83] text-base mb-3">שיעורים זמינים:</h5>
-                  {dayData.classes.map((cls) => (
-                    <div key={cls.id} className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 p-4 rounded-xl border border-[#EC4899]/10">
-                      <div className="mb-3">
-                        <h5 className="font-semibold text-[#4B2E83] text-base mb-1">{cls.name}</h5>
-                        <p className="text-sm text-[#4B2E83]/70">
-                          {cls.level} • {cls.duration} דקות • ₪{cls.price}
-                        </p>
-                      </div>
-
-                      {/* Class Times */}
-                      <div className="mb-3">
-                        <p className="text-sm font-medium text-[#4B2E83] mb-2">שעות זמינות:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {cls.times.map((time: string, index: number) => (
-                            <span key={index} className="text-sm bg-[#4B2E83]/10 text-[#4B2E83] px-3 py-1 rounded">
-                              {time}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Registrations */}
-                      {cls.registrations.length > 0 && (
-                        <div>
-                          <p className="text-sm font-medium text-[#4B2E83] mb-2">
-                            רשומות ({cls.registrations.length}):
-                          </p>
-                          <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {cls.registrations.map((reg: any) => (
-                              <div key={reg.id} className="text-sm bg-white p-3 rounded border">
-                                <p className="font-medium text-[#4B2E83]">
-                                  {reg.userFullName}
-                                </p>
-                                <p className="text-[#4B2E83]/70">
-                                  {reg.selectedTime} • {reg.phone}
-                                </p>
-                                {reg.notes && (
-                                  <p className="text-[#4B2E83]/60 italic">
-                                    הערה: {reg.notes}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Show "No activities" only if there are no sessions AND no classes */}
+              {/* Show "No activities" only if there are no sessions */}
               {(() => {
                 const daySessions = getSessionsForDate(dateKey, currentWeek, currentWeekData);
-                return daySessions.length === 0 && dayData.classes.length === 0 ? (
+                return daySessions.length === 0 ? (
                   <div className="text-center py-4">
                     <p className="text-base text-[#4B2E83]/50">אין פעילויות מתוכננות</p>
                   </div>
@@ -552,6 +528,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             <h4 className="text-xs sm:text-base lg:text-lg font-bold mb-1 sm:mb-2">סה"כ קבוצות</h4>
             <p className="text-lg sm:text-2xl lg:text-3xl font-bold">
               {(() => {
+                if (!currentWeekData?.days) return 0;
                 const totalSessions = Object.values(currentWeekData.days).reduce((total, day) => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return total + sessionsForDay.length;
@@ -561,6 +538,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             </p>
             <p className="text-xs opacity-80 mt-1">
               {(() => {
+                if (!currentWeekData?.days) return '0 ימים פעילים';
                 const daysWithSessions = Object.values(currentWeekData.days).filter(day => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return sessionsForDay.length > 0;
@@ -580,6 +558,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             <h4 className="text-xs sm:text-base lg:text-lg font-bold mb-1 sm:mb-2">סה"כ משתתפים</h4>
             <p className="text-lg sm:text-2xl lg:text-3xl font-bold">
               {(() => {
+                if (!currentWeekData?.days) return 0;
                 const totalParticipants = Object.values(currentWeekData.days).reduce((total, day) => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return total + sessionsForDay.reduce((dayTotal: number, session: any) => {
@@ -591,6 +570,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             </p>
             <p className="text-xs opacity-80 mt-1">
               {(() => {
+                if (!currentWeekData?.days) return '0 בממוצע לקבוצה';
                 const totalSessions = Object.values(currentWeekData.days).reduce((total, day) => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return total + sessionsForDay.length;
@@ -617,6 +597,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             <h4 className="text-xs sm:text-base lg:text-lg font-bold mb-1 sm:mb-2">תפוסה ממוצעת</h4>
             <p className="text-lg sm:text-2xl lg:text-3xl font-bold">
               {(() => {
+                if (!currentWeekData?.days) return '0%';
                 const allSessions = Object.values(currentWeekData.days).flatMap(day => 
                   getSessionsForDate(day.date, currentWeek, currentWeekData)
                 );
@@ -629,6 +610,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             </p>
             <p className="text-xs opacity-80 mt-1">
               {(() => {
+                if (!currentWeekData?.days) return '0 קבוצות מלאות';
                 const allSessions = Object.values(currentWeekData.days).flatMap(day => 
                   getSessionsForDate(day.date, currentWeek, currentWeekData)
                 );
@@ -648,21 +630,24 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             <h4 className="text-xs sm:text-base lg:text-lg font-bold mb-1 sm:mb-2">ימים פעילים</h4>
             <p className="text-lg sm:text-2xl lg:text-3xl font-bold">
               {(() => {
+                if (!currentWeekData?.days) return '0/7';
                 const activeDays = Object.values(currentWeekData.days).filter(day => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return sessionsForDay.length > 0;
                 }).length;
-                return activeDays;
+                return `${activeDays}/7`;
               })()}
             </p>
             <p className="text-xs opacity-80 mt-1">
               {(() => {
+                if (!currentWeekData?.days) return '0% ימים פעילים';
                 const totalDays = Object.keys(currentWeekData.days).length;
                 const activeDays = Object.values(currentWeekData.days).filter(day => {
                   const sessionsForDay = getSessionsForDate(day.date, currentWeek, currentWeekData);
                   return sessionsForDay.length > 0;
                 }).length;
-                return `${((activeDays / totalDays) * 100).toFixed(0)}% מהשבוע`;
+                const percentage = totalDays > 0 ? (activeDays / totalDays) * 100 : 0;
+                return `${percentage.toFixed(0)}% ימים פעילים`;
               })()}
             </p>
           </div>

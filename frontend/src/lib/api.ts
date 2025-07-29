@@ -323,42 +323,52 @@ export const apiService = {
   admin: {
     async getOverview(): Promise<any> {
       const headers = await getAuthHeaders();
-      const timestamp = Date.now();
       return fetchWithRetryAndQueue<any>(() => 
-        fetch(`${API_BASE_URL}/classes/admin/overview?_t=${timestamp}`, { headers })
-      );
+        fetch(`${API_BASE_URL}/admin/overview`, { headers })
+      ).catch(error => {
+        console.error('Admin API getOverview error:', error);
+        return { totalClasses: 0, totalRegistrations: 0, totalSessions: 0 };
+      });
     },
 
     async getClasses(): Promise<Class[]> {
       const headers = await getAuthHeaders();
-      const timestamp = Date.now();
       return fetchWithRetryAndQueue<Class[]>(() => 
-        fetch(`${API_BASE_URL}/classes/admin?_t=${timestamp}`, { headers })
-      );
+        fetch(`${API_BASE_URL}/admin/classes`, { headers })
+      ).catch(error => {
+        console.error('Admin API getClasses error:', error);
+        return [];
+      });
     },
 
     async getRegistrations(): Promise<RegistrationWithDetails[]> {
       const headers = await getAuthHeaders();
-      const timestamp = Date.now();
       return fetchWithRetryAndQueue<RegistrationWithDetails[]>(() => 
-        fetch(`${API_BASE_URL}/registrations?_t=${timestamp}`, { headers })
-      );
+        fetch(`${API_BASE_URL}/admin/registrations`, { headers })
+      ).catch(error => {
+        console.error('Admin API getRegistrations error:', error);
+        return [];
+      });
     },
 
     async getSessions(): Promise<any[]> {
       const headers = await getAuthHeaders();
-      const timestamp = Date.now();
       return fetchWithRetryAndQueue<any[]>(() => 
-        fetch(`${API_BASE_URL}/sessions/admin?_t=${timestamp}`, { headers })
-      );
+        fetch(`${API_BASE_URL}/admin/sessions`, { headers })
+      ).catch(error => {
+        console.error('Admin API getSessions error:', error);
+        return [];
+      });
     },
 
     async getCalendar(): Promise<any> {
       const headers = await getAuthHeaders();
-      const timestamp = Date.now();
       return fetchWithRetryAndQueue<any>(() => 
-        fetch(`${API_BASE_URL}/classes/admin/calendar?_t=${timestamp}`, { headers })
-      );
+        fetch(`${API_BASE_URL}/admin/calendar`, { headers })
+      ).catch(error => {
+        console.error('Admin API getCalendar error:', error);
+        return {};
+      });
     }
   },
 
