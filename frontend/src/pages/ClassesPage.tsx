@@ -222,24 +222,30 @@ function ClassesPage() {
         
         if (profileDataArray.length === 0) {
           // Create new profile if doesn't exist
+          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+          const nameParts = fullName.split(' ').filter(Boolean);
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+
           const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session?.access_token}`,
+              'Authorization': `Bearer ${session.access_token}`,
               'Content-Type': 'application/json',
-              'Prefer': 'return=representation'
+              'Prefer': 'resolution=merge-duplicates'
             },
             body: JSON.stringify({
               id: user.id,
               email: user.email,
-              first_name: '',
-              last_name: '',
+              first_name: firstName,
+              last_name: lastName,
               role: 'user',
+              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
               created_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: false,
-              marketing_consent: false,
+              terms_accepted: true,
+              marketing_consent: true,
               last_login_at: new Date().toISOString(),
               language: 'he',
               has_used_trial_class: false
@@ -254,14 +260,14 @@ function ClassesPage() {
           const newProfile: UserProfile = {
             id: user.id,
             email: user.email || '',
-            first_name: '',
-            last_name: '',
+            first_name: firstName,
+            last_name: lastName,
             role: 'user',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             is_active: true,
-            terms_accepted: false,
-            marketing_consent: false,
+            terms_accepted: true,
+            marketing_consent: true,
             last_login_at: new Date().toISOString(),
             language: 'he',
             has_used_trial_class: false
@@ -282,13 +288,6 @@ function ClassesPage() {
     
     loadProfileWithFetch();
   }, [user?.id, authLoading, contextProfile, session, isLoadingProfile]);
-
-  // Update local profile when context profile becomes available
-  useEffect(() => {
-    if (contextProfile && !localProfile) {
-      setLocalProfile(contextProfile);
-    }
-  }, [contextProfile, localProfile]);
 
   // Helper functions
   const getClassRoute = (slug: string) => `/class/${slug}`;

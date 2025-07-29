@@ -26,7 +26,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Utility functions are now imported from authUtils
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // console.log('AuthProvider render at:', new Date().toISOString(), 'render count:', Math.random()); // Debug log
   
   const [user, setUser] = useState<SafeUser | null>(null);
   const [session, setSession] = useState<SafeSession | null>(null);
@@ -46,8 +45,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = Boolean(user && session);
   const isAdmin = profile?.role === 'admin';
   
-  // console.log('Computed properties at:', new Date().toISOString(), { isAuthenticated, isAdmin, user: user?.id, session: !!session, profile: profile?.id });
-
   // Debug: Track state changes
   useEffect(() => {
     // console.log('Auth state changed at:', new Date().toISOString(), { 
@@ -60,55 +57,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Safe profile creation function
   const createProfileForUser = useCallback(async (safeUser: SafeUser): Promise<UserProfile | null> => {
-    // console.log('createProfileForUser function called at:', new Date().toISOString(), 'for user:', safeUser?.id); // Debug log
-    if (!validateUserForOperation(safeUser, 'create profile')) {
+    if (!safeUser?.id) {
+      console.error('Cannot create profile: user ID is missing');
       return null;
     }
 
     try {
-      const fullName = getSafeFullName(safeUser);
-      const nameParts = fullName.split(' ').filter(Boolean);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      const email = getSafeEmail(safeUser);
-      const avatarUrl = getSafeAvatarUrl(safeUser);
-
-      if (!email) {
-        console.error('Cannot create profile: user email is missing');
-        return null;
+      // Check if we're already creating a profile to prevent race condition
+      const creatingKey = `creating_profile_${safeUser.id}`;
+      if (sessionStorage.getItem(creatingKey)) {
+        // Another process is creating the profile, wait a bit and retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return await createProfileForUser(safeUser);
       }
+
+      // Set flag to prevent other processes from creating profile
+      sessionStorage.setItem(creatingKey, 'true');
+
+      const avatarUrl = safeUser.user_metadata?.avatar_url || '';
+      const profileData = {
+        id: safeUser.id,
+        email: safeUser.email || '',
+        first_name: safeUser.user_metadata?.full_name?.split(' ')[0] || '',
+        last_name: safeUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        role: 'user',
+        avatar_url: avatarUrl,
+        created_at: new Date().toISOString(),
+        is_active: true,
+        terms_accepted: true,
+        marketing_consent: true,
+        last_login_at: new Date().toISOString(),
+        language: 'he',
+        has_used_trial_class: false
+      };
 
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: safeUser.id,
-            email,
-            first_name: firstName,
-            last_name: lastName,
-            role: 'user',
-            avatar_url: avatarUrl,
-            created_at: new Date().toISOString(),
-            is_active: true,
-            terms_accepted: false,
-            marketing_consent: false,
-            last_login_at: new Date().toISOString(),
-            language: 'he',
-            has_used_trial_class: false
-          }
-        ])
+        .upsert([profileData], { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
         .select()
-        .single();
+        .maybeSingle();
 
       if (createError) {
         handleAuthError(createError, 'create profile');
         return null;
       }
 
+      // Cache the new profile immediately
+      if (newProfile) {
+        const cacheKey = `profile_${safeUser.id}`;
+        const profileWithCache = { ...newProfile, _cacheTime: Date.now() };
+        sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+      }
+
       return newProfile;
     } catch (error) {
       handleAuthError(error, 'createProfileForUser');
       return null;
+    } finally {
+      // Always remove the flag
+      const creatingKey = `creating_profile_${safeUser.id}`;
+      sessionStorage.removeItem(creatingKey);
     }
   }, []);
 
@@ -117,32 +128,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Safe profile loading function
   const loadProfileSafely = useCallback(async (userId: string): Promise<UserProfile | null> => {
-    // console.log('loadProfileSafely function called at:', new Date().toISOString(), 'for user:', userId); // Debug log
     if (!userId) {
       console.error('Cannot load profile: user ID is missing');
       return null;
     }
 
     try {
+      // Check cache first
+      const cacheKey = `profile_${userId}`;
+      const cachedProfile = sessionStorage.getItem(cacheKey);
+      if (cachedProfile) {
+        try {
+          const parsedProfile = JSON.parse(cachedProfile);
+          const cacheTime = parsedProfile._cacheTime || 0;
+          const now = Date.now();
+          // Cache for 5 minutes
+          if (now - cacheTime < 5 * 60 * 1000) {
+            return parsedProfile;
+          }
+        } catch (e) {
+          // Invalid cache, continue to fetch
+        }
+      }
+
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle empty results
 
       if (error) {
         console.error('Error loading profile:', error);
-        
-        // If profile doesn't exist, create it
-        if (error.code === 'PGRST116') {
-          // Get current user from state instead of dependency
-          const currentUser = user;
-          if (currentUser && createProfileForUserRef.current) {
-            return await createProfileForUserRef.current(currentUser);
+        return null;
+      }
+
+      // If no profile found, create one
+      if (!profileData) {
+        const currentUser = user;
+        if (currentUser && createProfileForUserRef.current) {
+          const newProfile = await createProfileForUserRef.current(currentUser);
+          if (newProfile) {
+            // Cache the new profile
+            const profileWithCache = { ...newProfile, _cacheTime: Date.now() };
+            sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
           }
+          return newProfile;
         }
         return null;
       }
+
+      // Cache the profile
+      const profileWithCache = { ...profileData, _cacheTime: Date.now() };
+      sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
 
       return profileData;
     } catch (error) {
@@ -156,7 +193,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Safe profile update function
   const updateProfileLoginTime = useCallback(async (userId: string): Promise<void> => {
-    // console.log('updateProfileLoginTime function called at:', new Date().toISOString(), 'for user:', userId); // Debug log
     if (!userId) return;
 
     try {
@@ -186,16 +222,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Handle profile operations with rate limiting
   const handleProfileOperations = useCallback(async (safeUser: SafeUser, event: AuthEvent) => {
-    // console.log('handleProfileOperations function called at:', new Date().toISOString(), 'for user:', safeUser?.id, 'event:', event); // Debug log
     if (!safeUser?.id) {
       console.error('Cannot handle profile operations: user ID is missing');
       return;
     }
 
+    // Create a temporary profile immediately for better UX
+    const tempProfile: UserProfile = {
+      id: safeUser.id,
+      email: safeUser.email || '',
+      first_name: safeUser.user_metadata?.full_name?.split(' ')[0] || '',
+      last_name: safeUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+      role: 'user',
+      avatar_url: safeUser.user_metadata?.avatar_url || safeUser.user_metadata?.picture || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_active: true,
+      terms_accepted: true,
+      marketing_consent: true,
+      last_login_at: new Date().toISOString(),
+      language: 'he',
+      has_used_trial_class: false,
+      phone_number: '',
+      address: '',
+      city: '',
+      postal_code: ''
+    };
+
+    // Set temporary profile immediately
+    setProfile(tempProfile);
+
     // Rate limiting check
     const now = Date.now();
     if (now - lastProfileUpdateRef.current < 15000) {
-      // console.log('Skipping profile update - too recent at:', new Date().toISOString());
       return;
     }
     lastProfileUpdateRef.current = now;
@@ -219,29 +278,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Load or create profile
-        const existingProfile = await loadProfileSafelyRef.current?.(safeUser.id);
-
-        if (!existingProfile) {
-          // Create new profile
-          const newProfile = await createProfileForUserRef.current?.(safeUser);
-          if (newProfile) {
-            setProfile(newProfile);
-          }
-        } else {
-          // Update existing profile login time
-          await updateProfileLoginTimeRef.current?.(safeUser.id);
-          setProfile(existingProfile);
+        // Load or create profile in background
+        const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+        if (profileData) {
+          setProfile(profileData);
+          // Cache the profile
+          const cacheKey = `profile_${safeUser.id}`;
+          const profileWithCache = { ...profileData, _cacheTime: Date.now() };
+          sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
         }
+
+        // Update last login time
+        await updateProfileLoginTimeRef.current?.(safeUser.id);
       } catch (error) {
-        console.error('Error handling profile operations:', error);
+        console.error('Error in handleProfileOperations:', error);
       }
-    }, 10000);
-  }, []); // Remove dependencies to prevent infinite re-renders
+    }, 1000); // Reduced delay to 1 second
+  }, []);
 
   // Initialize auth state
   useEffect(() => {
-    // console.log('Initializing auth at:', new Date().toISOString()); // Debug log
     const initializeAuth = async () => {
       try {
         setLoading(true);
@@ -269,7 +325,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           setAuthState(AuthState.UNAUTHENTICATED);
         }
-        // console.log('Auth initialization completed at:', new Date().toISOString()); // Debug log
       } catch (error) {
         console.error('Error initializing auth:', error);
         setAuthState(AuthState.ERROR);
@@ -289,21 +344,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthEvent, session: Session | null) => {
-        // console.log('Auth state change event at:', new Date().toISOString(), event, session?.user?.email);
         
         const safeSession = createSafeSession(session);
         const safeUser = safeSession?.user || null;
 
-        setSession(safeSession);
-        setUser(safeUser);
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          setSession(safeSession);
+          setUser(safeUser);
+        }, 0);
         
-        // console.log('Setting auth state at:', new Date().toISOString(), { event, hasUser: !!safeUser, hasSession: !!safeSession });
-
         switch (event) {
           case 'SIGNED_OUT':
-            setAuthState(AuthState.UNAUTHENTICATED);
-            setProfile(null);
-            setProfileLoading(false);
+            setTimeout(() => {
+              setAuthState(AuthState.UNAUTHENTICATED);
+              setProfile(null);
+              setProfileLoading(false);
+            }, 0);
             // Clear timeouts
             if (profileUpdateTimeoutRef.current) {
               clearTimeout(profileUpdateTimeoutRef.current);
@@ -313,16 +370,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           case 'SIGNED_IN':
           case 'INITIAL_SESSION':
             if (safeUser) {
-              setAuthState(AuthState.AUTHENTICATED);
-              setProfileLoading(true);
+              setTimeout(() => {
+                setAuthState(AuthState.AUTHENTICATED);
+                setProfileLoading(true);
+              }, 0);
               await handleProfileOperations(safeUser, event);
-              setProfileLoading(false);
+              setTimeout(() => {
+                setProfileLoading(false);
+              }, 0);
             }
             break;
 
           case 'USER_UPDATED':
             if (safeUser) {
-              setAuthState(AuthState.AUTHENTICATED);
+              setTimeout(() => {
+                setAuthState(AuthState.AUTHENTICATED);
+              }, 0);
             }
             break;
 
@@ -331,8 +394,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             break;
         }
 
-        setLoading(false);
-        // console.log('Auth state change handler completed at:', new Date().toISOString()); // Debug log
+        setTimeout(() => {
+          setLoading(false);
+        }, 0);
       }
     );
 
@@ -347,13 +411,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Safe sign out function
   const signOut = useCallback(async () => {
-    // console.log('signOut function called at:', new Date().toISOString()); // Debug log
     try {
-      // Immediate state cleanup
-      setProfile(null);
-      setUser(null);
-      setSession(null);
-      setAuthState(AuthState.UNAUTHENTICATED);
+      // Immediate state cleanup with setTimeout to avoid setState during render
+      setTimeout(() => {
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+        setAuthState(AuthState.UNAUTHENTICATED);
+      }, 0);
       
       // Clear timeouts
       if (profileUpdateTimeoutRef.current) {
@@ -382,7 +447,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Safe profile loading function
   const loadProfile = useCallback(async () => {
-    // console.log('loadProfile function called at:', new Date().toISOString()); // Debug log
     if (!user?.id) {
       console.error('Cannot load profile: no authenticated user');
       return;
@@ -401,17 +465,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]); // Only depend on user, not loadProfileSafely
 
   const value: AuthContextType = useMemo(() => {
-    // console.log('Creating new auth context value at:', new Date().toISOString(), 'with dependencies:', {
-    //   user: user?.id,
-    //   session: !!session,
-    //   loading,
-    //   profile: profile?.id,
-    //   profileLoading,
-    //   isAuthenticated,
-    //   isAdmin,
-    //   loadProfileFunction: !!loadProfile,
-    //   signOutFunction: !!signOut
-    // });
     return {
       user,
       session,
@@ -443,7 +496,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  // console.log('useAuth hook called at:', new Date().toISOString()); // Debug log
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

@@ -24,6 +24,9 @@ function Navbar() {
   // שימוש בפרופיל מהטעינה המקומית קודם, אחרת מה-AuthContext
   const currentProfile = localProfile || profile;
 
+  // אם יש משתמש, תמיד יש פרופיל (זמני או אמיתי)
+  const hasProfile = user && (currentProfile || user);
+
   // לוגים לדיבוג - הוסרו כי הכל עובד
 
   // האזנה לשינויים בסטטוס ההתחברות רק לפופאפ
@@ -129,15 +132,8 @@ function Navbar() {
                       >
                         פרופיל משתמש
                       </Link>
-                      {/* הצג הודעת טעינה אם הפרופיל לא נטען */}
-                      {user && !currentProfile && (
-                        <div className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6]">טוען פרופיל...</div>
-                      )}
                       {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
-                      {(() => {
-                        
-                        return currentProfile?.role === 'admin';
-                      })() && (
+                      {currentProfile?.role === 'admin' && (
                         <Link
                           to="/admin"
                           onClick={() => setIsProfileMenuOpen(false)}
@@ -226,15 +222,8 @@ function Navbar() {
                       >
                         פרופיל משתמש
                       </Link>
-                      {/* הצג הודעת טעינה אם הפרופיל לא נטען */}
-                      {user && !currentProfile && (
-                        <div className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6]">טוען פרופיל...</div>
-                      )}
                       {/* הצג כפתור דשבורד מנהלים רק למנהלים */}
-                      {(() => {
-                        
-                        return currentProfile?.role === 'admin';
-                      })() && (
+                      {currentProfile?.role === 'admin' && (
                         <Link
                           to="/admin"
                           onClick={() => setIsProfileMenuOpen(false)}

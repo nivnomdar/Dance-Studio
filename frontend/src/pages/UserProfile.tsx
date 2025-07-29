@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,214 +33,258 @@ function UserProfile() {
   const [isFetchingCount, setIsFetchingCount] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // איפוס מצב הטעינה כאשר המשתמש משתנה
-    setIsLoadingProfile(true);
-    setProfileError(null);
-    
-    // איפוס formData כאשר המשתמש משתנה
-    setFormData({
-      firstName: '',
-      lastName: '',
-      phone: '',
-      email: '',
-      address: '',
-      city: '',
-      postalCode: '',
-    });
-    
-    // רק אם יש משתמש ולא בטעינה
-    if (!user || authLoading) {
-      if (!user && !authLoading) {
-        setIsLoadingProfile(false);
+  // Move profile loading logic to useCallback to avoid setState during render
+  const loadProfileData = useCallback(async () => {
+    if (!user || !session?.access_token) return;
+
+    try {
+      // Check if we're already creating a profile to prevent race condition
+      const creatingKey = `creating_profile_${user.id}`;
+      if (sessionStorage.getItem(creatingKey)) {
+        // Another process is creating the profile, wait a bit and retry
+        setTimeout(() => {
+          loadProfileData();
+        }, 500);
+        return;
       }
-      return;
-    }
-    
-    // אם יש פרופיל מה-context, נשתמש בו
-    if (contextProfile) {
-      const profileData = {
-        firstName: contextProfile.first_name || '',
-        lastName: contextProfile.last_name || '',
-        phone: contextProfile.phone_number || '',
-        email: contextProfile.email || user.email || '',
-        address: contextProfile.address || '',
-        city: contextProfile.city || '',
-        postalCode: contextProfile.postal_code || '',
-      };
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      setFormData(profileData);
-      setLocalProfile(contextProfile);
-      setIsLoadingProfile(false);
-    } else {
-      // טעינת הפרופיל ישירות עם fetch
-      const loadProfileWithFetch = async () => {
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      const profileDataArray = await response.json();
+      
+      if (profileDataArray.length === 0) {
+        // Profile doesn't exist, create a new one
+        const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        const nameParts = fullName.split(' ').filter(Boolean);
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Set flag to prevent other processes from creating profile
+        sessionStorage.setItem(creatingKey, 'true');
+
+        // First, try to create the profile using upsert
         try {
-          // קריאה עם fetch
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+          const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
+            method: 'POST',
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session?.access_token}`,
-              'Content-Type': 'application/json'
-            }
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              id: user.id,
+              email: user.email,
+              first_name: firstName,
+              last_name: lastName,
+              role: 'user',
+              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+              created_at: new Date().toISOString(),
+              is_active: true,
+              terms_accepted: true,
+              marketing_consent: true,
+              last_login_at: new Date().toISOString(),
+              language: 'he',
+              has_used_trial_class: false
+            })
           });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-          }
-          
-          const profileDataArray = await response.json();
-          
-          if (profileDataArray.length === 0) {
-            // פרופיל לא קיים, נצור אחד חדש
-            const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
-              method: 'POST',
-              headers: {
-                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${session?.access_token}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-              },
-              body: JSON.stringify({
-                id: user.id,
-                email: user.email,
-                first_name: '',
-                last_name: '',
-                role: 'user',
-                created_at: new Date().toISOString(),
-                is_active: true,
-                terms_accepted: false,
-                marketing_consent: false,
-                last_login_at: new Date().toISOString(),
-                language: 'he',
-                // הוספת השדה החדש
-                has_used_trial_class: false
-              })
-            });
-            
-            if (!createResponse.ok) {
-              const createErrorText = await createResponse.text();
-              throw new Error(`Create failed: ${createErrorText}`);
-            }
-            
+
+          if (createResponse.ok) {
             const newProfile: UserProfile = {
               id: user.id,
               email: user.email || '',
-              first_name: '',
-              last_name: '',
+              first_name: firstName,
+              last_name: lastName,
               role: 'user',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: false,
-              marketing_consent: false,
+              terms_accepted: true,
+              marketing_consent: true,
               last_login_at: new Date().toISOString(),
               language: 'he',
               has_used_trial_class: false
             };
             
-            setLocalProfile(newProfile);
-            setFormData({
-              firstName: '',
-              lastName: '',
-              phone: '',
-              email: user.email || '',
-              address: '',
-              city: '',
-              postalCode: '',
-            });
+            setTimeout(() => {
+              setLocalProfile(newProfile);
+              setFormData({
+                firstName: newProfile.first_name || '',
+                lastName: newProfile.last_name || '',
+                phone: newProfile.phone_number || '',
+                email: newProfile.email || '',
+                address: newProfile.address || '',
+                city: newProfile.city || '',
+                postalCode: newProfile.postal_code || '',
+              });
+              setIsLoadingProfile(false);
+            }, 0);
           } else {
-            const profileData = profileDataArray[0];
-            const formDataFromProfile = {
-              firstName: profileData.first_name || '',
-              lastName: profileData.last_name || '',
-              phone: profileData.phone_number || '',
-              email: profileData.email || user.email || '',
-              address: profileData.address || '',
-              city: profileData.city || '',
-              postalCode: profileData.postal_code || '',
-            };
-            
-            setFormData(formDataFromProfile);
-            setLocalProfile(profileData);
+            throw new Error(`Failed to create profile: ${createResponse.status}`);
           }
-          
-          setIsLoadingProfile(false);
         } catch (error) {
-          console.error('Error loading profile:', error);
-          setProfileError(`שגיאה בטעינת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
-          setIsLoadingProfile(false);
+          // If upsert fails, try to load existing profile
+          sessionStorage.removeItem(creatingKey);
+          
+          // Final attempt to load existing profile
+          try {
+            const finalResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+              headers: {
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (finalResponse.ok) {
+              const profileDataArray = await finalResponse.json();
+              if (profileDataArray.length > 0) {
+                const profileData = profileDataArray[0];
+                setTimeout(() => {
+                  setLocalProfile(profileData);
+                  setFormData({
+                    firstName: profileData.first_name || '',
+                    lastName: profileData.last_name || '',
+                    phone: profileData.phone_number || '',
+                    email: profileData.email || user.email || '',
+                    address: profileData.address || '',
+                    city: profileData.city || '',
+                    postalCode: profileData.postal_code || '',
+                  });
+                  setIsLoadingProfile(false);
+                }, 0);
+              } else {
+                throw new Error('Profile not found in final attempt');
+              }
+            } else {
+              throw new Error(`Final attempt failed: ${finalResponse.status}`);
+            }
+          } catch (finalError) {
+            console.error('Final error loading profile:', finalError);
+            setTimeout(() => {
+              setProfileError(`שגיאה בטעינת הפרופיל: ${finalError instanceof Error ? finalError.message : 'שגיאה לא ידועה'}`);
+              setLocalProfile(null);
+              setIsLoadingProfile(false);
+            }, 0);
+          }
+        } finally {
+          // Always remove the flag
+          sessionStorage.removeItem(creatingKey);
         }
-      };
-      
-      loadProfileWithFetch();
+      } else {
+        const profileData = profileDataArray[0];
+        setTimeout(() => {
+          setLocalProfile(profileData);
+          setFormData({
+            firstName: profileData.first_name || '',
+            lastName: profileData.last_name || '',
+            phone: profileData.phone_number || '',
+            email: profileData.email || user.email || '',
+            address: profileData.address || '',
+            city: profileData.city || '',
+            postalCode: profileData.postal_code || '',
+          });
+          setIsLoadingProfile(false);
+        }, 0);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setTimeout(() => {
+        setProfileError(`שגיאה בטעינת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+        setLocalProfile(null);
+        setIsLoadingProfile(false);
+      }, 0);
     }
-  }, [user?.id, authLoading, contextProfile]);
+  }, [user, session, contextProfile]);
 
-  // useEffect נוסף לטיפול בפרופיל שנטען מאוחר יותר
   useEffect(() => {
-    if (contextProfile && isLoadingProfile) {
-      const profileData = {
-        firstName: contextProfile.first_name || '',
-        lastName: contextProfile.last_name || '',
-        phone: contextProfile.phone_number || '',
-        email: contextProfile.email || user?.email || '',
-        address: contextProfile.address || '',
-        city: contextProfile.city || '',
-        postalCode: contextProfile.postal_code || '',
-      };
-      
-      setFormData(profileData);
-      setLocalProfile(contextProfile);
+    if (!user || authLoading) {
+      if (!user && !authLoading) {
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          setIsLoadingProfile(false);
+        }, 0);
+      }
+      return;
+    }
+    
+    // Create temporary profile immediately for better UX
+    const tempProfile: UserProfile = {
+      id: user.id,
+      email: user.email || '',
+      first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
+      last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+      role: 'user',
+      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_active: true,
+      terms_accepted: true,
+      marketing_consent: true,
+      last_login_at: new Date().toISOString(),
+      language: 'he',
+      has_used_trial_class: false,
+      phone_number: '',
+      address: '',
+      city: '',
+      postal_code: ''
+    };
+
+    // Set temporary profile immediately
+    setTimeout(() => {
+      setLocalProfile(tempProfile);
+      setFormData({
+        firstName: tempProfile.first_name || '',
+        lastName: tempProfile.last_name || '',
+        phone: tempProfile.phone_number || '',
+        email: tempProfile.email || '',
+        address: tempProfile.address || '',
+        city: tempProfile.city || '',
+        postalCode: tempProfile.postal_code || '',
+      });
       setIsLoadingProfile(false);
-    }
-  }, [contextProfile, isLoadingProfile, user]);
+    }, 0);
+    
+    // Load real profile in background
+    loadProfileData();
+  }, [user?.id, authLoading, loadProfileData]);
 
-  // useEffect לטעינת ספירת השיעורים ויתרת מנויים
+  // Handle navigation when no user
   useEffect(() => {
-    if (user && session && !authLoading) {
-      fetchClassesCount();
-      fetchSubscriptionCredits();
+    if (!user && !authLoading) {
+      navigate('/');
     }
-  }, [user?.id, session, authLoading]);
-
-  // Remove the redundant focus event listener that was causing additional API calls
-  // useEffect לעדכון הספירה כאשר הדף נטען מחדש
-  // useEffect(() => {
-  //   const handleFocus = () => {
-  //     if (user && session && !authLoading) {
-  //       fetchClassesCount();
-  //     }
-  //   };
-
-  //   window.addEventListener('focus', handleFocus);
-  //   return () => window.removeEventListener('focus', handleFocus);
-  // }, [user?.id, session, authLoading]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  }, [user, authLoading, navigate]);
 
   // פונקציה לטעינת יתרת subscription credits
-  const fetchSubscriptionCredits = async () => {
+  const fetchSubscriptionCredits = useCallback(async () => {
     if (!user || !session) return;
     
     try {
       const userCredits = await subscriptionCreditsService.getUserCredits(user.id);
       const totalCredits = userCredits.total_group_credits + userCredits.total_private_credits + userCredits.total_zoom_credits;
-      setSubscriptionCredits(totalCredits);
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        setSubscriptionCredits(totalCredits);
+      }, 0);
     } catch (error) {
       console.error('Error fetching subscription credits:', error);
     }
-  };
+  }, [user, session]);
 
   // פונקציה לספירת השיעורים של המשתמש עם debouncing ו-retry
-  const fetchClassesCount = async (retryCount = 0) => {
+  const fetchClassesCount = useCallback(async (retryCount = 0) => {
     if (!user || !session || isFetchingCount) return;
     
     // Add cache check to prevent unnecessary requests
@@ -253,12 +297,18 @@ function UserProfile() {
       const now = Date.now();
       const cacheAge = now - parseInt(cacheTime);
       if (cacheAge < 5 * 60 * 1000) { // 5 minutes
-        setClassesCount(parseInt(cachedData));
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          setClassesCount(parseInt(cachedData));
+        }, 0);
         return;
       }
     }
     
-    setIsFetchingCount(true);
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => {
+      setIsFetchingCount(true);
+    }, 0);
     
     // Add debouncing to prevent too many requests
     const timeoutId = setTimeout(async () => {
@@ -280,7 +330,10 @@ function UserProfile() {
         });
         
         const count = validRegistrations.length;
-        setClassesCount(count);
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          setClassesCount(count);
+        }, 0);
         
         // Cache the result
         sessionStorage.setItem(cacheKey, count.toString());
@@ -290,24 +343,54 @@ function UserProfile() {
         console.error('Error fetching classes count:', error);
         // Handle rate limiting gracefully
         if (error instanceof Error && error.message.includes('429')) {
-          if (retryCount < 2) {
-            const retryDelay = Math.pow(2, retryCount) * 2000;
-            console.log(`Rate limited, retrying in ${retryDelay/1000} seconds...`);
-            setTimeout(() => fetchClassesCount(retryCount + 1), retryDelay);
-            return;
+          // Retry after a delay
+          if (retryCount < 3) {
+            setTimeout(() => {
+              fetchClassesCount(retryCount + 1);
+            }, 1000 * (retryCount + 1));
           }
-          console.log('Rate limit exceeded, stopping retries');
         }
       } finally {
-        setIsFetchingCount(false);
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          setIsFetchingCount(false);
+        }, 0);
       }
-    }, 2000); // Increased debounce to 2 seconds
+    }, 100); // 100ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [user, session, isFetchingCount]);
 
-    // Cleanup function
-    return () => {
-      clearTimeout(timeoutId);
-      setIsFetchingCount(false);
-    };
+  // useEffect לטעינת ספירת השיעורים ויתרת מנויים
+  useEffect(() => {
+    if (user && session && !authLoading) {
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        fetchClassesCount();
+        fetchSubscriptionCredits();
+      }, 0);
+    }
+  }, [user?.id, session, authLoading, fetchClassesCount, fetchSubscriptionCredits]);
+
+  // Remove the redundant focus event listener that was causing additional API calls
+  // useEffect לעדכון הספירה כאשר הדף נטען מחדש
+  // useEffect(() => {
+  //   const handleFocus = () => {
+  //     if (user && session && !authLoading) {
+  //       fetchClassesCount();
+  //     }
+  //   };
+
+  //   window.addEventListener('focus', handleFocus);
+  //   return () => window.removeEventListener('focus', handleFocus);
+  // }, [user?.id, session, authLoading]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -371,7 +454,6 @@ function UserProfile() {
 
   // No user state - redirect to home
   if (!user && !authLoading) {
-    navigate('/');
     return null;
   }
 
