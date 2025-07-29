@@ -393,34 +393,35 @@ function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-24 pb-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-[#4B2E83] mb-4 font-agrandir-grand">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">
             הפרופיל שלי
           </h1>
-          <p className="text-lg text-[#4B2E83]/70 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-[#4B2E83]/70 max-w-2xl mx-auto px-2">
             כאן תוכלי לנהל את הפרטים האישיים שלך ולעדכן את המידע שלך במערכת
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Profile Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden border border-[#EC4899]/10">
               {/* Profile Header */}
-              <div className="bg-gradient-to-r from-[#EC4899] to-[#4B2E83] px-8 py-12 text-center relative">
+              <div className="bg-gradient-to-r from-[#EC4899] to-[#4B2E83] px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 text-center relative">
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="relative z-10">
                   {/* Profile Picture */}
-                  <div className="relative mx-auto mb-6 flex justify-center">
-                    <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white/30 shadow-2xl overflow-hidden">
+                  <div className="relative mx-auto mb-4 sm:mb-6 flex justify-center">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 sm:border-4 border-white/30 shadow-xl sm:shadow-2xl overflow-hidden">
                       {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
                         <img 
                           src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
                           alt="Profile" 
                           className="w-full h-full object-cover"
+                          loading="eager"
                           onError={(e) => {
                             // אם התמונה לא נטענת, נציג אייקון ברירת מחדל
                             e.currentTarget.style.display = 'none';
@@ -429,7 +430,7 @@ function UserProfile() {
                         />
                       ) : null}
                       <div className={`w-full h-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center ${(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? 'hidden' : ''}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-white" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
                       </div>
@@ -437,9 +438,9 @@ function UserProfile() {
                     {isEditing && (
                       <button
                         type="button"
-                        className="absolute bottom-2 right-2 bg-white p-3 rounded-full shadow-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110"
+                        className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -448,10 +449,10 @@ function UserProfile() {
                   </div>
                   
                   {/* User Info */}
-                  <h2 className="text-2xl font-bold text-white mb-2 font-agrandir-grand">
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 sm:mb-2 font-agrandir-grand">
                     {`${formData.firstName} ${formData.lastName}`.trim() || 'משתמשת חדשה'}
                   </h2>
-                  <p className="text-white/80 text-sm mb-1">
+                  <p className="text-white/80 text-xs sm:text-sm mb-1">
                     {formData.email}
                   </p>
                   <p className="text-white/60 text-xs">
@@ -461,24 +462,24 @@ function UserProfile() {
               </div>
 
               {/* Quick Stats */}
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="text-center p-4 bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 rounded-2xl relative group">
-                    <div className="text-2xl font-bold text-[#EC4899]">{classesCount}</div>
-                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">השיעורים שלי</div>
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl sm:rounded-2xl relative group">
+                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#EC4899]">{classesCount}</div>
+                    <div className="text-xs sm:text-sm text-[#4B2E83]/70 mb-2 h-6 sm:h-8 flex items-center justify-center">השיעורים שלי</div>
                     <button
                       onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
-                      className="w-full px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
                       הרשמה לשיעור
                     </button>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-2xl relative group">
-                    <div className="text-2xl font-bold text-[#4B2E83]">{subscriptionCredits}</div>
-                    <div className="text-sm text-[#4B2E83]/70 mb-2 h-8 flex items-center justify-center">שיעורים זמינים</div>
+                  <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl sm:rounded-2xl relative group">
+                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83]">{subscriptionCredits}</div>
+                    <div className="text-xs sm:text-sm text-[#4B2E83]/70 mb-2 h-6 sm:h-8 flex items-center justify-center">שיעורים זמינים</div>
                     <button
                       onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
-                      className="w-full px-3 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
+                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
                     >
                       הרשמה לשיעור
                     </button>
@@ -487,12 +488,12 @@ function UserProfile() {
 
                 {/* Admin Dashboard Link - רק למנהלים */}
                 {localProfile?.role === 'admin' && (
-                  <div className="mb-6">
+                  <div className="mb-4 sm:mb-6">
                     <Link
                       to="/admin"
-                      className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-sm rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-300 hover:scale-105 shadow-md flex items-center justify-center gap-2"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs sm:text-sm rounded-lg sm:rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-300 hover:scale-105 shadow-md flex items-center justify-center gap-2"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                       דשבורד מנהלים
@@ -501,26 +502,26 @@ function UserProfile() {
                 )}
 
                 {/* Additional Info */}
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {/* Trial Class Status */}
-                  <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                       <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">שיעור ניסיון</span>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${localProfile?.has_used_trial_class ? 'bg-red-400' : 'bg-green-400'}`}></div>
-                        <span className="text-sm text-[#4B2E83]/80">סטטוס שיעור ניסיון</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${localProfile?.has_used_trial_class ? 'bg-red-400' : 'bg-green-400'}`}></div>
+                        <span className="text-xs sm:text-sm text-[#4B2E83]/80">סטטוס שיעור ניסיון</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <span className={`text-xs font-semibold ${localProfile?.has_used_trial_class ? 'text-red-500' : 'text-green-500'}`}>
                           {localProfile?.has_used_trial_class ? 'נוצל' : 'זמין לך'}
                         </span>
                         {!localProfile?.has_used_trial_class && user && (
                           <Link
                             to="/class/trial-class"
-                            className="bg-green-500 text-white px-2 py-0.5 rounded-md hover:bg-green-600 transition-colors text-xs font-medium"
+                            className="bg-green-500 text-white px-1.5 sm:px-2 py-0.5 rounded-md hover:bg-green-600 transition-colors text-xs font-medium"
                           >
                             הרשמה
                           </Link>
@@ -530,11 +531,11 @@ function UserProfile() {
                   </div>
 
                   {/* Credits Status */}
-                  <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                       <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">יתרה</span>
                       <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${subscriptionCredits > 0 ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${subscriptionCredits > 0 ? 'bg-green-400' : 'bg-red-400'}`}></div>
                         <span className="text-xs text-[#4B2E83]/70">
                           {subscriptionCredits > 0 ? 'פעיל' : 'לא זמין'}
                         </span>
@@ -542,11 +543,11 @@ function UserProfile() {
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#4B2E83]/80">שיעורים זמינים</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-[#4B2E83]">{subscriptionCredits}</span>
+                      <span className="text-xs sm:text-sm text-[#4B2E83]/80">שיעורים זמינים</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className="text-sm sm:text-lg font-bold text-[#4B2E83]">{subscriptionCredits}</span>
                         {subscriptionCredits > 0 && (
-                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                          <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-400 rounded-full animate-pulse"></div>
                         )}
                       </div>
                     </div>

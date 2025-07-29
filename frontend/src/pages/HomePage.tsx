@@ -4,7 +4,7 @@ import AboutSection from '../components/home/AboutSection';
 
 function HomePage() {
   return (
-    <main className="flex flex-col">
+    <main className="flex flex-col min-h-screen">
       <HeroSection />
       <AboutSection />
       <PhotosCarousel />

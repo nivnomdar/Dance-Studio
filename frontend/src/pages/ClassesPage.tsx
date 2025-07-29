@@ -15,7 +15,7 @@ const CLASSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Class Card Skeleton Components
 const ClassCardImageSkeleton = () => (
-  <div className="relative h-40 lg:h-48 hidden lg:block">
+  <div className="relative h-32 sm:h-40 lg:h-48 hidden lg:block">
     <SkeletonBox className="w-full h-full rounded-t-2xl" />
     <div className="absolute bottom-3 right-3">
       <SkeletonBox className="w-16 h-6 rounded-full" />
@@ -24,17 +24,17 @@ const ClassCardImageSkeleton = () => (
 );
 
 const ClassCardContentSkeleton = () => (
-  <div className="p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-4">
+  <div className="p-3 sm:p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-3">
     {/* Title */}
-    <SkeletonBox className="h-6 mb-3" />
+    <SkeletonBox className="h-5 sm:h-6 mb-2 sm:mb-3" />
     
     {/* Description */}
-    <div className="h-16 lg:h-20 mb-4">
+    <div className="h-12 sm:h-16 lg:h-20 mb-3 sm:mb-4">
       <SkeletonText lines={3} />
     </div>
     
     {/* Details */}
-    <div className="space-y-2 mb-6 h-12 lg:h-14">
+    <div className="space-y-2 mb-4 sm:mb-6 h-10 sm:h-12 lg:h-14">
       <div className="flex items-center">
         <SkeletonIcon className="ml-2" />
         <SkeletonBox className="h-3 w-20" />
@@ -47,7 +47,7 @@ const ClassCardContentSkeleton = () => (
     
     {/* Button */}
     <div className="lg:mt-auto">
-      <SkeletonBox className="w-full h-8 rounded-xl" />
+      <SkeletonBox className="w-full h-7 sm:h-8 rounded-xl" />
     </div>
   </div>
 );
@@ -60,7 +60,7 @@ const ClassCardSkeleton = () => (
 );
 
 const ClassesSkeletonGrid = () => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
     {Array.from({ length: 8 }).map((_, index) => (
       <ClassCardSkeleton key={index} />
     ))}
@@ -346,16 +346,16 @@ function ClassesPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF9F6] py-16">
+      <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#EC4899] mb-4 sm:mb-6 font-agrandir-grand">
               שיעורים
             </h1>
-            <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
-            <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
-              בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
+            <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto mb-6 sm:mb-8"></div>
+            <p className="text-base sm:text-lg lg:text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed px-4">
+              בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
               הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
             </p>
           </div>
@@ -370,20 +370,20 @@ function ClassesPage() {
   // Error state with improved UI
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 shadow-lg">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-red-600 mb-4 font-agrandir-grand">
+      <div className="min-h-screen bg-[#FDF9F6] flex items-center justify-center px-4">
+        <div className="text-center max-w-md mx-auto">
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 sm:p-8 shadow-lg">
+            <div className="text-red-500 text-4xl sm:text-6xl mb-4">⚠️</div>
+            <h1 className="text-xl sm:text-2xl font-bold text-red-600 mb-4 font-agrandir-grand">
               שגיאה בטעינת השיעורים
             </h1>
-            <p className="text-red-700 mb-6 font-agrandir-regular">
+            <p className="text-red-700 mb-6 font-agrandir-regular text-sm sm:text-base">
               {error}
             </p>
             <div className="space-y-3">
               <button 
                 onClick={handleRetry} 
-                className="w-full bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium flex items-center justify-center gap-2"
+                className="w-full bg-red-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <FaRedo className="w-4 h-4" />
                 נסה שוב
@@ -391,7 +391,7 @@ function ClassesPage() {
               {retryCount > 0 && (
                 <button 
                   onClick={handleRefresh} 
-                  className="w-full bg-gray-500 text-white px-6 py-3 rounded-xl hover:bg-gray-600 transition-colors duration-200 font-medium"
+                  className="w-full bg-gray-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-gray-600 transition-colors duration-200 font-medium text-sm sm:text-base"
                 >
                   רענן נתונים
                 </button>
@@ -404,27 +404,27 @@ function ClassesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF9F6] py-16">
+    <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-[#EC4899] mb-6 font-agrandir-grand">
+        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#EC4899] mb-4 sm:mb-6 font-agrandir-grand">
             שיעורים
           </h1>
-          <div className="w-24 h-1 bg-[#EC4899] mx-auto mb-8"></div>
-          <p className="text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed">
-            בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br/>
+          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto mb-6 sm:mb-8"></div>
+          <p className="text-base sm:text-lg lg:text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed px-4">
+            בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
             הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
           </p>
         </div>
 
         {/* Classes Grid */}
         {classes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#2B2B2B] font-agrandir-regular text-lg">אין שיעורים זמינים כרגע</p>
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-[#2B2B2B] font-agrandir-regular text-base sm:text-lg">אין שיעורים זמינים כרגע</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {[...classes].reverse().map((classItem) => {
               const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
@@ -439,11 +439,16 @@ function ClassesPage() {
                   }`}
                 >
                   {/* Desktop Image */}
-                  <div className="relative h-40 lg:h-48 hidden lg:block">
+                  <div className="relative h-32 sm:h-40 lg:h-48 hidden lg:block">
                     <img
                       src={classItem.image_url || '/carousel/image1.png'}
                       alt={classItem.name}
                       className="w-full h-full object-cover rounded-t-2xl"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPuaJp+ihjOaTjeS9nDwvdGV4dD4KPC9zdmc+';
+                      }}
                     />
                     <div className="absolute bottom-3 right-3">
                       <span className={`${colorScheme.bgColor} text-white px-3 py-1 rounded-full text-xs font-medium`}>
@@ -453,28 +458,28 @@ function ClassesPage() {
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-4">
-                    <h3 className={`text-lg lg:text-xl font-bold ${colorScheme.textColor} mb-3 font-agrandir-grand`}>
+                  <div className="p-3 sm:p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-3">
+                    <h3 className={`text-base sm:text-lg lg:text-xl font-bold ${colorScheme.textColor} mb-2 sm:mb-3 font-agrandir-grand`}>
                       {classItem.name}
                     </h3>
                     
-                    <div className="h-16 lg:h-20 mb-4">
-                      <p className="text-[#2B2B2B] font-agrandir-regular leading-relaxed text-xs lg:text-sm line-clamp-3">
+                    <div className="h-12 sm:h-16 lg:h-20 mb-3 sm:mb-4">
+                      <p className="text-[#2B2B2B] font-agrandir-regular leading-relaxed text-xs sm:text-sm lg:text-sm line-clamp-3">
                         {classItem.description}
                       </p>
                     </div>
                     
                     {/* Class Details */}
-                    <div className="space-y-2 mb-6 h-12 lg:h-14">
+                    <div className="space-y-2 mb-4 sm:mb-6 h-10 sm:h-12 lg:h-14">
                       {classItem.duration && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-xs lg:text-sm`}>
-                          <FaClock className="w-4 h-4 ml-2" />
+                        <div className={`flex items-center ${colorScheme.textColor} text-xs sm:text-sm`}>
+                          <FaClock className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                           <span className="font-agrandir-regular">{classItem.duration} דקות</span>
                         </div>
                       )}
                       {classItem.level && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-xs lg:text-sm`}>
-                          <FaUserGraduate className="w-4 h-4 ml-2" />
+                        <div className={`flex items-center ${colorScheme.textColor} text-xs sm:text-sm`}>
+                          <FaUserGraduate className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                           <span className="font-agrandir-regular">רמה: {classItem.level}</span>
                         </div>
                       )}
@@ -483,14 +488,14 @@ function ClassesPage() {
                     {/* Action Button */}
                     <div className="lg:mt-auto">
                       {hasUsedTrial ? (
-                        <div className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs lg:text-sm cursor-not-allowed opacity-90">
+                        <div className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm cursor-not-allowed opacity-90">
                           נוצל
                           <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
                         </div>
                       ) : (
                         <Link
                           to={route}
-                          className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-xs lg:text-sm`}
+                          className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-xs sm:text-sm`}
                         >
                           הרשמה
                           <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
