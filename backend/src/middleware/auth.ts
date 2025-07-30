@@ -38,18 +38,22 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 
 export const admin = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('Admin middleware: Starting...');
     // קבל את ה-token מה-headers
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Admin middleware: No valid authorization header');
       throw new AppError('No authorization token provided', 401);
     }
 
     const token = authHeader.substring(7);
+    console.log('Admin middleware: Token received, length:', token.length);
 
     // בדוק את ה-token עם Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.log('Admin middleware: Invalid token:', error);
       throw new AppError('Invalid or expired token', 401);
     }
 
@@ -71,6 +75,7 @@ export const admin = async (req: Request, res: Response, next: NextFunction) => 
     req.user = user;
     next();
   } catch (error) {
+    console.log('Admin middleware: Error:', error);
     next(error);
   }
 }; 

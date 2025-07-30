@@ -369,6 +369,16 @@ export const apiService = {
         console.error('Admin API getCalendar error:', error);
         return {};
       });
+    },
+
+    async getProfiles(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/profiles/admin`, { headers })
+      ).catch(error => {
+        console.error('Admin API getProfiles error:', error);
+        return [];
+      });
     }
   },
 

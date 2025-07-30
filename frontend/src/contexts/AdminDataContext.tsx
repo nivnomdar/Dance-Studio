@@ -12,6 +12,7 @@ interface AdminData {
   orders: any[];
   messages: any[];
   calendar: any;
+  profiles: any[];
   lastFetchTime: number;
 }
 
@@ -24,6 +25,7 @@ interface AdminDataContextType {
   fetchShop: () => Promise<void>;
   fetchContact: () => Promise<void>;
   fetchCalendar: () => Promise<void>;
+  fetchProfiles: () => Promise<void>;
   clearCache: () => void;
   resetRateLimit: () => void;
   isFetching: boolean;
@@ -55,6 +57,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     orders: [],
     messages: [],
     calendar: null,
+    profiles: [],
     lastFetchTime: 0
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +78,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     fetchClasses: () => Promise<void>;
     fetchShop: () => Promise<void>;
     fetchContact: () => Promise<void>;
+    fetchProfiles: () => Promise<void>;
   } | null>(null);
 
   // Update ref when data changes
@@ -342,6 +346,37 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     }
   }, [session]);
 
+  // טעינת נתוני משתמשים
+  const fetchProfiles = useCallback(async () => {
+    if (!session || isFetchingRef.current) return;
+    if (isRateLimited()) {
+      setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
+      return;
+    }
+    if (dataRef.current.profiles && isDataFresh()) return;
+
+    isFetchingRef.current = true;
+    setIsFetching(true);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const profiles = await apiService.admin.getProfiles();
+      setData(prev => ({
+        ...prev,
+        profiles: profiles || [],
+        lastFetchTime: Date.now()
+      }));
+      setError(null);
+    } catch (error) {
+      console.error('fetchProfiles: Error:', error);
+      setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+      isFetchingRef.current = false;
+    }
+  }, [session]);
+
   // טעינת נתוני סקירה כללית
   const fetchOverview = useCallback(async () => {
     if (!session) {
@@ -403,6 +438,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       orders: [],
       messages: [],
       calendar: null,
+      profiles: [],
       lastFetchTime: 0
     });
     // אפס את כל ה-refs כדי לאפשר טעינה מחדש רק אם זה החלפת משתמש
@@ -425,9 +461,10 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       fetchOverview,
       fetchClasses,
       fetchShop,
-      fetchContact
+      fetchContact,
+      fetchProfiles
     };
-  }, [fetchOverview, fetchClasses, fetchShop, fetchContact]);
+      }, [fetchOverview, fetchClasses, fetchShop, fetchContact, fetchProfiles]);
 
   // טעינת נתונים ראשונית כשהדשבורד נטען
   useEffect(() => {
@@ -455,6 +492,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
           fetchFunctionsRef.current.fetchClasses();
           fetchFunctionsRef.current.fetchShop();
           fetchFunctionsRef.current.fetchContact();
+          fetchFunctionsRef.current.fetchProfiles();
         }
       }, 100);
     } else {
@@ -510,6 +548,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     fetchShop,
     fetchContact,
     fetchCalendar,
+    fetchProfiles,
     clearCache,
     resetRateLimit,
     isFetching: isFetching

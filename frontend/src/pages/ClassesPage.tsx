@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
 import { TIMEOUTS } from '../utils/constants';
+import { RefreshButton } from '../components/admin';
 
 // Cache key for sessionStorage
 const CLASSES_CACHE_KEY = 'classes_cache';
@@ -231,7 +232,7 @@ function ClassesPage() {
             method: 'POST',
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session.access_token}`,
+              'Authorization': `Bearer ${session?.access_token}`,
               'Content-Type': 'application/json',
               'Prefer': 'resolution=merge-duplicates'
             },
@@ -388,12 +389,10 @@ function ClassesPage() {
                 נסה שוב
               </button>
               {retryCount > 0 && (
-                <button 
-                  onClick={handleRefresh} 
-                  className="w-full bg-gray-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-gray-600 transition-colors duration-200 font-medium text-sm sm:text-base"
-                >
-                  רענן נתונים
-                </button>
+                <RefreshButton
+                  onClick={handleRefresh}
+                  isFetching={false}
+                />
               )}
             </div>
           </div>

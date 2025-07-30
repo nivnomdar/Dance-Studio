@@ -57,6 +57,9 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   // State management
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterClass, setFilterClass] = useState<string>('all');
+  const [filterSession, setFilterSession] = useState<string>('all');
+  const [filterDate, setFilterDate] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'grouped' | 'all' | 'history'>('grouped');
   const [registrationEditModalOpen, setRegistrationEditModalOpen] = useState(false);
   const [editingRegistration, setEditingRegistration] = useState<any>(null);
@@ -104,6 +107,9 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                              reg.session_name.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesStatus = filterStatus === 'all' || reg.status === filterStatus;
+        const matchesClass = filterClass === 'all' || reg.class_id === filterClass;
+        const matchesSession = filterSession === 'all' || reg.session_id === filterSession;
+        const matchesDate = !filterDate || reg.selected_date === filterDate;
         
         // Filter by tab
         let matchesTab = true;
@@ -115,7 +121,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           matchesTab = reg.is_past;
         }
         
-        return matchesSearch && matchesStatus && matchesTab;
+        return matchesSearch && matchesStatus && matchesClass && matchesSession && matchesDate && matchesTab;
       })
       .sort((a, b) => {
         // Sort by date first, then by time, then by name
@@ -212,30 +218,52 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     setRegistrationEditModalOpen(true);
   };
 
+  const handleAddNewRegistration = () => {
+    setEditingRegistration({});
+    setRegistrationEditModalOpen(true);
+  };
+
   const handleSaveRegistration = async (updatedRegistration: any) => {
     if (!session) return;
     
+    const isNewRegistration = !updatedRegistration.id;
     setIsSavingRegistration(true);
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ status: updatedRegistration.status })
-      });
+      let response;
+      
+      if (isNewRegistration) {
+        // Create new registration
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify(updatedRegistration)
+        });
+      } else {
+        // Update existing registration
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ status: updatedRegistration.status })
+        });
+      }
 
       if (!response.ok) {
-        throw new Error('Failed to update registration');
+        throw new Error(isNewRegistration ? 'Failed to create registration' : 'Failed to update registration');
       }
 
       await fetchClasses();
       setRegistrationEditModalOpen(false);
       setEditingRegistration(null);
     } catch (error) {
-      console.error('Error updating registration:', error);
-      alert('שגיאה בעדכון ההרשמה');
+      console.error('Error saving registration:', error);
+      alert(isNewRegistration ? 'שגיאה ביצירת ההרשמה' : 'שגיאה בעדכון ההרשמה');
     } finally {
       setIsSavingRegistration(false);
     }
@@ -254,6 +282,9 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilterStatus('all');
+    setFilterClass('all');
+    setFilterSession('all');
+    setFilterDate('');
     setCurrentPage(1); // Reset to first page when clearing filters
   };
 
@@ -419,29 +450,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
 
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
-      {/* Statistics */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.totalFuture}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות עתידיות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{stats.futureActive}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">פעילות עתידיות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.totalPast}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">היסטוריה</div>
-        </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{stats.totalActive}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.totalCancelled}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">בוטלו</div>
-        </div>
-      </div>
+
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
@@ -467,36 +476,79 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-          <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש הרשמה</label>
-            <input
-              type="text"
-              placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={STYLES.input}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס הרשמה</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className={STYLES.input}
-            >
-              <option value="all">כל ההרשמות</option>
-              <option value="active">פעילות בלבד</option>
-              <option value="cancelled">בוטלו בלבד</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={handleClearFilters}
-              className={STYLES.buttonSecondary}
-            >
-              נקה פילטרים
-            </button>
+        <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש הרשמה</label>
+              <input
+                type="text"
+                placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס הרשמה</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              >
+                <option value="all">כל ההרשמות</option>
+                <option value="active">פעילות בלבד</option>
+                <option value="cancelled">בוטלו בלבד</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">שיעור</label>
+              <select
+                value={filterClass}
+                onChange={(e) => setFilterClass(e.target.value)}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              >
+                <option value="all">כל השיעורים</option>
+                {data.classes?.map((cls: any) => (
+                  <option key={cls.id} value={cls.id}>{cls.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קבוצה</label>
+              <select
+                value={filterSession}
+                onChange={(e) => setFilterSession(e.target.value)}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              >
+                <option value="all">כל הקבוצות</option>
+                {data.sessions?.map((session: any) => (
+                  <option key={session.id} value={session.id}>{session.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תאריך</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+              <button
+                onClick={handleClearFilters}
+                className="w-full sm:flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-xs sm:text-sm"
+              >
+                נקה פילטרים
+              </button>
+              <button 
+                onClick={handleAddNewRegistration}
+                className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs sm:text-sm"
+              >
+                הוסיפי הרשמה חדשה
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -674,6 +726,10 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           }}
           onSave={handleSaveRegistration}
           isLoading={isSavingRegistration}
+          isNewRegistration={!editingRegistration.id}
+          classes={data.classes || []}
+          sessions={data.sessions || []}
+          profiles={data.profiles || []}
         />
       )}
     </div>

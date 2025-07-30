@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
+import { RefreshButton } from '../../admin';
 import { anyToHebrewDay, isSessionActiveOnDay } from '../../../utils/weekdaysUtils';
 import { 
   formatDate, 
@@ -261,21 +262,18 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
   if (!currentWeekData) {
     return (
       <div className="space-y-8">
-        <div className="flex justify-between items-center mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6 sm:mb-8">
           <div>
             <h2 className="text-2xl font-bold text-[#4B2E83]">לוח שנה</h2>
             <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול קבוצות ופעילויות שבועיות</p>
           </div>
-          <button
+          <RefreshButton
             onClick={() => {
               fetchClasses();
               fetchCalendar();
             }}
-            disabled={isFetching}
-            className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-          </button>
+            isFetching={isFetching}
+          />
         </div>
         
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-xl">
@@ -291,21 +289,18 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-6 sm:mb-8">
         <div>
           <h2 className="text-2xl font-bold text-[#4B2E83]">לוח שנה</h2>
           <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול קבוצות ופעילויות שבועיות</p>
         </div>
-        <button
+        <RefreshButton
           onClick={() => {
             fetchClasses();
             fetchCalendar();
           }}
-          disabled={isFetching}
-          className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-        </button>
+          isFetching={isFetching}
+        />
       </div>
 
       {/* Week Navigation */}

@@ -81,25 +81,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
 
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
-      {/* Key Statistics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ קבוצות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{activeSessions}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">קבוצות פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{activeRegistrations}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{totalRegistrations}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
-        </div>
-      </div>
+
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
@@ -111,7 +93,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
               placeholder="חפש לפי שם או תיאור..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             />
           </div>
           <div>
@@ -119,7 +101,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             >
               <option value="all">כל הקבוצות</option>
               <option value="active">פעילות בלבד</option>
@@ -132,13 +114,13 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                 setSearchTerm('');
                 setFilterStatus('all');
               }}
-              className="flex-1 px-4 py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-sm"
+              className="w-full sm:flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-xs sm:text-sm"
             >
               נקה פילטרים
             </button>
             <button 
               onClick={handleAddNewSession}
-              className="px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+              className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs sm:text-sm"
             >
               הוסיפי קבוצה חדשה
             </button>
@@ -332,6 +314,10 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
             }
           }}
           isLoading={false}
+          isNewRegistration={false}
+          classes={data.classes || []}
+          sessions={data.sessions || []}
+          profiles={data.profiles || []}
         />
       )}
 

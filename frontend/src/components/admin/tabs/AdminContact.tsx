@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
+import { RefreshButton } from '../../admin';
 
 interface AdminContactProps {
   profile: UserProfile;
@@ -70,15 +71,15 @@ export default function AdminContact({ profile }: AdminContactProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#4B2E83]">פניות צור קשר</h2>
-        <button
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <div>
+          <h2 className="text-2xl font-bold text-[#4B2E83]">פניות צור קשר</h2>
+          <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול פניות ותמיכה</p>
+        </div>
+        <RefreshButton
           onClick={fetchContact}
-          disabled={isFetching}
-          className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-        </button>
+          isFetching={isFetching}
+        />
       </div>
 
       {/* Contact Messages Overview */}

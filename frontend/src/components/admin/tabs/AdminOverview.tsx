@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import type { UserProfile } from '../../../types/auth';
 // ... existing code ...
 import { ClassDetailsModal, RegistrationEditModal } from '../../../pages/admin/modals';
+import { RefreshButton } from '../../admin';
 
 // Types
 interface SessionData {
@@ -324,55 +325,18 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
           <h2 className="text-2xl font-bold text-[#4B2E83]">סקירה כללית</h2>
           <p className="text-sm text-[#4B2E83]/70 mt-1">סקירה כללית של השיעורים, הסשנים וההרשמות</p>
         </div>
-        <button
+        <RefreshButton
           onClick={handleRefreshData}
-          disabled={isFetching}
-          className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-        </button>
+          isFetching={isFetching}
+        />
       </div>
       
-      {/* Key Statistics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.totalSessions}</div>
-          <div className="text-xs text-[#4B2E83]/70">סה"כ קבוצות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.classes?.length || 0}</div>
-          <div className="text-xs text-[#4B2E83]/70">סה"כ שיעורים</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.totalRegistrations}</div>
-          <div className="text-xs text-[#4B2E83]/70">הרשמות פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">₪{summaryStats.totalRevenue.toLocaleString()}</div>
-          <div className="text-xs text-[#4B2E83]/70">הכנסות צפויות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.activeSessions}</div>
-          <div className="text-xs text-[#4B2E83]/70">קבוצות פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.registrations?.filter((reg: any) => new Date(reg.created_at).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).length || 0}</div>
-          <div className="text-xs text-[#4B2E83]/70">הרשמות היום</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#EC4899]">{summaryStats.avgOccupancy.toFixed(1)}%</div>
-          <div className="text-xs text-[#4B2E83]/70">תפוסה ממוצעת</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-2xl font-bold text-[#4B2E83]">{displayData.registrations?.filter((reg: any) => new Date(reg.created_at).toISOString().split('T')[0] === new Date(Date.now() - DAYS_IN_WEEK * MILLISECONDS_IN_DAY).toISOString().split('T')[0]).length || 0}</div>
-          <div className="text-xs text-[#4B2E83]/70">הרשמות השבוע</div>
-        </div>
-      </div>
+
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
@@ -794,6 +758,10 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
             }
           }}
           isLoading={false}
+          isNewRegistration={false}
+          classes={data.classes || []}
+          sessions={data.sessions || []}
+          profiles={data.profiles || []}
         />
       )}
     </div>

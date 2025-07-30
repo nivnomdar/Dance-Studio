@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useAdminData } from '../../contexts/AdminDataContext';
 import type { UserProfile } from '../../types/auth';
 import { ClassesTab, SessionsTab, RegistrationsTab } from './tabs';
+import { RefreshButton } from '../../components/admin';
 
 interface ClassesReportsProps {
   profile: UserProfile;
@@ -137,19 +138,10 @@ export default function ClassesReports({ profile }: ClassesReportsProps) {
               <p className="text-sm sm:text-base text-[#4B2E83]/70 mt-1 sm:mt-2">סקירה כללית של השיעורים, הסשנים וההרשמות</p>
             </div>
             <div className="flex gap-2 sm:gap-3">
-              <button
-                onClick={() => navigate('/admin')}
-                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs sm:text-sm"
-              >
-                חזור לפאנל
-              </button>
-              <button
+              <RefreshButton
                 onClick={handleRefresh}
-                disabled={isFetching}
-                className="px-3 sm:px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-              </button>
+                isFetching={isFetching}
+              />
             </div>
           </div>
         </div>

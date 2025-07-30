@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { AppError } from '../middleware/errorHandler';
 import { Request, Response, NextFunction } from 'express';
+import { admin } from '../middleware/auth';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const supabase = createClient(
@@ -149,6 +151,28 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (error) throw new AppError(error.message, 400);
 
     res.status(201).json(profile);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all profiles (admin only)
+router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Admin profiles endpoint called by user:', req.user?.id);
+    
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching profiles:', error);
+      throw new AppError('Failed to fetch profiles', 500);
+    }
+
+    logger.info('Profiles fetched successfully:', { count: profiles?.length || 0 });
+    res.json(profiles || []);
   } catch (error) {
     next(error);
   }

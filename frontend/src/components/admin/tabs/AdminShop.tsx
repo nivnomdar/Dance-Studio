@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
+import { RefreshButton } from '../../admin';
 
 interface AdminShopProps {
   profile: UserProfile;
@@ -29,8 +30,11 @@ export default function AdminShop({ profile }: AdminShopProps) {
   if (isLoading && data.products.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div>
+            <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
+            <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול מוצרים והזמנות בחנות</p>
+          </div>
         </div>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EC4899] mx-auto mb-4"></div>
@@ -43,8 +47,11 @@ export default function AdminShop({ profile }: AdminShopProps) {
   if (error && data.products.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div>
+            <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
+            <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול מוצרים והזמנות בחנות</p>
+          </div>
         </div>
         <div className="text-center py-12">
           <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -66,20 +73,15 @@ export default function AdminShop({ profile }: AdminShopProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
-        <div className="flex gap-3">
-          <button
-            onClick={fetchShop}
-            disabled={isFetching}
-            className="px-4 py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isFetching ? 'מעדכן...' : 'רענן נתונים'}
-          </button>
-          <button className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300">
-            הוספת מוצר חדש
-          </button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <div>
+          <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
+          <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול מוצרים והזמנות בחנות</p>
         </div>
+        <RefreshButton
+          onClick={fetchShop}
+          isFetching={isFetching}
+        />
       </div>
 
       {/* Shop Management Interface */}

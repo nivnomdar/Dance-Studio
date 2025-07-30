@@ -173,29 +173,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
 
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
-      {/* Key Statistics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.totalClasses}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ שיעורים</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{stats.activeClasses}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">שיעורים פעילים</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.activeRegistrations}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center col-span-2 sm:col-span-1">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">₪{stats.totalRevenue.toLocaleString()}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">הכנסות צפויות</div>
-        </div>
-        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center col-span-2 sm:col-span-1">
-          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.totalRegistrations}</div>
-          <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
-        </div>
-      </div>
+
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
@@ -207,7 +185,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
               placeholder="חפש לפי שם, תיאור או קטגוריה..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`${STYLES.input} text-sm sm:text-base`}
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             />
           </div>
           <div>
@@ -215,7 +193,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className={`${STYLES.input} text-sm sm:text-base`}
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             >
               <option value="all">כל השיעורים</option>
               <option value="active">פעילים בלבד</option>
@@ -225,13 +203,13 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
           <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
             <button
               onClick={handleClearFilters}
-              className={`${STYLES.buttonSecondary} text-sm`}
+              className="w-full sm:flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-xs sm:text-sm"
             >
               נקה פילטרים
             </button>
             <button 
               onClick={handleAddNewClass}
-              className={`${STYLES.button} text-sm`}
+              className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs sm:text-sm"
             >
               הוסיפי שיעור חדש
             </button>
