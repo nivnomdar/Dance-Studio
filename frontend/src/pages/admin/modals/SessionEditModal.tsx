@@ -46,7 +46,13 @@ const getDefaultFormData = () => ({
   weekdays: [] as number[],
   start_time: '',
   end_time: '',
+  start_date: '',
+  end_date: '',
+  duration_minutes: 60,
   max_capacity: 5,
+  min_capacity: 1,
+  location_id: '',
+  room_name: '',
   address: 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
   is_active: true
 });
@@ -69,7 +75,13 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
         weekdays: sessionData.weekdays || [],
         start_time: sessionData.start_time || '',
         end_time: sessionData.end_time || '',
+        start_date: sessionData.start_date || '',
+        end_date: sessionData.end_date || '',
+        duration_minutes: sessionData.duration_minutes || 60,
         max_capacity: sessionData.max_capacity || 5,
+        min_capacity: sessionData.min_capacity || 1,
+        location_id: sessionData.location_id || '',
+        room_name: sessionData.room_name || '',
         address: sessionData.address || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
         is_active: sessionData.is_active !== undefined ? sessionData.is_active : true
       });
@@ -316,7 +328,7 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 זמני פעילות
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     שעת התחלה <span className="text-red-500">*</span>
@@ -345,17 +357,97 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
 
                 <div>
                   <label className="block text-sm font-medium text-[#4B2E83] mb-2">
-                    סטטוס
+                    תאריך התחלה
                   </label>
-                  <select
-                    value={formData.is_active ? 'true' : 'false'}
-                    onChange={(e) => handleInputChange('is_active', e.target.value === 'true')}
+                  <input
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => handleInputChange('start_date', e.target.value)}
                     className={STYLES.input}
-                  >
-                    <option value="true">פעיל</option>
-                    <option value="false">לא פעיל</option>
-                  </select>
+                  />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    תאריך סיום
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.end_date}
+                    onChange={(e) => handleInputChange('end_date', e.target.value)}
+                    className={STYLES.input}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    משך השיעור (דקות)
+                  </label>
+                  <input
+                    type="number"
+                    min="15"
+                    max="180"
+                    value={formData.duration_minutes}
+                    onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 60)}
+                    className={STYLES.input}
+                    placeholder="60"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    תפוסה מינימלית
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.min_capacity}
+                    onChange={(e) => handleInputChange('min_capacity', parseInt(e.target.value) || 1)}
+                    className={STYLES.input}
+                    placeholder="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    תפוסה מקסימלית <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_capacity > 0 ? formData.max_capacity : ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        handleInputChange('max_capacity', 5);
+                      } else {
+                        const numValue = parseInt(value);
+                        if (numValue > 0) {
+                          handleInputChange('max_capacity', numValue);
+                        }
+                      }
+                    }}
+                    className={getInputClassName('max_capacity', errors)}
+                    placeholder="5"
+                    min="1"
+                  />
+                  {errors.max_capacity && <p className="text-red-500 text-xs mt-1">{errors.max_capacity}</p>}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  סטטוס
+                </label>
+                <select
+                  value={formData.is_active ? 'true' : 'false'}
+                  onChange={(e) => handleInputChange('is_active', e.target.value === 'true')}
+                  className={STYLES.input}
+                >
+                  <option value="true">פעיל</option>
+                  <option value="false">לא פעיל</option>
+                </select>
               </div>
 
               <div className="mt-4">
@@ -391,9 +483,37 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 מיקום
               </h3>
 
-              <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    מזהה מיקום
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.location_id}
+                    onChange={(e) => handleInputChange('location_id', e.target.value)}
+                    className={STYLES.input}
+                    placeholder="location_1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    שם החדר
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.room_name}
+                    onChange={(e) => handleInputChange('room_name', e.target.value)}
+                    className={STYLES.input}
+                    placeholder="חדר 1"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-[#4B2E83] mb-2">
-                  מיקום הקבוצה
+                  כתובת מיקום
                 </label>
                 <input
                   type="text"

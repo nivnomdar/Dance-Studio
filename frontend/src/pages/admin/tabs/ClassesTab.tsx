@@ -18,8 +18,10 @@ interface ProcessedClass extends Class {
 
 // Constants
 const ALLOWED_FIELDS = [
-  'name', 'slug', 'description', 'price', 'duration', 
-  'level', 'category', 'color_scheme', 'is_active'
+  'name', 'slug', 'description', 'long_description', 'price', 'duration', 
+  'level', 'age_group', 'max_participants', 'location', 'included',
+  'image_url', 'video_url', 'category', 'color_scheme', 'registration_type',
+  'group_credits', 'private_credits', 'is_active'
 ];
 
 const STYLES = {
@@ -50,10 +52,21 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         id: cls.id,
         name: cls.name,
         description: cls.description,
+        long_description: cls.long_description,
         price: cls.price,
         duration: cls.duration,
+        level: cls.level,
+        age_group: cls.age_group,
+        max_participants: cls.max_participants,
+        location: cls.location,
+        included: cls.included,
+        image_url: cls.image_url,
+        video_url: cls.video_url,
         category: cls.category,
         color_scheme: cls.color_scheme,
+        registration_type: cls.registration_type,
+        group_credits: cls.group_credits,
+        private_credits: cls.private_credits,
         is_active: cls.is_active,
         total_registrations: classRegistrations.length,
         active_registrations: activeRegistrations.length,
@@ -161,58 +174,58 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Key Statistics */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.totalClasses}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.totalClasses}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ שיעורים</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{stats.activeClasses}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{stats.activeClasses}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">שיעורים פעילים</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.activeRegistrations}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.activeRegistrations}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">₪{stats.totalRevenue.toLocaleString()}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center col-span-2 sm:col-span-1">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">₪{stats.totalRevenue.toLocaleString()}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">הכנסות צפויות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{stats.totalRegistrations}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center col-span-2 sm:col-span-1">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{stats.totalRegistrations}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש שיעור</label>
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש שיעור</label>
             <input
               type="text"
               placeholder="חפש לפי שם, תיאור או קטגוריה..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={STYLES.input}
+              className={`${STYLES.input} text-sm sm:text-base`}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס שיעור</label>
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס שיעור</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className={STYLES.input}
+              className={`${STYLES.input} text-sm sm:text-base`}
             >
               <option value="all">כל השיעורים</option>
               <option value="active">פעילים בלבד</option>
               <option value="inactive">לא פעילים</option>
             </select>
           </div>
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
             <button
               onClick={handleClearFilters}
-              className={STYLES.buttonSecondary}
+              className={`${STYLES.buttonSecondary} text-sm`}
             >
               נקה פילטרים
             </button>
@@ -233,15 +246,15 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
           <p className="text-sm sm:text-base text-[#4B2E83]/70">סקירה כללית של כל השיעורים הקיימים במערכת</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-2/5">שם השיעור</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">קטגוריה</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">מחיר</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">הכנסות</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">פעולות</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-2/5">שם השיעור</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">קטגוריה</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">מחיר</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">הכנסות</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -253,18 +266,18 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                     return `${colorScheme.bg} hover:bg-opacity-90 hover:${colorScheme.bg.replace('100', '200')}`;
                   })()}`}
                 >
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
                     <div>
-                      <div className="font-semibold text-sm text-[#4B2E83] truncate">{cls.name}</div>
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{cls.name}</div>
                       <div className="text-xs text-[#4B2E83]/70 truncate" title={cls.description}>{cls.description}</div>
                     </div>
                   </td>
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                     <div className="flex justify-center">
                       {(() => {
                         const colorScheme = getCategoryColorScheme(cls.color_scheme);
                         return (
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-white ${colorScheme.text} border ${colorScheme.border} shadow-sm hover:shadow-md transition-all duration-200 cursor-default min-w-[80px] justify-center`}>
+                          <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-medium bg-white ${colorScheme.text} border ${colorScheme.border} shadow-sm hover:shadow-md transition-all duration-200 cursor-default min-w-[60px] sm:min-w-[80px] justify-center`}>
                             <span className="truncate" title={cls.category}>
                               {cls.category || 'כללי'}
                             </span>
@@ -273,41 +286,43 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                       })()}
                     </div>
                   </td>
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-sm">₪{cls.price}</td>
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-sm">
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-xs sm:text-sm">₪{cls.price}</td>
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-xs sm:text-sm">
                     ₪{(cls.active_registrations * cls.price).toLocaleString()}
                   </td>
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                    <span className={`inline-flex items-center gap-1 px-1 sm:px-2 py-1 rounded-full text-xs font-medium ${
                       cls.is_active 
                         ? 'bg-green-100 text-green-800 border border-green-200' 
                         : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                       {cls.is_active ? (
                         <>
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          פעיל
+                          <span className="hidden sm:inline">פעיל</span>
+                          <span className="sm:hidden">✓</span>
                         </>
                       ) : (
                         <>
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                           </svg>
-                          לא פעיל
+                          <span className="hidden sm:inline">לא פעיל</span>
+                          <span className="sm:hidden">✗</span>
                         </>
                       )}
                     </span>
                   </td>
-                  <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
                     <div className="flex gap-1">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEditClass(cls);
                         }}
-                        className={STYLES.actionButton}
+                        className={`${STYLES.actionButton} text-xs px-1 sm:px-2 py-1`}
                       >
                         ערוך
                       </button>
@@ -316,7 +331,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                           e.stopPropagation();
                           handleViewClassSessions(cls);
                         }}
-                        className={STYLES.actionButtonAlt}
+                        className={`${STYLES.actionButtonAlt} text-xs px-1 sm:px-2 py-1`}
                       >
                         קבוצות
                       </button>
