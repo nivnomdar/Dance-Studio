@@ -10,6 +10,17 @@ export const ENGLISH_WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'th
 export const DAY_NAMES_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 export const DAY_NAMES_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
+// Weekdays options for form selects (value-label pairs)
+export const WEEKDAYS_OPTIONS = [
+  { value: 0, label: 'ראשון' },
+  { value: 1, label: 'שני' },
+  { value: 2, label: 'שלישי' },
+  { value: 3, label: 'רביעי' },
+  { value: 4, label: 'חמישי' },
+  { value: 5, label: 'שישי' },
+  { value: 6, label: 'שבת' }
+];
+
 /**
  * Convert number to Hebrew day name
  * @param dayNumber - Day number (0-6, where 0=Sunday)

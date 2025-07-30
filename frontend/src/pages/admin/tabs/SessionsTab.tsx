@@ -82,57 +82,57 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Key Statistics */}
-      <div className="grid grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{totalSessions}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ קבוצות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{activeSessions}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{activeSessions}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">קבוצות פעילות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#EC4899]">{activeRegistrations}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#EC4899]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#EC4899]">{activeRegistrations}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">הרשמות פעילות</div>
         </div>
-        <div className="bg-white p-2 sm:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-lg sm:text-3xl font-bold text-[#4B2E83]">{totalRegistrations}</div>
+        <div className="bg-white p-2 sm:p-4 lg:p-6 rounded-xl border border-[#4B2E83]/10 text-center">
+          <div className="text-base sm:text-lg lg:text-3xl font-bold text-[#4B2E83]">{totalRegistrations}</div>
           <div className="text-xs sm:text-sm text-[#4B2E83]/70">סה"כ הרשמות</div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש קבוצה</label>
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש קבוצה</label>
             <input
               type="text"
               placeholder="חפש לפי שם או תיאור..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס קבוצה</label>
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס קבוצה</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             >
               <option value="all">כל הקבוצות</option>
               <option value="active">פעילות בלבד</option>
               <option value="inactive">לא פעילות</option>
             </select>
           </div>
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
             <button
               onClick={() => {
                 setSearchTerm('');
                 setFilterStatus('all');
               }}
-              className="flex-1 px-4 py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300"
+              className="flex-1 px-4 py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-sm"
             >
               נקה פילטרים
             </button>
@@ -153,16 +153,16 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
           <p className="text-sm sm:text-base text-[#4B2E83]/70">ניהול הקבוצות במערכת עם אפשרויות עריכה</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
               <tr>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שם הקבוצה</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">שעות</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">ימי שבוע</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">תפוסה</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">סטטוס</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שיעורים מקושרים</th>
-                <th className="px-3 py-3 text-right text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">פעולות</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שם הקבוצה</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">שעות</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">ימי שבוע</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">תפוסה</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">סטטוס</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/5">שיעורים מקושרים</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
@@ -179,90 +179,92 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
 
                 return (
                   <tr key={sessionData.id} className="hover:bg-[#EC4899]/5 transition-colors">
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
-                      <div className="font-semibold text-sm text-[#4B2E83] truncate">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
+                      <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">
                         {sessionData.name}
                       </div>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                      <div className="text-sm text-[#EC4899] font-medium">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="text-xs sm:text-sm text-[#EC4899] font-medium">
                         {sessionData.start_time && sessionData.end_time 
                           ? `${sessionData.start_time.substring(0, 5)} - ${sessionData.end_time.substring(0, 5)}`
                           : 'לא מוגדר'
                         }
                       </div>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {weekdays.length > 0 ? (
-                          weekdays.slice(0, 3).map((day: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
+                          weekdays.slice(0, 2).map((day: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-1 sm:px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
                               {day}
                             </span>
                           ))
                         ) : (
                           <span className="text-xs text-[#4B2E83]/50">לא מוגדר</span>
                         )}
-                        {weekdays.length > 3 && (
-                          <span className="text-xs text-[#4B2E83]/70">+{weekdays.length - 3}</span>
+                        {weekdays.length > 2 && (
+                          <span className="text-xs text-[#4B2E83]/70">+{weekdays.length - 2}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                      <div className="text-sm font-semibold text-[#4B2E83]">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="text-xs sm:text-sm font-semibold text-[#4B2E83]">
                         {sessionData.max_capacity || 0}
                       </div>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      <span className={`inline-flex items-center gap-1 px-1 sm:px-2 py-1 rounded-full text-xs font-medium ${
                         sessionData.is_active 
                           ? 'bg-green-100 text-green-800 border border-green-200' 
                           : 'bg-red-50 text-red-700 border border-red-200'
                       }`}>
                         {sessionData.is_active ? (
                           <>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                            פעיל
+                            <span className="hidden sm:inline">פעיל</span>
+                            <span className="sm:hidden">✓</span>
                           </>
                         ) : (
                           <>
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
-                            לא פעיל
+                            <span className="hidden sm:inline">לא פעיל</span>
+                            <span className="sm:hidden">✗</span>
                           </>
                         )}
                       </span>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
                       <div className="flex flex-wrap gap-1">
                         {linkedClasses.length > 0 ? (
-                          linkedClasses.slice(0, 2).map((className: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
+                          linkedClasses.slice(0, 1).map((className: string, index: number) => (
+                            <span key={index} className="inline-flex items-center px-1 sm:px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
                               {className}
                             </span>
                           ))
                         ) : (
                           <span className="text-xs text-[#4B2E83]/50">אין שיעורים</span>
                         )}
-                        {linkedClasses.length > 2 && (
-                          <span className="text-xs text-[#4B2E83]/70">+{linkedClasses.length - 2}</span>
+                        {linkedClasses.length > 1 && (
+                          <span className="text-xs text-[#4B2E83]/70">+{linkedClasses.length - 1}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       <div className="flex gap-1 justify-center">
                         <button
                           onClick={() => handleViewSessionDetails(sessionData)}
-                          className="px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
                         >
                           פרטים
                         </button>
                         <button
                           onClick={() => handleEditSession(sessionData)}
-                          className="px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
+                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
                         >
                           ערוך
                         </button>
