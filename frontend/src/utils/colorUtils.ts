@@ -276,3 +276,115 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
     hoverColor: 'hover:bg-gray-600'
   };
 }; 
+
+// פונקציה לקבלת צבעים לטבלאות אדמין (רקע בהיר עם border)
+export const getCategoryColorScheme = (colorScheme?: string) => {
+  const schemes = {
+    pink: {
+      bg: 'bg-pink-100',
+      text: 'text-pink-800',
+      border: 'border-pink-300'
+    },
+    purple: {
+      bg: 'bg-purple-100',
+      text: 'text-purple-800',
+      border: 'border-purple-300'
+    },
+    emerald: {
+      bg: 'bg-emerald-100',
+      text: 'text-emerald-800',
+      border: 'border-emerald-300'
+    },
+    blue: {
+      bg: 'bg-blue-100',
+      text: 'text-blue-800',
+      border: 'border-blue-300'
+    },
+    red: {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      border: 'border-red-300'
+    },
+    orange: {
+      bg: 'bg-orange-100',
+      text: 'text-orange-800',
+      border: 'border-orange-300'
+    },
+    yellow: {
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
+      border: 'border-yellow-300'
+    },
+    green: {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      border: 'border-green-300'
+    },
+    teal: {
+      bg: 'bg-teal-100',
+      text: 'text-teal-800',
+      border: 'border-teal-300'
+    },
+    cyan: {
+      bg: 'bg-cyan-100',
+      text: 'text-cyan-800',
+      border: 'border-cyan-300'
+    },
+    indigo: {
+      bg: 'bg-indigo-100',
+      text: 'text-indigo-800',
+      border: 'border-indigo-300'
+    },
+    violet: {
+      bg: 'bg-violet-100',
+      text: 'text-violet-800',
+      border: 'border-violet-300'
+    },
+    fuchsia: {
+      bg: 'bg-fuchsia-100',
+      text: 'text-fuchsia-800',
+      border: 'border-fuchsia-300'
+    },
+    rose: {
+      bg: 'bg-rose-100',
+      text: 'text-rose-800',
+      border: 'border-rose-300'
+    },
+    slate: {
+      bg: 'bg-slate-100',
+      text: 'text-slate-800',
+      border: 'border-slate-300'
+    },
+    gray: {
+      bg: 'bg-gray-100',
+      text: 'text-gray-800',
+      border: 'border-gray-300'
+    },
+    zinc: {
+      bg: 'bg-zinc-100',
+      text: 'text-zinc-800',
+      border: 'border-zinc-300'
+    },
+    neutral: {
+      bg: 'bg-neutral-100',
+      text: 'text-neutral-800',
+      border: 'border-neutral-300'
+    },
+    stone: {
+      bg: 'bg-stone-100',
+      text: 'text-stone-800',
+      border: 'border-stone-300'
+    },
+    amber: {
+      bg: 'bg-amber-100',
+      text: 'text-amber-800',
+      border: 'border-amber-300'
+    },
+    lime: {
+      bg: 'bg-lime-100',
+      text: 'text-lime-800',
+      border: 'border-lime-300'
+    },
+  };
+  return schemes[colorScheme as keyof typeof schemes] || schemes.pink; // Default to pink
+}; 

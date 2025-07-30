@@ -130,7 +130,9 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
       return [];
     }
 
-    return displayData.sessions.map((session: SessionData) => {
+    const allSessionEntries: SessionData[] = [];
+
+    displayData.sessions.forEach((session: SessionData) => {
       const linkedClasses = displayData.session_classes?.filter(
         (sc: any) => sc.session_id === session.id
       ) || [];
@@ -139,36 +141,51 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
         (reg: any) => reg.session_id === session.id
       ) || [];
 
-      const activeRegistrations = sessionRegistrations.filter(
-        (reg: any) => reg.status === 'active'
-      );
+      // Generate upcoming dates for this session
+      const upcomingDates = generateUpcomingDates(session.weekdays);
 
-      const totalRevenue = sessionRegistrations.reduce(
-        (sum: number, reg: any) => sum + (reg.purchase_price || 0), 0
-      );
+      // Create a session entry for each upcoming date
+      const sessionEntries = upcomingDates.map((date: string) => {
+        // Filter registrations for this specific date
+        const dateRegistrations = sessionRegistrations.filter((reg: any) => {
+          return reg.selected_date === date;
+        });
+        
+        const dateActiveRegistrations = dateRegistrations.filter(
+          (reg: any) => reg.status === 'active'
+        );
 
-      const occupancyRate = session.max_capacity > 0 
-        ? (activeRegistrations.length / session.max_capacity) * 100 
-        : 0;
+        const dateTotalRevenue = dateRegistrations.reduce(
+          (sum: number, reg: any) => sum + (reg.purchase_price || 0), 0
+        );
 
-      return {
-        ...session,
-        linkedClassesCount: linkedClasses.length,
-        registrationsCount: sessionRegistrations.length,
-        activeRegistrationsCount: activeRegistrations.length,
-        totalRevenue,
-        occupancyRate,
-        sessionClasses: linkedClasses,
-        registrations: sessionRegistrations,
-        linkedClasses: linkedClasses.map((sc: any) => sc.class_id),
-        upcomingActiveRegistrations: activeRegistrations.filter((reg: any) => {
-          const regDate = new Date(reg.created_at);
-          const today = new Date();
-          return regDate >= today;
-        })
-      };
+        const dateOccupancyRate = session.max_capacity > 0 
+          ? (dateActiveRegistrations.length / session.max_capacity) * 100 
+          : 0;
+
+        return {
+          ...session,
+          specificDate: date,
+          linkedClassesCount: linkedClasses.length,
+          registrationsCount: dateRegistrations.length,
+          activeRegistrationsCount: dateActiveRegistrations.length,
+          totalRevenue: dateTotalRevenue,
+          occupancyRate: dateOccupancyRate,
+          sessionClasses: linkedClasses,
+          registrations: dateRegistrations,
+          linkedClasses: linkedClasses.map((sc: any) => {
+            const classData = displayData.classes?.find((c: any) => c.id === sc.class_id);
+            return classData ? classData.name : 'שיעור לא ידוע';
+          }),
+          upcomingActiveRegistrations: dateActiveRegistrations
+        };
+      });
+
+      allSessionEntries.push(...sessionEntries);
     });
-  }, [displayData.sessions, displayData.session_classes, displayData.registrations]);
+
+    return allSessionEntries;
+  }, [displayData.sessions, displayData.session_classes, displayData.registrations, generateUpcomingDates]);
 
   // Filter and sort sessions
   const filteredAndSortedSessions = useMemo(() => {
@@ -191,10 +208,18 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
       });
     }
 
-    // Sort by occupancy rate (descending)
-    return filtered.sort((a: SessionData, b: SessionData) => 
-      (b.occupancyRate || 0) - (a.occupancyRate || 0)
-    );
+    // Sort by date (closest to farthest) when "all" is selected, otherwise by occupancy rate
+    if (filterStatus === 'all') {
+      return filtered.sort((a: SessionData, b: SessionData) => {
+        if (!a.specificDate || !b.specificDate) return 0;
+        return new Date(a.specificDate).getTime() - new Date(b.specificDate).getTime();
+      });
+    } else {
+      // Sort by occupancy rate (descending) for other filters
+      return filtered.sort((a: SessionData, b: SessionData) => 
+        (b.occupancyRate || 0) - (a.occupancyRate || 0)
+      );
+    }
   }, [processedSessions, searchTerm, filterStatus]);
 
   // Calculate summary statistics

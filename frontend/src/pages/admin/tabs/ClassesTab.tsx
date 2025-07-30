@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ClassEditModal, ClassSessionsModal } from '../modals';
 import { Class } from '../../../types';
+import { getCategoryColorScheme } from '../../../utils/colorUtils';
 
 interface ClassesTabProps {
   data: any;
@@ -18,7 +19,7 @@ interface ProcessedClass extends Class {
 // Constants
 const ALLOWED_FIELDS = [
   'name', 'slug', 'description', 'price', 'duration', 
-  'level', 'category', 'is_active'
+  'level', 'category', 'color_scheme', 'is_active'
 ];
 
 const STYLES = {
@@ -52,6 +53,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         price: cls.price,
         duration: cls.duration,
         category: cls.category,
+        color_scheme: cls.color_scheme,
         is_active: cls.is_active,
         total_registrations: classRegistrations.length,
         active_registrations: activeRegistrations.length,
@@ -246,7 +248,10 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
               {filteredClasses.map((cls) => (
                 <tr 
                   key={cls.id} 
-                  className="hover:bg-[#EC4899]/5 transition-colors"
+                  className={`transition-colors ${(() => {
+                    const colorScheme = getCategoryColorScheme(cls.color_scheme);
+                    return `${colorScheme.bg} hover:bg-opacity-90 hover:${colorScheme.bg.replace('100', '200')}`;
+                  })()}`}
                 >
                   <td className="px-3 py-3 border-l border-[#EC4899]/10">
                     <div>
@@ -255,9 +260,18 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                     </div>
                   </td>
                   <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] truncate max-w-[8ch]" title={cls.category}>
-                      {cls.category}
-                    </span>
+                    <div className="flex justify-center">
+                      {(() => {
+                        const colorScheme = getCategoryColorScheme(cls.color_scheme);
+                        return (
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-white ${colorScheme.text} border ${colorScheme.border} shadow-sm hover:shadow-md transition-all duration-200 cursor-default min-w-[80px] justify-center`}>
+                            <span className="truncate" title={cls.category}>
+                              {cls.category || 'כללי'}
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </td>
                   <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-sm">₪{cls.price}</td>
                   <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-sm">
