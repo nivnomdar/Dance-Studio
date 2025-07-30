@@ -622,7 +622,7 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
       });
     });
     
-    return `השיעורים מתקיימים בימים: ${Array.from(availableDays).join(', ')}`;
+    return `${Array.from(availableDays).join(', ')}`;
   } catch (error) {
     return 'כל התאריכים זמינים';
   }
