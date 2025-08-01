@@ -30,28 +30,28 @@ export const toggleGoTrueClientLogs = (hide: boolean = true) => {
 console.log = (...args) => {
   const message = args.join(' ');
   if (!hideGoTrueClientLogs || !isGoTrueClientLog(message)) {
-    originalConsoleLog.apply(console, args);
+    // originalConsoleLog.apply(console, args);
   }
 };
 
 console.warn = (...args) => {
   const message = args.join(' ');
   if (!hideGoTrueClientLogs || !isGoTrueClientLog(message)) {
-    originalConsoleWarn.apply(console, args);
+    // originalConsoleWarn.apply(console, args);
   }
 };
 
 console.error = (...args) => {
   const message = args.join(' ');
   if (!hideGoTrueClientLogs || !isGoTrueClientLog(message)) {
-    originalConsoleError.apply(console, args);
+    // originalConsoleError.apply(console, args);
   }
 };
 
 console.info = (...args) => {
   const message = args.join(' ');
   if (!hideGoTrueClientLogs || !isGoTrueClientLog(message)) {
-    originalConsoleInfo.apply(console, args);
+    // originalConsoleInfo.apply(console, args);
   }
 };
 

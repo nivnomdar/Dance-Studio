@@ -17,29 +17,24 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
 };
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
-  const { first_name, last_name, phone, email, selected_date, selected_time } = req.body;
+  console.log('=== VALIDATION MIDDLEWARE STARTED ===');
+  console.log('Validation middleware received:', req.body);
+  
+  const { class_id, first_name, last_name, phone, email, selected_date, selected_time } = req.body;
 
-  // Debug log
-  console.log('Validation - received data:', {
-    first_name,
-    last_name,
-    phone,
-    email,
-    selected_date,
-    selected_time
-  });
-
-  // Check required fields
-  if (!first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
-    console.log('Validation failed - missing required fields');
+  // Check required fields - phone is required again since admin can update it
+  if (!class_id || !first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
+    console.log('=== VALIDATION FAILED ===');
+    console.log('Missing required fields:', { class_id, first_name, last_name, phone, email, selected_date, selected_time });
     return res.status(400).json({
-      error: 'כל השדות הם חובה: שם פרטי, שם משפחה, טלפון, אימייל, תאריך ושעה'
+      error: 'כל השדות הם חובה: שיעור, שם פרטי, שם משפחה, טלפון, אימייל, תאריך ושעה'
     });
   }
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
+    console.log('=== VALIDATION FAILED - EMAIL ===');
     return res.status(400).json({
       error: 'פורמט אימייל לא תקין'
     });
@@ -48,21 +43,23 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
   // Validate date format (YYYY-MM-DD)
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(selected_date)) {
+    console.log('=== VALIDATION FAILED - DATE ===');
     return res.status(400).json({
       error: 'פורמט תאריך לא תקין. יש להשתמש בפורמט YYYY-MM-DD'
     });
   }
 
-  // Validate time format (HH:MM)
+  // Validate time format (HH:MM or HH:MM עד HH:MM)
   const timeRegex = /^\d{2}:\d{2}$/;
-  console.log('Validation - time format check:', selected_time, 'matches regex:', timeRegex.test(selected_time));
-  if (!timeRegex.test(selected_time)) {
-    console.log('Validation failed - invalid time format');
+  const timeWithUntilRegex = /^\d{2}:\d{2}\s+עד\s+\d{2}:\d{2}$/;
+  if (!timeRegex.test(selected_time) && !timeWithUntilRegex.test(selected_time)) {
+    console.log('=== VALIDATION FAILED - TIME ===');
     return res.status(400).json({
-      error: 'פורמט שעה לא תקין. יש להשתמש בפורמט HH:MM'
+      error: 'פורמט שעה לא תקין. יש להשתמש בפורמט HH:MM או HH:MM עד HH:MM'
     });
   }
 
+  console.log('=== VALIDATION PASSED ===');
   next();
 };
 

@@ -38,6 +38,19 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [usingFallbackMode, setUsingFallbackMode] = useState(false);
 
+  // Prevent modal from closing automatically
+  useEffect(() => {
+    if (showRegistrationSuccess) {
+      // Disable body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Re-enable body scroll when modal is closed
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showRegistrationSuccess]);
+
   // Cache for dates, times, spots
   const [datesCache, setDatesCache] = useState<{ [classId: string]: string[] }>({});
   const [timesCache, setTimesCache] = useState<{ [key: string]: string[] }>({}); // key: classId+date
@@ -400,6 +413,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
         class_id: classData.id,
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
         ...(spotsInfo?.sessionClassId && { session_class_id: spotsInfo.sessionClassId }),
+        // Always include session_class_id - the backend will handle finding/creating it
+        session_class_id: spotsInfo?.sessionClassId || null,
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
@@ -463,6 +478,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
     if (!user || !session) return;
     
     try {
+      console.log(`Updating trial class status for user ${user.id}`);
+      
       const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
         method: 'PATCH',
         headers: {
@@ -477,7 +494,10 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       });
       
       if (updateResponse.ok) {
+        console.log(`Successfully updated trial class status for user ${user.id}`);
         await loadProfile();
+      } else {
+        console.error(`Failed to update trial class status for user ${user.id}:`, updateResponse.status, updateResponse.statusText);
       }
     } catch (error) {
       console.error('Error updating trial class status:', error);
@@ -551,11 +571,24 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                   </h3>
                   <div className="mt-2 text-sm text-red-700">
                     {registrationError}
-                  </div>
-                </div>
-              </div>
+                                </div>
+              
+              {/* Close button in top-right corner */}
+              <button
+                onClick={() => {
+                  setShowRegistrationSuccess(false);
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                aria-label="סגור"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-          )}
+          </div>
+        </div>
+      )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Date Selection */}
@@ -875,32 +908,97 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
 
       {/* Registration Success Modal */}
       {showRegistrationSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Prevent closing when clicking outside
+            e.stopPropagation();
+          }}
+          onKeyDown={(e) => {
+            // Prevent closing with Escape key
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl transform transition-all">
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              {/* Success Icon */}
+              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               
-              <h2 className="text-2xl font-bold text-gray-900 mb-4 font-agrandir-grand">
-                ההרשמה בוצעה בהצלחה! 🎉
+              {/* Title */}
+              <h2 className="text-3xl font-bold text-gray-900 mb-4 font-agrandir-grand">
+                הרשמה מוצלחת! 🎉
               </h2>
               
-              <p className="text-gray-600 mb-8 font-agrandir-regular leading-relaxed">
-                ההרשמה שלך ל{classData?.name} נשמרה בהצלחה. 
-                <br />
-                פרטי ההזמנה שלך יהיו זמינים בדף הפרופיל האישי שלך.
-              </p>
+              {/* Registration Details */}
+              <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">פרטי ההרשמה שלך:</h3>
+                
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">שיעור:</span>
+                    <span className="font-bold text-[#4B2E83]">{classData?.name}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">תאריך:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {selectedDate ? new Date(selectedDate).toLocaleDateString('he-IL', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      }) : 'לא נבחר'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">שעה:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {selectedTime ? selectedTime.split(' עד ')[0] : 'לא נבחרה'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">מחיר:</span>
+                    <span className="font-bold text-[#EC4899]">{classData?.price} ש"ח</span>
+                  </div>
+                </div>
+              </div>
               
+              {/* Additional Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-right">
+                    <h4 className="font-semibold text-blue-900 mb-2">מה הלאה?</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• תקבלי אימייל אישור עם פרטי השיעור</li>
+                      <li>• פרטי ההרשמה שלך זמינים בפרופיל האישי</li>
+                      <li>• אפשר לבטל עד 48 שעות לפני השיעור</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Buttons */}
               <div className="space-y-3">
                 <button
                   onClick={() => {
                     setShowRegistrationSuccess(false);
                     navigate('/profile');
                   }}
-                  className="w-full bg-[#EC4899] hover:bg-[#EC4899]/90 text-white py-3 px-6 rounded-xl font-bold transition-colors duration-200"
+                  className="w-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] hover:from-[#4B2E83] hover:to-[#EC4899] text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   עבור לפרופיל שלי
                 </button>
@@ -908,13 +1006,36 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 <button
                   onClick={() => {
                     setShowRegistrationSuccess(false);
-                    navigate('/');
+                    navigate('/classes');
                   }}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  הרשמה לשיעור נוסף
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowRegistrationSuccess(false);
+                    navigate('/');
+                  }}
+                  className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-600 py-3 px-6 rounded-xl font-medium transition-colors duration-200"
                 >
                   חזור לדף הבית
                 </button>
               </div>
+              
+              {/* Close button in top-right corner */}
+              <button
+                onClick={() => {
+                  setShowRegistrationSuccess(false);
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                aria-label="סגור"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>

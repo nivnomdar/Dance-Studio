@@ -25,7 +25,7 @@ interface AdminDataContextType {
   fetchShop: () => Promise<void>;
   fetchContact: () => Promise<void>;
   fetchCalendar: () => Promise<void>;
-  fetchProfiles: () => Promise<void>;
+  fetchProfiles: (search?: string) => Promise<any[]>;
   clearCache: () => void;
   resetRateLimit: () => void;
   isFetching: boolean;
@@ -154,7 +154,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // טעינת נתוני שיעורים
   const fetchClasses = useCallback(async (forceRefresh = false) => {
     if (!session) {
-      console.log('fetchClasses: No session available');
       return;
     }
     if (isRateLimited()) {
@@ -162,18 +161,15 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (!forceRefresh && dataRef.current.classes.length > 0 && isDataFresh()) {
-      console.log('fetchClasses: Using cached data');
       return;
     }
 
-    console.log('fetchClasses: Starting to fetch data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
     
     try {
-      console.log('fetchClasses: Making API calls...');
       const [classes, registrations, sessions, session_classes] = await Promise.all([
         apiService.admin.getClasses().catch(error => {
           console.error('fetchClasses: Error fetching classes:', error);
@@ -192,13 +188,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
           return [];
         })
       ]);
-      
-      console.log('fetchClasses: API calls completed:', {
-        classes: classes?.length || 0,
-        registrations: registrations?.length || 0,
-        sessions: sessions?.length || 0,
-        session_classes: session_classes?.length || 0
-      });
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -238,7 +227,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // טעינת נתוני חנות
   const fetchShop = useCallback(async () => {
     if (!session || isFetchingRef.current) {
-      console.log('fetchShop: No session or already fetching');
       return;
     }
     if (isRateLimited()) {
@@ -246,11 +234,9 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (dataRef.current.products.length > 0 && isDataFresh()) {
-      console.log('fetchShop: Using cached data');
       return;
     }
 
-    console.log('fetchShop: Starting to fetch shop data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
@@ -258,7 +244,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     
     try {
       // אין כרגע apiService.shop, נחזיר מערכים ריקים
-      console.log('fetchShop: Setting empty shop data');
       setData(prev => ({
         ...prev,
         products: [],
@@ -279,7 +264,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // טעינת נתוני צור קשר
   const fetchContact = useCallback(async () => {
     if (!session || isFetchingRef.current) {
-      console.log('fetchContact: No session or already fetching');
       return;
     }
     if (isRateLimited()) {
@@ -287,11 +271,9 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (dataRef.current.messages.length > 0 && isDataFresh()) {
-      console.log('fetchContact: Using cached data');
       return;
     }
 
-    console.log('fetchContact: Starting to fetch contact data...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
@@ -299,7 +281,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     
     try {
       // אין כרגע apiService.contact, נחזיר מערך ריק
-      console.log('fetchContact: Setting empty contact data');
       setData(prev => ({
         ...prev,
         messages: [],
@@ -347,29 +328,34 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   }, [session]);
 
   // טעינת נתוני משתמשים
-  const fetchProfiles = useCallback(async () => {
-    if (!session || isFetchingRef.current) return;
+  const fetchProfiles = useCallback(async (search?: string) => {
+    if (!session || isFetchingRef.current) return [];
     if (isRateLimited()) {
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
-      return;
+      return [];
     }
-    if (dataRef.current.profiles && isDataFresh()) return;
+    // Only use cache if no search term is provided
+    if (!search && dataRef.current.profiles && isDataFresh()) return dataRef.current.profiles;
 
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
     setError(null);
     try {
-      const profiles = await apiService.admin.getProfiles();
-      setData(prev => ({
-        ...prev,
-        profiles: profiles || [],
-        lastFetchTime: Date.now()
-      }));
+      const profiles = await apiService.admin.getProfiles(search);
+      if (!search) {
+        setData(prev => ({
+          ...prev,
+          profiles: profiles || [],
+          lastFetchTime: Date.now()
+        }));
+      }
       setError(null);
+      return profiles || [];
     } catch (error) {
       console.error('fetchProfiles: Error:', error);
       setError(error instanceof Error ? error.message : 'שגיאה בטעינת נתונים');
+      return [];
     } finally {
       setIsLoading(false);
       setIsFetching(false);
@@ -404,7 +390,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
         return { totalClasses: 0, totalRegistrations: 0, totalSessions: 0 };
       });
       
-      console.log('fetchOverview: Overview data received:', overview);
+
       
       // ודא שתמיד מחזירים מבנה מלא
       setData(prev => {
@@ -468,40 +454,25 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
 
   // טעינת נתונים ראשונית כשהדשבורד נטען
   useEffect(() => {
-    console.log('AdminDataContext: useEffect triggered', {
-      session: !!session,
-      globalHasInitialized: globalHasInitializedRef.current,
-      fetchFunctionsRef: !!fetchFunctionsRef.current
-    });
-    
     if (!session) {
-      console.log('AdminDataContext: No session, returning');
       return;
     }
-    
     // טען נתונים רק אם אין נתונים קיימים
     if (!globalHasInitializedRef.current && fetchFunctionsRef.current) {
-      console.log('AdminDataContext: Starting initial data fetch');
       globalHasInitializedRef.current = true;
-      
       // טען נתונים עם timeout כדי למנוע blocking
       setTimeout(() => {
         if (fetchFunctionsRef.current) {
-          console.log('AdminDataContext: Executing fetch functions');
           fetchFunctionsRef.current.fetchOverview();
           fetchFunctionsRef.current.fetchClasses();
           fetchFunctionsRef.current.fetchShop();
           fetchFunctionsRef.current.fetchContact();
-          fetchFunctionsRef.current.fetchProfiles();
+          // קריאה לאתחול ראשוני בלבד, לא חיפוש
+          fetchProfiles();
         }
       }, 100);
-    } else {
-      console.log('AdminDataContext: Skipping initial fetch', {
-        globalHasInitialized: globalHasInitializedRef.current,
-        fetchFunctionsRef: !!fetchFunctionsRef.current
-      });
     }
-  }, [session]);
+  }, [session, fetchProfiles]);
 
   // רענון נתונים כל 5 דקות
   useEffect(() => {

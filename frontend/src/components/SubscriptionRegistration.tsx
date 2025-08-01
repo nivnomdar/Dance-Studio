@@ -333,6 +333,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
         user_id: user.id, // Add user_id explicitly
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
         ...(spotsInfo?.sessionClassId && { session_class_id: spotsInfo.sessionClassId }),
+        // Always include session_class_id - the backend will handle finding/creating it
+        session_class_id: spotsInfo?.sessionClassId || null,
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
@@ -352,22 +354,37 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       
       if (availableCredits > 0) {
         // Use existing credit
-        await subscriptionCreditsService.useCredit(user.id, creditGroup);
+        console.log(`Using existing credit for user ${user.id}, credit_group: ${creditGroup}, available: ${availableCredits}`);
+        try {
+          await subscriptionCreditsService.useCredit(user.id, creditGroup);
+          console.log(`Successfully used credit for user ${user.id}`);
+        } catch (creditError) {
+          console.error('Error using credit:', creditError);
+          // Don't fail the registration, just log the error
+        }
       } else {
         // Create new subscription with credits based on class data
         // User pays for the class and gets credits for future use
         const totalCredits = getCreditAmount();
         
-        // First, create the subscription with full credits
-        await subscriptionCreditsService.addCredits({
-          user_id: user.id,
-          credit_group: creditGroup,
-          remaining_credits: totalCredits, // Full amount - they paid for all credits
-          expires_at: undefined
-        });
+        console.log(`Creating new subscription for user ${user.id}, credit_group: ${creditGroup}, total_credits: ${totalCredits}`);
         
-        // Then, immediately use one credit for this registration
-        await subscriptionCreditsService.useCredit(user.id, creditGroup);
+        try {
+          // First, create the subscription with full credits
+          await subscriptionCreditsService.addCredits({
+            user_id: user.id,
+            credit_group: creditGroup,
+            remaining_credits: totalCredits, // Full amount - they paid for all credits
+            expires_at: undefined
+          });
+          
+          // Then, immediately use one credit for this registration
+          await subscriptionCreditsService.useCredit(user.id, creditGroup);
+          console.log(`Successfully created subscription and used credit for user ${user.id}`);
+        } catch (creditError) {
+          console.error('Error creating subscription or using credit:', creditError);
+          // Don't fail the registration, just log the error
+        }
       }
 
       setShowRegistrationSuccess(true);

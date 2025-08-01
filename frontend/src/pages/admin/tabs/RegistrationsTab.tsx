@@ -229,11 +229,20 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     const isNewRegistration = !updatedRegistration.id;
     setIsSavingRegistration(true);
     
+    console.log('=== FRONTEND: SAVING REGISTRATION ===');
+    console.log('Saving registration:', { isNewRegistration, updatedRegistration, session: !!session });
+    console.log('Full registration data:', JSON.stringify(updatedRegistration, null, 2));
+    
     try {
       let response;
       
       if (isNewRegistration) {
         // Create new registration
+        console.log('=== FRONTEND: CREATING NEW REGISTRATION ===');
+        console.log('Creating new registration with data:', updatedRegistration);
+        console.log('Session access token:', session.access_token ? 'Present' : 'Missing');
+        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/registrations`);
+        
         response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations`, {
           method: 'POST',
           headers: {
@@ -242,8 +251,22 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           },
           body: JSON.stringify(updatedRegistration)
         });
+        
+        console.log('=== FRONTEND: RESPONSE RECEIVED ===');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Response error text:', errorText);
+          console.error('Response error status:', response.status);
+        } else {
+          const responseData = await response.json();
+          console.log('Response success data:', responseData);
+        }
       } else {
         // Update existing registration
+        console.log('=== FRONTEND: UPDATING EXISTING REGISTRATION ===');
         response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
           method: 'PUT',
           headers: {
@@ -262,6 +285,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
       setRegistrationEditModalOpen(false);
       setEditingRegistration(null);
     } catch (error) {
+      console.error('=== FRONTEND: ERROR SAVING REGISTRATION ===');
       console.error('Error saving registration:', error);
       alert(isNewRegistration ? 'שגיאה ביצירת ההרשמה' : 'שגיאה בעדכון ההרשמה');
     } finally {
@@ -729,6 +753,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           isNewRegistration={!editingRegistration.id}
           classes={data.classes || []}
           sessions={data.sessions || []}
+          session_classes={data.session_classes || []}
           profiles={data.profiles || []}
         />
       )}

@@ -371,10 +371,11 @@ export const apiService = {
       });
     },
 
-    async getProfiles(): Promise<any[]> {
+    async getProfiles(search?: string): Promise<any[]> {
       const headers = await getAuthHeaders();
+      const searchParam = search ? `?search=${encodeURIComponent(search)}` : '';
       return fetchWithRetryAndQueue<any[]>(() => 
-        fetch(`${API_BASE_URL}/profiles/admin`, { headers })
+        fetch(`${API_BASE_URL}/profiles/admin${searchParam}`, { headers })
       ).catch(error => {
         console.error('Admin API getProfiles error:', error);
         return [];

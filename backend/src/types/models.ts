@@ -33,6 +33,11 @@ export interface Registration {
   used_credit?: boolean;
   credit_type?: 'group' | 'private';
   purchase_price?: number;
+  // Enhanced fields
+  payment_method?: 'cash' | 'credit' | 'card_online' | 'bit' | 'credit_usage';
+  session_selection?: 'custom' | 'scheduled';
+  session_id?: string;
+  session_class_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +79,9 @@ export interface CreateRegistrationRequest {
   used_credit?: boolean;
   credit_type?: 'group' | 'private';
   purchase_price?: number;
+  // Enhanced fields
+  payment_method?: 'cash' | 'credit' | 'online' | 'credit_usage';
+  session_selection?: 'custom' | 'scheduled';
 }
 
 export interface UpdateRegistrationRequest extends Partial<CreateRegistrationRequest> {

@@ -69,50 +69,60 @@ class SubscriptionCreditsService {
 
   // Use a credit (decrease remaining credits)
   async useCredit(userId: string, creditGroup: CreditGroup): Promise<SubscriptionCredit> {
-    // Get available credits for this group
-    const credits = await this.getCreditsForGroup(userId, creditGroup);
-    
-    if (credits.length === 0) {
-      throw new Error(`No credits available for group ${creditGroup}`);
+    try {
+      // Get available credits for this group
+      const credits = await this.getCreditsForGroup(userId, creditGroup);
+      
+      if (credits.length === 0) {
+        throw new Error(`No credits available for group ${creditGroup}`);
+      }
+
+      // Find the first credit with remaining credits
+      const availableCredit = credits.find(c => c.remaining_credits > 0);
+      
+      if (!availableCredit) {
+        throw new Error(`No remaining credits for group ${creditGroup}`);
+      }
+
+      // Update the credit
+      const { data, error } = await supabase
+        .from('subscription_credits')
+        .update({ 
+          remaining_credits: availableCredit.remaining_credits - 1 
+        })
+        .eq('id', availableCredit.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to use credit: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Error using credit for user ${userId}, group ${creditGroup}:`, error);
+      throw error;
     }
-
-    // Find the first credit with remaining credits
-    const availableCredit = credits.find(c => c.remaining_credits > 0);
-    
-    if (!availableCredit) {
-      throw new Error(`No remaining credits for group ${creditGroup}`);
-    }
-
-    // Update the credit
-    const { data, error } = await supabase
-      .from('subscription_credits')
-      .update({ 
-        remaining_credits: availableCredit.remaining_credits - 1 
-      })
-      .eq('id', availableCredit.id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to use credit: ${error.message}`);
-    }
-
-    return data;
   }
 
   // Add credits to user
   async addCredits(request: CreateSubscriptionCreditRequest): Promise<SubscriptionCredit> {
-    const { data, error } = await supabase
-      .from('subscription_credits')
-      .insert([request])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('subscription_credits')
+        .insert([request])
+        .select()
+        .single();
 
-    if (error) {
-      throw new Error(`Failed to add credits: ${error.message}`);
+      if (error) {
+        throw new Error(`Failed to add credits: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Error adding credits for user ${request.user_id}, group ${request.credit_group}:`, error);
+      throw error;
     }
-
-    return data;
   }
 
   // Update existing credits

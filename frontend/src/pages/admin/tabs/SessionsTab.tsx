@@ -317,6 +317,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
           isNewRegistration={false}
           classes={data.classes || []}
           sessions={data.sessions || []}
+          session_classes={data.session_classes || []}
           profiles={data.profiles || []}
         />
       )}

@@ -14,50 +14,52 @@ declare global {
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('Auth middleware: checking authorization...');
+    console.log('Auth middleware: headers:', req.headers);
+    
     // קבל את ה-token מה-headers
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Auth middleware: No authorization header or invalid format');
       throw new AppError('No authorization token provided', 401);
     }
 
     const token = authHeader.substring(7); // הסר את "Bearer "
+    console.log('Auth middleware: Token extracted, length:', token.length);
 
     // בדוק את ה-token עם Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.log('Auth middleware: Token validation failed:', error);
       throw new AppError('Invalid or expired token', 401);
     }
 
+    console.log('Auth middleware: User authenticated successfully:', user.id);
     req.user = user;
     next();
   } catch (error) {
+    console.log('Auth middleware: Error:', error);
     next(error);
   }
 };
 
 export const admin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log('Admin middleware: Starting...');
     // קבל את ה-token מה-headers
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Admin middleware: No valid authorization header');
       throw new AppError('No authorization token provided', 401);
     }
 
     const token = authHeader.substring(7);
-    console.log('Admin middleware: Token received, length:', token.length);
 
     // בדוק את ה-token עם Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.log('Admin middleware: Invalid token:', error);
       throw new AppError('Invalid or expired token', 401);
     }
-
-    console.log('Admin middleware: user authenticated:', user.id);
 
     // בדוק אם המשתמש הוא מנהל
     const { data: profile, error: profileError } = await supabase
@@ -67,15 +69,12 @@ export const admin = async (req: Request, res: Response, next: NextFunction) => 
       .single();
 
     if (profileError || !profile || profile.role !== 'admin') {
-      console.log('Admin middleware: access denied for user:', user.id, 'role:', profile?.role);
       throw new AppError('Access denied. Admin only.', 403);
     }
 
-    console.log('Admin middleware: user is admin:', user.id);
     req.user = user;
     next();
   } catch (error) {
-    console.log('Admin middleware: Error:', error);
     next(error);
   }
 }; 

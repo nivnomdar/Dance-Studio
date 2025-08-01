@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  getAvailableDatesForButtonsFromSessions,
-  getAvailableTimesForDateFromSessions,
-  getAvailableDatesMessageFromSessions
+  getAvailableDatesForSession,
+  getAvailableTimesForSessionAndDate,
+  getAvailableDatesMessageForSession
 } from '../../../utils/sessionsUtils';
-import { FaCalendar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCalendar } from 'react-icons/fa';
+import UserDetailsSection from '../../../components/common/UserDetailsSection';
+import RegistrationDetailsSection from '../../../components/common/RegistrationDetailsSection';
+import { useAdminData } from '../../../contexts/AdminDataContext';
 
 interface RegistrationEditModalProps {
   registrationData: any;
@@ -15,6 +18,7 @@ interface RegistrationEditModalProps {
   isNewRegistration?: boolean;
   classes?: any[];
   sessions?: any[];
+  session_classes?: any[];
   profiles?: any[];
 }
 
@@ -27,26 +31,37 @@ export default function RegistrationEditModal({
   isNewRegistration = false,
   classes = [],
   sessions = [],
+  session_classes = [],
   profiles = []
 }: RegistrationEditModalProps) {
+  const { fetchProfiles } = useAdminData();
   const isNewReg = isNewRegistration || !registrationData.id;
   
   const [formData, setFormData] = useState({
-    // User selection
     user_id: registrationData.user_id || '',
     
     // Registration details
     class_id: registrationData.class_id || '',
     session_id: registrationData.session_id || '',
+    session_class_id: registrationData.session_class_id || '',
     selected_date: registrationData.selected_date || '',
     selected_time: registrationData.selected_time || '',
     status: registrationData.status || 'active',
     
     // Credit and payment details
     purchase_price: registrationData.purchase_price || '',
+    used_credit: registrationData.used_credit || false,
+    credit_type: registrationData.credit_type || '',
+    payment_method: registrationData.payment_method || 'cash',
     
-    // Additional fields for new registration
-    notes: registrationData.notes || ''
+    // Session selection
+    session_selection: registrationData.session_selection || 'custom',
+    
+    // Manual user details fields
+    first_name: registrationData.first_name || '',
+    last_name: registrationData.last_name || '',
+    email: registrationData.email || '',
+    phone: registrationData.phone || ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -59,7 +74,45 @@ export default function RegistrationEditModal({
   const [datesMessage, setDatesMessage] = useState('');
   const [useCustomDateTime, setUseCustomDateTime] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showCustomTimePicker, setShowCustomTimePicker] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isSearchingProfiles, setIsSearchingProfiles] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>(profiles || []);
+  const previousProfilesRef = useRef<any[]>([]);
+  
+  // Add state for user credits
+  const [userCredits, setUserCredits] = useState<any>(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Prevent modal from closing automatically
+  useEffect(() => {
+    if (showSuccessModal) {
+      // Disable body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Re-enable body scroll when modal is closed
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showSuccessModal]);
+
+  // Reset search results when opening modal or profiles prop changes
+  useEffect(() => {
+    const newProfiles = profiles || [];
+    const currentIds = searchResults.map(p => p.id).sort();
+    const newIds = newProfiles.map(p => p.id).sort();
+    const previousIds = previousProfilesRef.current.map(p => p.id).sort();
+    
+    // Only update if profiles are actually different from previous
+    if (JSON.stringify(currentIds) !== JSON.stringify(newIds) && 
+        JSON.stringify(previousIds) !== JSON.stringify(newIds)) {
+      setSearchResults(newProfiles);
+      previousProfilesRef.current = newProfiles;
+    }
+  }, [profiles, isOpen]); // Remove searchResults from dependencies
 
   useEffect(() => {
     if (isNewReg) {
@@ -68,48 +121,91 @@ export default function RegistrationEditModal({
         user_id: '',
         class_id: '',
         session_id: '',
+        session_class_id: '',
         selected_date: '',
         selected_time: '',
         status: 'active',
         purchase_price: '',
-        notes: ''
+        used_credit: false,
+        credit_type: '',
+        payment_method: 'cash',
+        session_selection: 'custom',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: ''
       });
     } else {
       // Set form for editing existing registration
-    setFormData({
+      setFormData({
         user_id: registrationData.user_id || '',
         class_id: registrationData.class_id || '',
         session_id: registrationData.session_id || '',
+        session_class_id: registrationData.session_class_id || '',
         selected_date: registrationData.selected_date || '',
         selected_time: registrationData.selected_time || '',
         status: registrationData.status || 'active',
         purchase_price: registrationData.purchase_price || '',
-        notes: registrationData.notes || ''
+        used_credit: registrationData.used_credit || false,
+        credit_type: registrationData.credit_type || '',
+        payment_method: registrationData.payment_method || 'cash',
+        session_selection: registrationData.session_selection || 'custom',
+        first_name: registrationData.first_name || '',
+        last_name: registrationData.last_name || '',
+        email: registrationData.email || '',
+        phone: registrationData.phone || ''
       });
     }
     setErrors({});
   }, [registrationData, isNewReg]);
 
-  // Load available dates when class is selected
+  // Load available dates and times when class changes
   useEffect(() => {
-    if (formData.class_id && isNewReg && !useCustomDateTime) {
-      loadAvailableDates(formData.class_id);
+    if (isNewReg && formData.session_id && !useCustomDateTime) {
+      loadAvailableDates(formData.session_id);
+      if (formData.selected_date) {
+        loadAvailableTimes(formData.session_id, formData.selected_date);
+      }
     }
-  }, [formData.class_id, isNewReg, useCustomDateTime]);
+  }, [formData.session_id, formData.selected_date, isNewReg, useCustomDateTime]);
 
-  // Load available times when date is selected
+  // Load user credits when user is selected
   useEffect(() => {
-    if (formData.class_id && formData.selected_date && isNewReg && !useCustomDateTime) {
-      loadAvailableTimes(formData.class_id, formData.selected_date);
+    if (isNewReg && formData.user_id) {
+      loadUserCredits(formData.user_id);
     }
-  }, [formData.class_id, formData.selected_date, isNewReg, useCustomDateTime]);
+  }, [formData.user_id, isNewReg]);
 
-  const loadAvailableDates = async (classId: string) => {
+  const loadUserCredits = async (userId: string) => {
+    try {
+      setLoadingCredits(true);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscription-credits/user/${userId}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const credits = await response.json();
+        setUserCredits(credits);
+      } else {
+        setUserCredits(null);
+      }
+    } catch (error) {
+      console.error('Error loading user credits:', error);
+      setUserCredits(null);
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
+
+  const loadAvailableDates = async (sessionId: string) => {
     try {
       setLoadingDates(true);
+      // For now, we'll use the existing function but we should create session-specific functions
       const [dates, message] = await Promise.all([
-        getAvailableDatesForButtonsFromSessions(classId),
-        getAvailableDatesMessageFromSessions(classId)
+        getAvailableDatesForSession(sessionId),
+        getAvailableDatesMessageForSession(sessionId)
       ]);
       setAvailableDates(dates);
       setDatesMessage(message);
@@ -122,10 +218,11 @@ export default function RegistrationEditModal({
     }
   };
 
-  const loadAvailableTimes = async (classId: string, date: string) => {
+  const loadAvailableTimes = async (sessionId: string, date: string) => {
     try {
       setLoadingTimes(true);
-      const times = await getAvailableTimesForDateFromSessions(classId, date);
+      // For now, we'll use the existing function but we should create session-specific functions
+      const times = await getAvailableTimesForSessionAndDate(sessionId, date);
       setAvailableTimes(times);
     } catch (error) {
       console.error('Error loading available times:', error);
@@ -135,41 +232,165 @@ export default function RegistrationEditModal({
     }
   };
 
+  // Handle profile search
+  const handleProfileSearch = useCallback(async (searchTerm: string) => {
+    try {
+      setIsSearchingProfiles(true);
+      const results = await fetchProfiles(searchTerm);
+      
+      // Only update if results are different
+      setSearchResults(prev => {
+        const currentIds = prev.map(p => p.id).sort();
+        const newIds = results.map(p => p.id).sort();
+        
+        if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+          return results || [];
+        }
+        return prev;
+      });
+    } catch (error) {
+      setSearchResults([]);
+      console.error('Error searching profiles:', error);
+    } finally {
+      setIsSearchingProfiles(false);
+    }
+  }, [fetchProfiles]);
+
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (isNewReg) {
+      // Step 1: User selection is always first
       if (!formData.user_id) newErrors.user_id = 'בחירת משתמש היא שדה חובה';
-      if (!formData.class_id) newErrors.class_id = 'בחירת שיעור היא שדה חובה';
-      if (!formData.selected_date) newErrors.selected_date = 'תאריך הוא שדה חובה';
-      if (!formData.selected_time) newErrors.selected_time = 'שעה היא שדה חובה';
+      
+      // Step 2: Session selection (only if user is selected)
+      if (formData.user_id && !formData.session_id) newErrors.session_id = 'בחירת קבוצה היא שדה חובה';
+      
+      // Step 3: Class selection (only if session is selected)
+      if (formData.user_id && formData.session_id && !formData.class_id) newErrors.class_id = 'בחירת שיעור היא שדה חובה';
+      
+      // Step 4: Date and time (only if class is selected)
+      if (formData.user_id && formData.session_id && formData.class_id && !formData.selected_date) newErrors.selected_date = 'תאריך הוא שדה חובה';
+      if (formData.user_id && formData.session_id && formData.class_id && formData.selected_date && !formData.selected_time) newErrors.selected_time = 'שעה היא שדה חובה';
+      
+      // Step 5: Payment details (only if date and time are selected)
+      if (formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time) {
+        if (!formData.purchase_price || formData.purchase_price <= 0) newErrors.purchase_price = 'מחיר רכישה הוא שדה חובה';
+        if (!formData.payment_method) newErrors.payment_method = 'שיטת תשלום היא שדה חובה';
+        
+        // Check phone number
+        const phone = formData.phone || searchResults.find(p => p.id === formData.user_id)?.phone || searchResults.find(p => p.id === formData.user_id)?.phone_number || '';
+        if (!phone) newErrors.phone = 'מספר טלפון הוא שדה חובה';
+        
+        // Check credits if payment method is credit_usage
+        if (formData.payment_method === 'credit_usage') {
+          if (!userCredits || !userCredits.credits || userCredits.credits.length === 0) {
+            newErrors.payment_method = 'אין קרדיטים זמינים למשתמש זה';
+          } else {
+            const totalCredits = userCredits.credits.reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0);
+            if (totalCredits <= 0) {
+              newErrors.payment_method = 'אין קרדיטים זמינים למשתמש זה';
+            }
+          }
+        }
+      }
+      
+      // Conditional validation based on class type
+      const selectedClass = classes.find(c => c.id === formData.class_id);
+      if (selectedClass) {
+        // Check if class requires credits
+        if ((selectedClass.group_credits > 0 || selectedClass.private_credits > 0) && formData.used_credit && !formData.credit_type) {
+          newErrors.credit_type = 'יש לבחור סוג קרדיט';
+        }
+        
+        // Check if class is a trial class
+        if (selectedClass.slug === 'trial-class') {
+          // Additional validation for trial classes if needed
+        }
+      }
+      
+      // Validate session selection if using scheduled sessions
+      if (formData.session_selection === 'scheduled' && !formData.session_id) {
+        newErrors.session_id = 'יש לבחור מפגש קבוע';
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const checkAvailability = async () => {
+    if (!formData.session_id || !formData.selected_date || !formData.selected_time) {
+      return { available: true, message: '' };
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/sessions/spots/${formData.session_id}/${formData.selected_date}/${formData.selected_time}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      } else {
+        console.error('Failed to check availability');
+        return { available: 0, message: 'שגיאה בבדיקת זמינות' };
+      }
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      return { available: 0, message: 'שגיאה בבדיקת זמינות' };
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
 
+    // Check availability before saving
+    if (isNewReg && formData.session_id && formData.selected_date && formData.selected_time) {
+      const availability = await checkAvailability();
+      
+      if (availability.available <= 0) {
+        setErrors(prev => ({
+          ...prev,
+          selected_time: `אין מקום פנוי בשעה זו. ${availability.message}`
+        }));
+        return;
+      }
+    }
+
     // Get selected user details
-    const selectedUser = profiles.find(p => p.id === formData.user_id);
+    const selectedUser = searchResults.find(p => p.id === formData.user_id);
+    
+    console.log('Selected user:', selectedUser);
+    console.log('Search results:', searchResults);
+    console.log('Form user_id:', formData.user_id);
     
     const submissionData = {
       ...registrationData,
       ...formData,
-      // Add user details for the API
-      first_name: selectedUser?.first_name || '',
-      last_name: selectedUser?.last_name || '',
-      email: selectedUser?.email || '',
-      phone: selectedUser?.phone_number || ''
+      // Use manual fields if provided, otherwise use user profile data
+      first_name: formData.first_name || selectedUser?.first_name || '',
+      last_name: formData.last_name || selectedUser?.last_name || '',
+      email: selectedUser?.email || '', // Always use email from profile
+      phone: formData.phone || selectedUser?.phone || selectedUser?.phone_number || '',
+      // Ensure all new fields are included
+      payment_method: formData.payment_method,
+      used_credit: formData.used_credit,
+      credit_type: formData.credit_type,
+      session_selection: formData.session_selection,
+      session_class_id: formData.session_class_id,
+      // שלח רק את שעת ההתחלה
+      selected_time: formData.selected_time?.split(' עד ')[0] || formData.selected_time
     };
 
+    console.log('Sending registration data:', submissionData);
+
     onSave(submissionData);
+    
+    // הצג מודל הצלחה
+    setShowSuccessModal(true);
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -179,66 +400,103 @@ export default function RegistrationEditModal({
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
     
+    // Clear class when session changes
+    if (field === 'session_id') {
+      setFormData(prev => ({ 
+        ...prev, 
+        class_id: '', 
+        purchase_price: '', 
+        credit_type: '', 
+        used_credit: false 
+      }));
+    }
+    
     // Auto-set price when class is selected
     if (field === 'class_id' && value) {
       const selectedClass = classes.find(cls => cls.id === value);
       if (selectedClass && selectedClass.price) {
         setFormData(prev => ({ ...prev, purchase_price: selectedClass.price }));
       }
+      
+      // Reset credit type when class changes
+      setFormData(prev => ({ ...prev, credit_type: '', used_credit: false }));
     }
-  };
-
-  const getSelectedUser = () => {
-    if (!formData.user_id) return null;
-    return profiles.find(p => p.id === formData.user_id);
-  };
-
-  const selectedUser = getSelectedUser();
-
-  // Date picker helper functions
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
     
-    const days = [];
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null);
+    // Handle credit type selection
+    if (field === 'credit_type' && value) {
+      setFormData(prev => ({ ...prev, used_credit: true }));
     }
-    // Add all days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
+    
+    // Handle session selection
+    if (field === 'session_selection') {
+      if (value === 'custom') {
+        setFormData(prev => ({ ...prev, session_id: '', session_class_id: '' }));
+      }
     }
-    return days;
+
+    // Check availability when date or time changes
+    if ((field === 'selected_date' || field === 'selected_time') && 
+        formData.session_id && 
+        (field === 'selected_date' ? value : formData.selected_date) && 
+        (field === 'selected_time' ? value : formData.selected_time)) {
+      
+      const checkAvailabilityForSelection = async () => {
+        const date = field === 'selected_date' ? value : formData.selected_date;
+        const time = field === 'selected_time' ? value : formData.selected_time;
+        
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/sessions/spots/${formData.session_id}/${date}/${time}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.available <= 0) {
+              setErrors(prev => ({
+                ...prev,
+                selected_time: `אין מקום פנוי בשעה זו. ${data.message}`
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error checking availability:', error);
+        }
+      };
+      
+      checkAvailabilityForSelection();
+    }
+
+    // Check credits when payment method changes to credit_usage
+    if (field === 'payment_method' && value === 'credit_usage') {
+      if (userCredits && userCredits.credits && userCredits.credits.length > 0) {
+        const totalCredits = userCredits.credits.reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0);
+        if (totalCredits <= 0) {
+          setErrors(prev => ({
+            ...prev,
+            payment_method: 'אין קרדיטים זמינים למשתמש זה'
+          }));
+          // Reset payment method to empty
+          setFormData(prev => ({ ...prev, payment_method: '' }));
+        }
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          payment_method: 'אין קרדיטים זמינים למשתמש זה'
+        }));
+        // Reset payment method to empty
+        setFormData(prev => ({ ...prev, payment_method: '' }));
+      }
+    }
   };
 
   const formatDateForInput = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
-
-  const isSelected = (date: Date) => {
-    return formData.selected_date === formatDateForInput(date);
-  };
-
-  const isAvailableDate = (date: Date) => {
-    if (useCustomDateTime) return true;
-    return availableDates.includes(formatDateForInput(date));
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const handleDateSelect = (date: Date) => {
-    if (isAvailableDate(date)) {
       handleInputChange('selected_date', formatDateForInput(date));
       setShowDatePicker(false);
-    }
   };
 
   const nextMonth = () => {
@@ -247,6 +505,14 @@ export default function RegistrationEditModal({
 
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const handleMonthChange = (direction: 'next' | 'prev') => {
+    if (direction === 'next') {
+      nextMonth();
+    } else {
+      prevMonth();
+    }
   };
 
   if (!isOpen) return null;
@@ -283,537 +549,315 @@ export default function RegistrationEditModal({
 
         <div className="overflow-y-auto max-h-[calc(95vh-140px)]">
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-            {/* בחירת משתמש */}
-            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-                בחירת משתמש
-              </h3>
-              <div className="space-y-3">
-                {isNewReg ? (
-                  // New registration - show user selection
-          <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                      בחרי משתמש *
-            </label>
-                    <select
-                      required
-                      value={formData.user_id}
-                      onChange={(e) => handleInputChange('user_id', e.target.value)}
-                      className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                        errors.user_id 
-                          ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                      }`}
-                    >
-                      <option value="">בחרי משתמש</option>
-                      {profiles.map((profile: any) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.first_name} {profile.last_name} - {profile.email}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.user_id && (
-                      <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
-                    )}
-                    
-                    {/* Show selected user details */}
-                    {selectedUser && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="font-medium text-[#4B2E83]">שם מלא:</span>
-                            <span className="text-[#4B2E83]/70 mr-2"> {selectedUser.first_name} {selectedUser.last_name}</span>
-                          </div>
-                          <div>
-                            <span className="font-medium text-[#4B2E83]">אימייל:</span>
-                            <span className="text-[#4B2E83]/70 mr-2"> {selectedUser.email}</span>
-                          </div>
-                          {selectedUser.phone_number && (
-                            <div>
-                              <span className="font-medium text-[#4B2E83]">טלפון:</span>
-                              <span className="text-[#4B2E83]/70 mr-2"> {selectedUser.phone_number}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Existing registration - show read-only user info
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">שם מלא</p>
-              <p className="text-sm text-[#4B2E83]/70">
-                {registrationData.user ? 
-                  `${registrationData.user.first_name || ''} ${registrationData.user.last_name || ''}`.trim() || registrationData.user.email :
-                  `${registrationData.first_name || ''} ${registrationData.last_name || ''}`.trim() || registrationData.email || 'לא ידוע'
-                }
-              </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">אימייל</p>
-                        <p className="text-sm text-[#4B2E83]/70">{registrationData.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">טלפון</p>
-                        <p className="text-sm text-[#4B2E83]/70">{registrationData.phone || 'לא צוין'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <UserDetailsSection
+              isNewRegistration={isNewReg}
+              formData={formData}
+              registrationData={registrationData}
+              profiles={searchResults}
+              errors={errors}
+              onInputChange={handleInputChange}
+              onSearchProfiles={handleProfileSearch}
+              isLoadingProfiles={isSearchingProfiles}
+            />
 
-            {/* פרטי הרשמה */}
-            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                פרטי הרשמה
-              </h3>
-              <div className="space-y-3">
-                {isNewReg ? (
-                  // New registration - show form fields
-                  <div className="space-y-3">
-                    {/* Class Selection */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                        שיעור *
-                      </label>
-                      <select
-                        required
-                        value={formData.class_id}
-                        onChange={(e) => handleInputChange('class_id', e.target.value)}
-                        className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                          errors.class_id 
-                            ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                            : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                        }`}
-                      >
-                        <option value="">בחרי שיעור</option>
-                        {classes.map((cls: any) => (
-                          <option key={cls.id} value={cls.id}>{cls.name}</option>
-                        ))}
-                      </select>
-                      {errors.class_id && (
-                        <p className="text-red-500 text-xs mt-1">{errors.class_id}</p>
+            <RegistrationDetailsSection
+              isNewRegistration={isNewReg}
+              formData={formData}
+              registrationData={registrationData}
+              classes={classes}
+              sessions={sessions}
+              session_classes={session_classes}
+              errors={errors}
+              onInputChange={handleInputChange}
+              useCustomDateTime={useCustomDateTime}
+              setUseCustomDateTime={setUseCustomDateTime}
+              showDatePicker={showDatePicker}
+              setShowDatePicker={setShowDatePicker}
+              showTimePicker={showTimePicker}
+              setShowTimePicker={setShowTimePicker}
+              showCustomTimePicker={showCustomTimePicker}
+              setShowCustomTimePicker={setShowCustomTimePicker}
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+              availableDates={availableDates}
+              availableTimes={availableTimes}
+              loadingDates={loadingDates}
+              loadingTimes={loadingTimes}
+              datesMessage={datesMessage}
+              onDateSelect={handleDateSelect}
+              onTimeSelect={(time: string) => handleInputChange('selected_time', time)}
+              onMonthChange={handleMonthChange}
+              userCredits={userCredits}
+              loadingCredits={loadingCredits}
+            />
+
+            {/* Registration Summary - Only show when all required fields are filled */}
+            {isNewReg && formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time && formData.purchase_price && formData.purchase_price > 0 && formData.payment_method && (
+              <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#4B2E83]">סיכום ההרשמה</h3>
+                </div>
+                
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    קביעת{' '}
+                    <span className="font-semibold text-[#4B2E83]">
+                      {classes.find(c => c.id === formData.class_id)?.name}
+                    </span>
+                    {' '}בקבוצה{' '}
+                    <span className="font-semibold text-[#4B2E83]">
+                      {sessions.find(s => s.id === formData.session_id)?.name}
+                    </span>
+                    {' '}ל
+                    <span className="font-semibold text-[#4B2E83]">
+                      {searchResults.find(p => p.id === formData.user_id)?.first_name} {searchResults.find(p => p.id === formData.user_id)?.last_name}
+                    </span>
+                    {' '}בתאריך{' '}
+                    <span className="font-semibold text-[#4B2E83]">
+                      {new Date(formData.selected_date).toLocaleDateString('he-IL')}
+                    </span>
+                    {' '}ב
+                    <span className="font-semibold text-[#4B2E83]">
+                      {new Date(formData.selected_date).toLocaleDateString('he-IL', { weekday: 'long' })}
+                    </span>
+                    {' '}בשעה{' '}
+                    <span className="font-semibold text-[#4B2E83]">
+                      {formData.selected_time}
+                    </span>
+                    {' '}במחיר של{' '}
+                    <span className="font-semibold text-[#EC4899]">
+                      {formData.purchase_price} ש"ח
+                    </span>
+                    {' '}בתשלום{' '}
+                    <span className="font-semibold text-[#4B2E83]">
+                      {formData.payment_method === 'cash' ? 'מזומן' : 
+                       formData.payment_method === 'credit' ? 'כרטיס אשראי' : 
+                       formData.payment_method === 'card_online' ? 'כרטיס אשראי באתר' : 
+                       formData.payment_method === 'bit' ? 'ביט' : 
+                       formData.payment_method === 'credit_usage' ? 'קרדיט' : formData.payment_method}
+                    </span>
+                    ?
+                  </p>
+                </div>
+
+                {/* Additional Details Summary */}
+                {(formData.credit_type || formData.session_selection !== 'custom') && (
+                  <div className="mt-4 pt-3 border-t border-[#EC4899]/20">
+                    <h4 className="text-sm font-semibold text-[#4B2E83] mb-2">פרטים נוספים:</h4>
+                    <div className="space-y-1 text-xs text-gray-600">
+                      {formData.credit_type && (
+                        <div className="flex justify-between">
+                          <span>סוג קרדיט:</span>
+                          <span className="font-medium">
+                            {formData.credit_type === 'group' ? 'קבוצה' : 'פרטי'}
+                          </span>
+                        </div>
+                      )}
+                      {formData.session_selection === 'scheduled' && (
+                        <div className="flex justify-between">
+                          <span>סוג מפגש:</span>
+                          <span className="font-medium">מפגש קבוע</span>
+                        </div>
                       )}
                     </div>
-
-                                        {/* Date and Time Selection */}
-                    {formData.class_id && (
-                      <div className="space-y-3">
-                        {/* Custom DateTime Toggle */}
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id="customDateTime"
-                            checked={useCustomDateTime}
-                            onChange={(e) => {
-                              setUseCustomDateTime(e.target.checked);
-                              if (e.target.checked) {
-                                // Clear existing selections when switching to custom
-                                handleInputChange('selected_date', '');
-                                handleInputChange('selected_time', '');
-                              }
-                            }}
-                            className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2"
-                          />
-                          <label htmlFor="customDateTime" className="text-xs sm:text-sm font-medium text-[#4B2E83]">
-                            בחרי תאריך ושעה ידנית
-                          </label>
-                        </div>
-
-                        {useCustomDateTime ? (
-                          // Custom DateTime Inputs
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                                תאריך מותאם אישית *
-                              </label>
-                              <div className="relative">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="text"
-                                    required
-                                    value={formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL') : ''}
-                                    onChange={(e) => handleInputChange('selected_date', e.target.value)}
-                                    placeholder="בחרי תאריך"
-                                    readOnly
-                                    className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                                      errors.selected_date 
-                                        ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                                        : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                                    }`}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowDatePicker(!showDatePicker)}
-                                    className="px-3 py-1.5 sm:py-2 bg-[#EC4899] text-white rounded-lg hover:bg-[#EC4899]/80 transition-colors"
-                                  >
-                                    <FaCalendar className="w-3 h-3" />
-                                  </button>
-                                </div>
-                                
-                                {/* Date Picker Dropdown */}
-                                {showDatePicker && (
-                                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-3">
-                                    {/* Header */}
-                                    <div className="flex items-center justify-between mb-3">
-                                      <button
-                                        type="button"
-                                        onClick={prevMonth}
-                                        className="p-1 hover:bg-gray-100 rounded"
-                                      >
-                                        <FaChevronLeft className="w-3 h-3" />
-                                      </button>
-                                      <span className="text-sm font-medium">
-                                        {currentMonth.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' })}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={nextMonth}
-                                        className="p-1 hover:bg-gray-100 rounded"
-                                      >
-                                        <FaChevronRight className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    
-                                    {/* Days of week */}
-                                    <div className="grid grid-cols-7 gap-1 mb-2">
-                                      {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => (
-                                        <div key={day} className="text-xs text-center text-gray-500 py-1">
-                                          {day}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    
-                                    {/* Calendar grid */}
-                                    <div className="grid grid-cols-7 gap-1">
-                                      {getDaysInMonth(currentMonth).map((date, index) => (
-                                        <button
-                                          key={index}
-                                          type="button"
-                                          onClick={() => date && handleDateSelect(date)}
-                                          disabled={!date || !isAvailableDate(date)}
-                                          className={`
-                                            p-2 text-xs rounded-lg transition-all
-                                            ${!date ? 'invisible' : ''}
-                                            ${date && isToday(date) ? 'bg-blue-100 text-blue-600 font-bold' : ''}
-                                            ${date && isSelected(date) ? 'bg-[#EC4899] text-white font-bold' : ''}
-                                            ${date && !isToday(date) && !isSelected(date) && isAvailableDate(date) ? 'hover:bg-gray-100' : ''}
-                                            ${date && !isAvailableDate(date) ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
-                                            ${date && isAvailableDate(date) ? 'text-gray-700' : ''}
-                                          `}
-                                        >
-                                          {date ? date.getDate() : ''}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {errors.selected_date && (
-                                <p className="text-red-500 text-xs mt-1">{errors.selected_date}</p>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                                שעה מותאמת אישית *
-                              </label>
-                              <input
-                                type="time"
-                                required
-                                value={formData.selected_time}
-                                onChange={(e) => handleInputChange('selected_time', e.target.value)}
-                                className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                                  errors.selected_time 
-                                    ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                                    : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                                }`}
-                              />
-                              {errors.selected_time && (
-                                <p className="text-red-500 text-xs mt-1">{errors.selected_time}</p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          // Available Dates and Times from Sessions
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                                תאריך זמין *
-                              </label>
-                              {loadingDates ? (
-                                <div className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg bg-gray-100 animate-pulse">
-                                  טוען תאריכים...
-                                </div>
-                              ) : (
-                                <div className="relative">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      required
-                                      value={formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL') : ''}
-                                      onChange={(e) => handleInputChange('selected_date', e.target.value)}
-                                      placeholder="בחרי תאריך זמין"
-                                      readOnly
-                                      className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                                        errors.selected_date 
-                                          ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                                          : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                                      }`}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowDatePicker(!showDatePicker)}
-                                      className="px-3 py-1.5 sm:py-2 bg-[#EC4899] text-white rounded-lg hover:bg-[#EC4899]/80 transition-colors"
-                                    >
-                                      <FaCalendar className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                  
-                                  {/* Date Picker Dropdown */}
-                                  {showDatePicker && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-3">
-                                      {/* Header */}
-                                      <div className="flex items-center justify-between mb-3">
-                                        <button
-                                          type="button"
-                                          onClick={prevMonth}
-                                          className="p-1 hover:bg-gray-100 rounded"
-                                        >
-                                          <FaChevronLeft className="w-3 h-3" />
-                                        </button>
-                                        <span className="text-sm font-medium">
-                                          {currentMonth.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' })}
-                                        </span>
-                                        <button
-                                          type="button"
-                                          onClick={nextMonth}
-                                          className="p-1 hover:bg-gray-100 rounded"
-                                        >
-                                          <FaChevronRight className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                      
-                                      {/* Days of week */}
-                                      <div className="grid grid-cols-7 gap-1 mb-2">
-                                        {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => (
-                                          <div key={day} className="text-xs text-center text-gray-500 py-1">
-                                            {day}
-                                          </div>
-                                        ))}
-                                      </div>
-                                      
-                                      {/* Calendar grid */}
-                                      <div className="grid grid-cols-7 gap-1">
-                                        {getDaysInMonth(currentMonth).map((date, index) => (
-                                          <button
-                                            key={index}
-                                            type="button"
-                                            onClick={() => date && handleDateSelect(date)}
-                                            disabled={!date || !isAvailableDate(date)}
-                                            className={`
-                                              p-2 text-xs rounded-lg transition-all
-                                              ${!date ? 'invisible' : ''}
-                                              ${date && isToday(date) ? 'bg-blue-100 text-blue-600 font-bold' : ''}
-                                              ${date && isSelected(date) ? 'bg-[#EC4899] text-white font-bold' : ''}
-                                              ${date && !isToday(date) && !isSelected(date) && isAvailableDate(date) ? 'hover:bg-gray-100' : ''}
-                                              ${date && !isAvailableDate(date) ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
-                                              ${date && isAvailableDate(date) ? 'text-gray-700' : ''}
-                                            `}
-                                          >
-                                            {date ? date.getDate() : ''}
-                                          </button>
-                                        ))}
-                                      </div>
-                                      
-                                      {/* Available dates info */}
-                                      {availableDates.length > 0 && (
-                                        <div className="mt-3 pt-3 border-t border-gray-200">
-                                          <p className="text-xs text-gray-600 mb-2">תאריכים זמינים:</p>
-                                          <div className="flex flex-wrap gap-1">
-                                            {availableDates.slice(0, 5).map((date) => (
-                                              <span key={date} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                                {new Date(date).toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric' })}
-                                              </span>
-                                            ))}
-                                            {availableDates.length > 5 && (
-                                              <span className="text-xs text-gray-500">+{availableDates.length - 5} נוספים</span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {errors.selected_date && (
-                                <p className="text-red-500 text-xs mt-1">{errors.selected_date}</p>
-                              )}
-                              {datesMessage && (
-                                <p className="text-xs text-gray-600 mt-1">{datesMessage}</p>
-                              )}
-                            </div>
-
-                            <div>
-                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                                שעה זמינה *
-                              </label>
-                              {loadingTimes ? (
-                                <div className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg bg-gray-100 animate-pulse">
-                                  טוען שעות...
-                                </div>
-                              ) : (
-                                <select
-                                  required
-                                  value={formData.selected_time}
-                                  onChange={(e) => handleInputChange('selected_time', e.target.value)}
-                                  className={`w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:outline-none transition-all ${
-                                    errors.selected_time 
-                                      ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                                      : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                                  }`}
-                                >
-                                  <option value="">בחרי שעה</option>
-                                  {availableTimes.map((time) => (
-                                    <option key={time} value={time}>{time}</option>
-                                  ))}
-                                </select>
-                              )}
-                              {errors.selected_time && (
-                                <p className="text-red-500 text-xs mt-1">{errors.selected_time}</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Existing registration - show read-only info
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">שיעור</p>
-              <p className="text-sm text-[#4B2E83]/70">
-                {registrationData.class?.name || registrationData.class_name || 'שיעור לא ידוע'}
-              </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">תאריך</p>
-                        <p className="text-sm text-[#4B2E83]/70">
-                          {registrationData.selected_date ? new Date(registrationData.selected_date).toLocaleDateString('he-IL') : 'לא מוגדר'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-[#4B2E83]">שעה</p>
-                        <p className="text-sm text-[#4B2E83]/70">
-                          {registrationData.selected_time || 'לא מוגדר'}
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 )}
-            </div>
-          </div>
 
-            {/* סטטוס ותשלום */}
-            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-4">
-              <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                </svg>
-                סטטוס ותשלום
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-              סטטוס הרשמה *
-            </label>
-            <select
-              value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-            >
-              <option value="active">פעיל</option>
-              <option value="pending">ממתין</option>
-              <option value="cancelled">בוטל</option>
-            </select>
-          </div>
-                                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                      מחיר רכישה
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.purchase_price}
-                      onChange={(e) => handleInputChange('purchase_price', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                      placeholder="המחיר יותאם אוטומטית לפי השיעור"
-                    />
-                    {formData.class_id && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        מחיר השיעור: {classes.find(cls => cls.id === formData.class_id)?.price || 0} ש"ח
-                      </p>
-                    )}
-                  </div>
-              </div>
-            </div>
-
-            {/* הערות (רק להרשמה חדשה) */}
-            {isNewReg && (
-              <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-4">
-                <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                  הערות נוספות
-                </h3>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    הערות
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder="הערות נוספות על ההרשמה..."
-                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                  />
+                {/* כפתורים */}
+                <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 border-t border-[#EC4899]/20">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 sm:px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300 text-sm sm:text-base"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                  >
+                    {isLoading ? 'שומר...' : (isNewReg ? 'צור הרשמה' : 'שמור שינויים')}
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* כפתורים */}
-            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-                className="px-4 sm:px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300 text-sm sm:text-base"
-            >
-              ביטול
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-                className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-            >
-                {isLoading ? 'שומר...' : (isNewReg ? 'צור הרשמה' : 'שמור שינויים')}
-            </button>
-          </div>
+            {/* כפתורים - רק כשאין סיכום */}
+            {(!isNewReg || !formData.user_id || !formData.class_id || !formData.selected_date || !formData.selected_time || !formData.purchase_price || formData.purchase_price <= 0) && (
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 sm:px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300 text-sm sm:text-base"
+                >
+                  ביטול
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                >
+                  {isLoading ? 'שומר...' : (isNewReg ? 'צור הרשמה' : 'שמור שינויים')}
+                </button>
+              </div>
+            )}
         </form>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            // Prevent closing when clicking outside
+            e.stopPropagation();
+          }}
+          onKeyDown={(e) => {
+            // Prevent closing with Escape key
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl transform transition-all">
+            <div className="text-center">
+              {/* Success Icon */}
+              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              
+              {/* Title */}
+              <h2 className="text-3xl font-bold text-gray-900 mb-4 font-agrandir-grand">
+                {isNewReg ? 'הרשמה נוצרה בהצלחה! 🎉' : 'הרשמה עודכנה בהצלחה! ✅'}
+              </h2>
+              
+              {/* Registration Details */}
+              <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-6 mb-6">
+                <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">פרטי ההרשמה:</h3>
+                
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">משתמש:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {searchResults.find(p => p.id === formData.user_id)?.first_name} {searchResults.find(p => p.id === formData.user_id)?.last_name}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">שיעור:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {classes.find(c => c.id === formData.class_id)?.name}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">תאריך:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      }) : 'לא נבחר'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">שעה:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {formData.selected_time ? formData.selected_time.split(' עד ')[0] : 'לא נבחרה'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">מחיר:</span>
+                    <span className="font-bold text-[#EC4899]">{formData.purchase_price} ש"ח</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">תשלום:</span>
+                    <span className="font-bold text-[#4B2E83]">
+                      {formData.payment_method === 'cash' ? 'מזומן' : 
+                       formData.payment_method === 'credit' ? 'כרטיס אשראי' : 
+                       formData.payment_method === 'card_online' ? 'כרטיס אשראי באתר' : 
+                       formData.payment_method === 'bit' ? 'ביט' : 
+                       formData.payment_method === 'credit_usage' ? 'קרדיט' : formData.payment_method}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Additional Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-right">
+                    <h4 className="font-semibold text-blue-900 mb-2">מה הלאה?</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• ההרשמה נשמרה במערכת</li>
+                      <li>• המשתמש יקבל אימייל אישור</li>
+                      <li>• אפשר לערוך או לבטל מהפאנל הניהול</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    onClose();
+                  }}
+                  className="w-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] hover:from-[#4B2E83] hover:to-[#EC4899] text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  סגור
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    onClose();
+                    // רענון הדף כדי לראות את ההרשמה החדשה
+                    window.location.reload();
+                  }}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors duration-200"
+                >
+                  רענן דף
+                </button>
+              </div>
+              
+              {/* Close button in top-right corner */}
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  onClose();
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                aria-label="סגור"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

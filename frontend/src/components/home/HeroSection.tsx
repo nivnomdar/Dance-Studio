@@ -18,10 +18,9 @@ function HeroSection() {
       try {
         if (video.paused) {
           await video.play();
-          console.log('Video started successfully');
         }
       } catch (error) {
-        console.log('Video play failed:', error);
+        // Video play failed silently
       }
     };
 

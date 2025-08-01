@@ -343,12 +343,12 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
 };
 
 /**
- * קבלת תאריכים זמינים לכפתורים - גרסה חדשה עם sessions ו-cache משופר
+ * קבלת תאריכים זמינים לפי class ID - גרסה חדשה
  */
 export const getAvailableDatesForButtonsFromSessions = async (classId: string): Promise<string[]> => {
   try {
     // Check cache first
-    const cacheKey = `${classId}_dates`;
+    const cacheKey = `class_${classId}_dates`;
     const cached = classDatesCache.get(cacheKey);
     if (isCacheValid(cached || null)) {
       return cached!.data;
@@ -372,10 +372,75 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
       
       const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
       
+      // בדוק אם יש session פעיל ביום הזה
+      const dayName = DAY_NAMES_EN[dayOfWeek];
+      
+      const hasAvailableSession = sessions.some(session => isSessionActiveOnDay(session, dayName));
+      
+      if (hasAvailableSession) {
+        datesSet.add(date.toISOString().split('T')[0]); // Use Set.add() to prevent duplicates
+      }
+    }
+    
+    // Convert Set back to array and sort by date
+    const dates = Array.from(datesSet).sort();
+    
+    // Cache the result immediately
+    const cacheEntry = { data: dates, timestamp: Date.now() };
+    classDatesCache.set(cacheKey, cacheEntry);
+    
+    // Save to localStorage
+    const allDatesCache = Object.fromEntries(classDatesCache);
+    saveCacheToStorage(STORAGE_KEYS.CLASS_DATES, allDatesCache);
+    
+    return dates;
+  } catch (error) {
+    console.error('Error in getAvailableDatesForButtonsFromSessions:', error);
+    return [];
+  }
+};
+
+/**
+ * קבלת תאריכים זמינים לפי session ID - גרסה חדשה
+ */
+export const getAvailableDatesForSession = async (sessionId: string): Promise<string[]> => {
+  try {
+    // Check cache first
+    const cacheKey = `session_${sessionId}_dates`;
+    const cached = classDatesCache.get(cacheKey);
+    if (isCacheValid(cached || null)) {
+      return cached!.data;
+    }
+    
+    // Fetch session data with throttling
+    const response = await throttledFetch(`${API_BASE_URL}/sessions/${sessionId}`);
+    if (!response.ok) {
+      console.error('Failed to fetch session data');
+      return [];
+    }
+    
+    const session = await response.json();
+    
+    if (!session || !session.is_active) {
+      classDatesCache.set(cacheKey, { data: [], timestamp: Date.now() });
+      return [];
+    }
+
+    // עבור recurring sessions, ניצור תאריכים לפי ה-weekdays
+    const datesSet = new Set<string>(); // Use Set to prevent duplicates
+    const today = new Date();
+    
+    // ניצור תאריכים לשבוע הבא
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+      
       // בדוק אם ה-session פעיל ביום הזה
       const dayName = DAY_NAMES_EN[dayOfWeek];
       
-      const isAvailable = sessions.some(session => isSessionActiveOnDay(session, dayName));
+      const isAvailable = isSessionActiveOnDay(session, dayName);
       
       if (isAvailable) {
         datesSet.add(date.toISOString().split('T')[0]); // Use Set.add() to prevent duplicates
@@ -395,7 +460,69 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
     
     return dates;
   } catch (error) {
-    console.error('Error in getAvailableDatesForButtonsFromSessions:', error);
+    console.error('Error in getAvailableDatesForSession:', error);
+    return [];
+  }
+};
+
+/**
+ * קבלת שעות זמינות לפי session ID ותאריך - גרסה חדשה
+ */
+export const getAvailableTimesForSessionAndDate = async (
+  sessionId: string, 
+  selectedDate: string
+): Promise<string[]> => {
+  try {
+    // Check cache first
+    const cacheKey = `session_${sessionId}_${selectedDate}_times`;
+    const cached = classTimesCache.get(cacheKey);
+    if (isCacheValid(cached || null)) {
+      return cached!.data;
+    }
+    
+    // Fetch session data with throttling
+    const response = await throttledFetch(`${API_BASE_URL}/sessions/${sessionId}`);
+    if (!response.ok) {
+      console.error('Failed to fetch session data');
+      return [];
+    }
+    
+    const session = await response.json();
+    
+    if (!session || !session.is_active) {
+      classTimesCache.set(cacheKey, { data: [], timestamp: Date.now() });
+      return [];
+    }
+
+    // בדוק איזה יום זה
+    const date = new Date(selectedDate);
+    const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+    
+    // בדוק אם ה-session פעיל ביום הזה
+    const dayName = DAY_NAMES_EN[dayOfWeek];
+    
+    const isAvailable = isSessionActiveOnDay(session, dayName);
+    
+    if (!isAvailable) {
+      classTimesCache.set(cacheKey, { data: [], timestamp: Date.now() });
+      return [];
+    }
+    
+    // החזר את השעה של ה-session
+    const time = formatTimeForDisplay(session);
+    const times = [time];
+    
+    // Cache the result immediately
+    const cacheEntry = { data: times, timestamp: Date.now() };
+    classTimesCache.set(cacheKey, cacheEntry);
+    
+    // Save to localStorage
+    const allTimesCache = Object.fromEntries(classTimesCache);
+    saveCacheToStorage(STORAGE_KEYS.CLASS_TIMES, allTimesCache);
+    
+    return times;
+  } catch (error) {
+    console.error('Error in getAvailableTimesForSessionAndDate:', error);
     return [];
   }
 };
@@ -506,14 +633,50 @@ export const getAvailableSpotsFromSessions = async (
         sessionClassesCache = { data: allSessionClasses, timestamp: Date.now() };
       }
       
-      const sessionClass = allSessionClasses.find((sc: any) => 
+      let sessionClass = allSessionClasses.find((sc: any) => 
         sc.session_id === matchingSession.id && 
         sc.class_id === classId && 
         sc.is_active === true
       );
 
+      // If no session_class exists, try to create one
       if (!sessionClass) {
-        return { available: 0, message: 'השיעור לא זמין בsession זה' };
+        try {
+          console.log(`No session_class found for session_id: ${matchingSession.id}, class_id: ${classId}. Attempting to create one.`);
+          
+          // Get class data first
+          const classResponse = await throttledFetch(`${API_BASE_URL}/classes/${classId}`);
+          let classData = null;
+          if (classResponse.ok) {
+            classData = await classResponse.json();
+          }
+          
+          const createResponse = await throttledFetch(`${API_BASE_URL}/sessions/session-classes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: matchingSession.id,
+              class_id: classId,
+              price: classData?.price || 0,
+              is_trial: classData?.slug === 'trial-class',
+              max_uses_per_user: classData?.slug === 'trial-class' ? 1 : null
+            })
+          });
+          
+          if (createResponse.ok) {
+            const newSessionClass = await createResponse.json();
+            sessionClass = newSessionClass;
+            console.log(`Created new session_class: ${newSessionClass.id}`);
+          } else {
+            console.error('Failed to create session_class');
+            return { available: 0, message: 'השיעור לא זמין בsession זה' };
+          }
+        } catch (createError) {
+          console.error('Error creating session_class:', createError);
+          return { available: 0, message: 'השיעור לא זמין בsession זה' };
+        }
       }
 
       // בדיקה אם זה שיעור פרטי - נשתמש ב-API במקום Supabase ישירות
@@ -625,6 +788,28 @@ export const getAvailableDatesMessageFromSessions = async (classId: string): Pro
     return `${Array.from(availableDays).join(', ')}`;
   } catch (error) {
     return 'כל התאריכים זמינים';
+  }
+};
+
+/**
+ * קבלת הודעה על זמינות לפי session ID - גרסה חדשה
+ */
+export const getAvailableDatesMessageForSession = async (sessionId: string): Promise<string> => {
+  try {
+    const dates = await getAvailableDatesForSession(sessionId);
+    
+    if (dates.length === 0) {
+      return 'אין תאריכים זמינים השבוע';
+    }
+    
+    if (dates.length === 1) {
+      return `תאריך זמין אחד השבוע`;
+    }
+    
+    return `${dates.length} תאריכים זמינים השבוע`;
+  } catch (error) {
+    console.error('Error in getAvailableDatesMessageForSession:', error);
+    return 'שגיאה בטעינת זמינות';
   }
 };
 

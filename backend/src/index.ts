@@ -16,6 +16,7 @@ import registrationsRoutes from './routes/registrations';
 import profilesRoutes from './routes/profiles';
 import sessionsRoutes from './routes/sessions';
 import adminRoutes from './routes/admin';
+import subscriptionCreditsRoutes from './routes/subscription-credits';
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/registrations', registrationsRoutes);
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscription-credits', subscriptionCreditsRoutes);
 
 // Error handling
 app.use(errorHandler);

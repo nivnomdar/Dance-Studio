@@ -11,6 +11,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 );
 
+// Get all profiles (admin only)
+router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Admin profiles endpoint called by user:', req.user?.id);
+    
+    const { search } = req.query;
+    let query = supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    // Add search functionality
+    if (search && typeof search === 'string' && search.trim()) {
+      const searchTerm = search.trim().toLowerCase();
+      query = query.or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
+    }
+    
+    const { data: profiles, error } = await query;
+
+    if (error) {
+      logger.error('Error fetching profiles:', error);
+      throw new AppError('Failed to fetch profiles', 500);
+    }
+
+    logger.info('Profiles fetched successfully:', { count: profiles?.length || 0, search: search || 'none' });
+    res.json(profiles || []);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get user profile
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -151,28 +182,6 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (error) throw new AppError(error.message, 400);
 
     res.status(201).json(profile);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get all profiles (admin only)
-router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    logger.info('Admin profiles endpoint called by user:', req.user?.id);
-    
-    const { data: profiles, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      logger.error('Error fetching profiles:', error);
-      throw new AppError('Failed to fetch profiles', 500);
-    }
-
-    logger.info('Profiles fetched successfully:', { count: profiles?.length || 0 });
-    res.json(profiles || []);
   } catch (error) {
     next(error);
   }
