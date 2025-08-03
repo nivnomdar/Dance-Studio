@@ -221,7 +221,11 @@ export default function UserSearch({
           {isOpen && filteredUsers.length > 0 && (
             <div
               ref={dropdownRef}
-              className="absolute left-0 right-0 mt-1 lg:mt-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-72 overflow-y-auto"
+              className="absolute left-0 right-0 mt-1 lg:mt-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+              style={{
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }}
             >
               {filteredUsers.map((user, index) => (
                 <button

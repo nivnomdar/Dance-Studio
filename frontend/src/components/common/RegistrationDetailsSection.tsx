@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FaCalendar, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import Select from 'react-select';
+import { FaCalendarAlt, FaClock } from 'react-icons/fa';
 import CalendarPicker from './CalendarPicker';
 import TimePicker from './TimePicker';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,9 +10,27 @@ interface RegistrationDetailsSectionProps {
   isNewRegistration: boolean;
   formData: any;
   registrationData: any;
-  classes: any[];
-  sessions?: any[];
-  session_classes?: any[];
+  classes: Array<{
+    id: string;
+    name: string;
+    price: number;
+    category: string;
+    slug: string;
+  }>;
+  sessions?: Array<{
+    id: string;
+    name: string;
+    session_name: string;
+    weekdays: number[];
+    start_time: string;
+    end_time: string;
+  }>;
+  session_classes?: Array<{
+    id: string;
+    session_id: string;
+    class_id: string;
+    is_active: boolean;
+  }>;
   errors: { [key: string]: string };
   onInputChange: (field: string, value: any) => void;
   useCustomDateTime: boolean;
@@ -118,34 +137,28 @@ export default function RegistrationDetailsSection({
 
   const loadUserRegistrations = async () => {
     if (!formData.user_id || !formData.class_id) {
-      console.log('Missing user_id or class_id, skipping user registrations check');
       return;
     }
-    const token = session?.access_token;
-    if (!token) {
-      console.warn('No access token found, skipping user registrations check');
-      return;
-    }
+
     try {
-      setLoadingUserRegistrations(true);
+      const token = session?.access_token;
+      if (!token) {
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/user/${formData.user_id}?class_id=${formData.class_id}`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
+
       if (response.ok) {
-        const registrations = await response.json();
-        setUserRegistrations(registrations);
-      } else {
-        console.error('Failed to load user registrations:', response.status);
-        setUserRegistrations([]);
+        const data = await response.json();
+        setUserRegistrations(data);
       }
     } catch (error) {
-      console.error('Error loading user registrations:', error);
-      setUserRegistrations([]);
-    } finally {
-      setLoadingUserRegistrations(false);
+      // Handle error silently
     }
   };
 
@@ -171,40 +184,30 @@ export default function RegistrationDetailsSection({
   const loadSessionAvailability = async () => {
     // בדוק שיש session_id לפני הקריאה
     if (!formData.session_id) {
-      console.log('No session_id, skipping availability check');
       return;
     }
     
     // בדוק שיש class_id לפני הקריאה
     if (!formData.class_id) {
-      console.log('No class_id, skipping availability check');
       return;
     }
     
     // בדוק שיש שעות זמינות לפני הקריאה
     if (availableTimes.length === 0) {
-      console.log('No available times, skipping availability check');
       return;
     }
     
     try {
       setLoadingAvailability(true);
       
-      console.log('🔍 Starting availability check for class:', formData.class_id);
-      console.log('📅 Available dates:', availableDates);
-      console.log('⏰ Available times:', availableTimes);
-      
       const availabilityPromises = availableDates.map(async (date) => {
-        console.log(`📅 Checking availability for date: ${date}`);
         
         try {
           // השתמש באותו API כמו ב-StandardRegistration
           const spotsData = await getAvailableSpotsBatchFromSessions(formData.class_id, date);
-          console.log(`✅ Spots data for ${date}:`, spotsData);
           
           return { date, timeAvailability: spotsData };
         } catch (error) {
-          console.error(`💥 Error checking availability for ${date}:`, error);
           return { date, timeAvailability: {} };
         }
       });
@@ -215,17 +218,93 @@ export default function RegistrationDetailsSection({
         return acc;
       }, {} as {[key: string]: any});
       
-      console.log('🎯 Final availability map:', availabilityMap);
       setSessionAvailability(availabilityMap);
     } catch (error) {
-      console.error('💥 Error loading session availability:', error);
+      // Handle error silently
     } finally {
       setLoadingAvailability(false);
     }
   };
 
+  // react-select custom styles
+  const customSelectStyles = {
+    menu: (provided: any) => ({
+      ...provided,
+      zIndex: 9999,
+      maxHeight: 200,
+      direction: 'rtl',
+    }),
+    control: (provided: any, state: any) => ({
+      ...provided,
+      minHeight: 38,
+      borderRadius: '0.75rem',
+      borderColor: state.isFocused ? '#EC4899' : '#EC4899',
+      boxShadow: state.isFocused ? '0 0 0 2px #EC4899' : undefined,
+      fontSize: 14,
+      background: '#fff',
+      direction: 'rtl',
+    }),
+    option: (provided: any, state: any) => ({
+      ...provided,
+      fontSize: 14,
+      background: state.isSelected ? '#EC4899' : state.isFocused ? '#F3E8FF' : '#fff',
+      color: state.isSelected ? '#fff' : '#4B2E83',
+      textAlign: 'right',
+      direction: 'rtl',
+    }),
+    singleValue: (provided: any) => ({
+      ...provided,
+      direction: 'rtl',
+    }),
+    input: (provided: any) => ({
+      ...provided,
+      direction: 'rtl',
+    }),
+    menuList: (provided: any) => ({
+      ...provided,
+      maxHeight: 200,
+      direction: 'rtl',
+    }),
+  };
+
+  // קבוצה - options
+  const sessionOptions = sessions.map((session) => {
+    // מצא את השיעור הקשור לקבוצה זו
+    const sessionClass = session_classes.find(sc => sc.session_id === session.id);
+    const classInfo = sessionClass ? classes.find(c => c.id === sessionClass.class_id) : null;
+    let label = session.name || session.session_name || 'קבוצה ללא שם';
+    if (classInfo) label += ` - ${classInfo.name}`;
+    if (session.weekdays && session.weekdays.length > 0) {
+      const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+      label += ' (' + session.weekdays.map(d => dayNames[d]).join(', ') + ')';
+    }
+    if (session.start_time && session.end_time) label += ` ${session.start_time}-${session.end_time}`;
+    return { value: session.id, label };
+  });
+
+  // שיעור - options (רק לשיעורים שקשורים לקבוצה שנבחרה)
+  const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
+  const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
+  const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
+  const classOptions = relatedClasses.map(cls => ({ value: cls.id, label: `${cls.name} - ${cls.price} ש"ח` }));
+
   return (
     <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-4">
+      <style>{`
+        .registration-select {
+          max-height: ${isMobile ? '60px' : '100px'} !important;
+          overflow-y: auto !important;
+        }
+        .registration-select option {
+          font-size: ${isMobile ? '12px' : '14px'};
+          padding: 4px 8px;
+        }
+        @media (max-width: 640px) {
+          .registration-select {
+            max-height: 60px !important;
+          }
+        }
+      `}</style>
       <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -237,90 +316,53 @@ export default function RegistrationDetailsSection({
             <div className="space-y-4">
               {formData.user_id ? (
                 <>
-                  {/* Step 2: Group Selection */}
-              <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
-                <h4 className="text-sm font-semibold text-[#4B2E83] mb-3 flex items-center gap-2">
-                      <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">2</span>
-                  בחירת קבוצה
-                </h4>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    קבוצה *
-                  </label>
-                  <select
-                    required
-                    value={formData.session_id}
-                    onChange={(e) => onInputChange('session_id', e.target.value)}
-                      className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white max-h-32 overflow-y-auto ${
-                      errors.session_id 
-                        ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                        : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                    }`}
-                  >
-                      <option value="" className="text-xs sm:text-sm">בחרי קבוצה</option>
-                      {sessions.map((session) => {
-                        // מצא את השיעור הקשור לקבוצה זו
-                        const sessionClass = session_classes.find(sc => sc.session_id === session.id);
-                        const classInfo = sessionClass ? classes.find(c => c.id === sessionClass.class_id) : null;
-                        
-                        // צור תיאור מפורט עם התאמה למסכים קטנים
-                        let description = session.name || session.session_name || 'קבוצה ללא שם';
-                        if (classInfo) {
-                          description += ` - ${classInfo.name}`;
-                        }
-                        
-                        // הוסף ימים ושעות אם קיימים
-                        if (session.weekdays && session.weekdays.length > 0) {
-                          const days = session.weekdays.map((day: number) => {
-                            const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-                            return dayNames[day];
-                          }).join(', ');
-                          description += ` (${days})`;
-                        }
-                        
-                        if (session.start_time && session.end_time) {
-                          description += ` ${session.start_time}-${session.end_time}`;
-                        }
-                        
-                        // צור תיאור קצר למסכים קטנים - רק שם קבוצה, ימים ושעות
-                        let shortDescription = session.name || session.session_name || 'קבוצה';
-                        
-                        // הוסף ימים לשני התיאורים
-                        if (session.weekdays && session.weekdays.length > 0) {
-                          const days = session.weekdays.map((day: number) => {
-                            const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-                            return dayNames[day];
-                          }).join(', ');
-                          shortDescription += ` (${days})`;
-                        }
-                        
-                        // הוסף שעות לשני התיאורים
-                        if (session.start_time && session.end_time) {
-                          shortDescription += ` ${session.start_time}-${session.end_time}`;
-                        }
-                        
-                        return (
-                          <option key={session.id} value={session.id} className="text-xs sm:text-sm py-1">
-                            {isMobile ? shortDescription : description}
-                          </option>
-                        );
-                      })}
-                  </select>
-                  {errors.session_id && (
-                      <p className="text-red-500 text-xs mt-2">{errors.session_id}</p>
-                  )}
-                </div>
-              </div>
-
-                  {/* Step 3: Class Selection */}
-                {formData.session_id && (
+                  {/* Step 2 & 3: Group and Class Selection */}
                 <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
                   <h4 className="text-sm font-semibold text-[#4B2E83] mb-3 flex items-center gap-2">
-                        <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">3</span>
-                    בחירת שיעור
+                    <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">2</span>
+                    בחירת קבוצה ושיעור
                   </h4>
-                  <div>
-                    {(() => {
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Group Selection */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                        קבוצה *
+                      </label>
+                      <Select
+                        classNamePrefix="react-select"
+                        styles={customSelectStyles}
+                        options={sessionOptions}
+                        value={sessionOptions.find(opt => opt.value === formData.session_id) || null}
+                        onChange={option => onInputChange('session_id', option ? option.value : '')}
+                        placeholder="בחרי קבוצה..."
+                        isClearable
+                        isSearchable
+                        noOptionsMessage={() => 'לא נמצאו קבוצות'}
+                        menuPlacement="auto"
+                        menuPosition="fixed"
+                        theme={theme => ({
+                          ...theme,
+                          borderRadius: 12,
+                          colors: {
+                            ...theme.colors,
+                            primary: '#EC4899',
+                            primary25: '#F3E8FF',
+                          },
+                        })}
+                        isRtl
+                      />
+                      {errors.session_id && (
+                        <p className="text-red-500 text-xs mt-2">{errors.session_id}</p>
+                      )}
+                    </div>
+
+                    {/* Class Selection */}
+                    {formData.session_id && (
+                      <div>
+                        <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                          שיעור *
+                        </label>
+                        {(() => {
                           // מצא את השיעורים שמקושרים לקבוצה שנבחרה
                           const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
                           const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
@@ -328,40 +370,47 @@ export default function RegistrationDetailsSection({
                           
                           if (relatedClasses.length === 1) {
                             const onlyClass = relatedClasses[0];
-                        return (
+                            return (
                               <div className="flex items-center gap-2 px-3 py-2.5 text-sm border rounded-xl bg-gray-50 text-[#4B2E83] font-semibold">
                                 {onlyClass ? `${onlyClass.name} - ${onlyClass.price} ש"ח` : 'שיעור אחד'}
                                 <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-normal">נבחר אוטומטית</span>
-                          </div>
-                        );
+                              </div>
+                            );
                           } else {
-                      return (
-                        <select
-                          required
-                          value={formData.class_id}
-                          onChange={(e) => onInputChange('class_id', e.target.value)}
-                                className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white max-h-32 overflow-y-auto ${
-                            errors.class_id 
-                              ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                              : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                          }`}
-                        >
-                                <option value="" className="text-xs sm:text-sm">בחרי שיעור</option>
-                                {relatedClasses.map((cls) => (
-                                  <option key={cls.id} value={cls.id} className="text-xs sm:text-sm py-1">
-                                    {cls.name} - {cls.price} ש"ח
-                            </option>
-                          ))}
-                        </select>
-                      );
+                            return (
+                              <Select
+                                classNamePrefix="react-select"
+                                styles={customSelectStyles}
+                                options={classOptions}
+                                value={classOptions.find(opt => opt.value === formData.class_id) || null}
+                                onChange={option => onInputChange('class_id', option ? option.value : '')}
+                                placeholder="בחרי שיעור..."
+                                isClearable
+                                isSearchable
+                                noOptionsMessage={() => 'לא נמצאו שיעורים'}
+                                menuPlacement="auto"
+                                menuPosition="fixed"
+                                theme={theme => ({
+                                  ...theme,
+                                  borderRadius: 12,
+                                  colors: {
+                                    ...theme.colors,
+                                    primary: '#EC4899',
+                                    primary25: '#F3E8FF',
+                                  },
+                                })}
+                                isRtl
+                              />
+                            );
                           }
-                    })()}
-                    {errors.class_id && (
-                        <p className="text-red-500 text-xs mt-2">{errors.class_id}</p>
+                        })()}
+                        {errors.class_id && (
+                          <p className="text-red-500 text-xs mt-2">{errors.class_id}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
-              )}
 
                   {/* Step 4: Date and Time Selection */}
                 {formData.class_id && (
@@ -429,7 +478,7 @@ export default function RegistrationDetailsSection({
                               onClick={() => setShowDatePicker(!showDatePicker)}
                               className="px-4 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-lg hover:shadow-xl"
                             >
-                              <FaCalendar className="w-4 h-4" />
+                              <FaCalendarAlt className="w-4 h-4" />
                             </button>
                           </div>
                           
@@ -620,15 +669,6 @@ export default function RegistrationDetailsSection({
                                   const timeAvailability = dateAvailability ? dateAvailability[time] : null;
                                   const isFull = timeAvailability && timeAvailability.available <= 0;
                                   
-                                  console.log(`🎯 Rendering time ${time}:`, {
-                                    isSelected,
-                                    isBooked,
-                                    dateAvailability: !!dateAvailability,
-                                    timeAvailability,
-                                    isFull,
-                                    availableTimes
-                                  });
-                                  
                                   return (
                                     <button
                                       key={time}
@@ -655,7 +695,7 @@ export default function RegistrationDetailsSection({
                                       {isFull && (
                                         <div className="absolute -top-2 -left-2 bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
                                           מלא
-                                        </div>
+                            </div>
                                       )}
                                       {!isBooked && !isFull && timeAvailability && (
                                         <div className={`absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-bold shadow-md transform rotate-12 ${
@@ -671,19 +711,14 @@ export default function RegistrationDetailsSection({
                                               : timeAvailability.available === 1 
                                                 ? 'מקום אחרון' 
                                                 : `${timeAvailability.available} מקומות`;
-                                            console.log(`🏷️ Availability tag for ${time}:`, {
-                                              available: timeAvailability.available,
-                                              message,
-                                              timeAvailability
-                                            });
                                             return message;
                                           })()}
-                                        </div>
+                          </div>
                                       )}
                                       <div className="text-center leading-tight">
                                         <div className="text-xs lg:text-sm">{time}</div>
-                                      </div>
-                                    </button>
+                              </div>
+                              </button>
                                   );
                                 })
                               ) : (
@@ -808,7 +843,7 @@ export default function RegistrationDetailsSection({
                         required
                         value={formData.credit_type}
                         onChange={(e) => onInputChange('credit_type', e.target.value)}
-                        className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white max-h-32 overflow-y-auto ${
+                        className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white registration-select ${
                           errors.credit_type 
                             ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
                             : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'

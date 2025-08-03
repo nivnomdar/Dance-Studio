@@ -4,23 +4,95 @@ import {
   getAvailableTimesForSessionAndDate,
   getAvailableDatesMessageForSession
 } from '../../../utils/sessionsUtils';
-import { FaCalendar } from 'react-icons/fa';
 import UserDetailsSection from '../../../components/common/UserDetailsSection';
 import RegistrationDetailsSection from '../../../components/common/RegistrationDetailsSection';
 import { SuccessModal } from '../../../components/common';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 
+// Define specific types instead of using 'any'
+interface Class {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  slug: string;
+  group_credits?: number;
+  private_credits?: number;
+}
+
+interface Session {
+  id: string;
+  name: string;
+  session_name: string;
+  weekdays: number[];
+  start_time: string;
+  end_time: string;
+}
+
+interface SessionClass {
+  id: string;
+  session_id: string;
+  class_id: string;
+  is_active: boolean;
+}
+
+interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  phone_number: string;
+}
+
+interface RegistrationData {
+  id?: string;
+  user_id?: string;
+  class_id?: string;
+  session_id?: string;
+  session_class_id?: string;
+  selected_date?: string;
+  selected_time?: string;
+  status?: string;
+  purchase_price?: number;
+  used_credit?: boolean;
+  credit_type?: string;
+  session_selection?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+}
+
+interface FormData {
+  user_id: string;
+  class_id: string;
+  session_id: string;
+  session_class_id: string;
+  selected_date: string;
+  selected_time: string;
+  status: string;
+  purchase_price: number;
+  used_credit: boolean;
+  credit_type: string;
+  session_selection: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+}
+
 interface RegistrationEditModalProps {
-  registrationData: any;
+  registrationData: RegistrationData;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedRegistration: any) => void;
+  onSave: (updatedRegistration: RegistrationData) => void;
   isLoading: boolean;
   isNewRegistration?: boolean;
-  classes?: any[];
-  sessions?: any[];
-  session_classes?: any[];
-  profiles?: any[];
+  classes?: Class[];
+  sessions?: Session[];
+  session_classes?: SessionClass[];
+  profiles?: Profile[];
 }
 
 export default function RegistrationEditModal({ 
@@ -38,7 +110,7 @@ export default function RegistrationEditModal({
   const { fetchProfiles } = useAdminData();
   const isNewReg = isNewRegistration || !registrationData.id;
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     user_id: registrationData.user_id || '',
     
     // Registration details
@@ -50,7 +122,7 @@ export default function RegistrationEditModal({
     status: registrationData.status || 'active',
     
     // Credit and payment details
-    purchase_price: registrationData.purchase_price || '',
+    purchase_price: registrationData.purchase_price || 0,
     used_credit: registrationData.used_credit || false,
     credit_type: registrationData.credit_type || '',
     
@@ -78,8 +150,8 @@ export default function RegistrationEditModal({
   const [showCustomTimePicker, setShowCustomTimePicker] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isSearchingProfiles, setIsSearchingProfiles] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>(profiles || []);
-  const previousProfilesRef = useRef<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Profile[]>(profiles || []);
+  const previousProfilesRef = useRef<Profile[]>([]);
   
   // Add state for user credits
   const [userCredits, setUserCredits] = useState<any>(null);
@@ -138,7 +210,7 @@ export default function RegistrationEditModal({
         selected_date: '',
         selected_time: '',
         status: 'active',
-        purchase_price: '',
+        purchase_price: 0,
         used_credit: false,
         credit_type: '',
         session_selection: 'custom',
@@ -157,7 +229,7 @@ export default function RegistrationEditModal({
         selected_date: registrationData.selected_date || '',
         selected_time: registrationData.selected_time || '',
         status: registrationData.status || 'active',
-        purchase_price: registrationData.purchase_price || '',
+        purchase_price: registrationData.purchase_price || 0,
         used_credit: registrationData.used_credit || false,
         credit_type: registrationData.credit_type || '',
         session_selection: registrationData.session_selection || 'custom',
@@ -203,7 +275,6 @@ export default function RegistrationEditModal({
         setUserCredits(null);
       }
     } catch (error) {
-      console.error('Error loading user credits:', error);
       setUserCredits(null);
     } finally {
       setLoadingCredits(false);
@@ -221,7 +292,6 @@ export default function RegistrationEditModal({
       setAvailableDates(dates);
       setDatesMessage(message);
     } catch (error) {
-      console.error('Error loading available dates:', error);
       setAvailableDates([]);
       setDatesMessage('שגיאה בטעינת התאריכים');
     } finally {
@@ -236,7 +306,6 @@ export default function RegistrationEditModal({
       const times = await getAvailableTimesForSessionAndDate(sessionId, date);
       setAvailableTimes(times);
     } catch (error) {
-      console.error('Error loading available times:', error);
       setAvailableTimes([]);
     } finally {
       setLoadingTimes(false);
@@ -261,7 +330,6 @@ export default function RegistrationEditModal({
       });
     } catch (error) {
       setSearchResults([]);
-      console.error('Error searching profiles:', error);
     } finally {
       setIsSearchingProfiles(false);
     }
@@ -297,7 +365,7 @@ export default function RegistrationEditModal({
       const selectedClass = classes.find(c => c.id === formData.class_id);
       if (selectedClass) {
         // Check if class requires credits
-        if ((selectedClass.group_credits > 0 || selectedClass.private_credits > 0) && formData.used_credit && !formData.credit_type) {
+        if (((selectedClass.group_credits || 0) > 0 || (selectedClass.private_credits || 0) > 0) && formData.used_credit && !formData.credit_type) {
           newErrors.credit_type = 'יש לבחור סוג קרדיט';
         }
         
@@ -329,11 +397,9 @@ export default function RegistrationEditModal({
         const data = await response.json();
         return data;
       } else {
-        console.error('Failed to check availability');
         return { available: 0, message: 'שגיאה בבדיקת זמינות' };
       }
     } catch (error) {
-      console.error('Error checking availability:', error);
       return { available: 0, message: 'שגיאה בבדיקת זמינות' };
     }
   };
@@ -361,10 +427,6 @@ export default function RegistrationEditModal({
     // Get selected user details
     const selectedUser = searchResults.find(p => p.id === formData.user_id);
     
-    console.log('Selected user:', selectedUser);
-    console.log('Search results:', searchResults);
-    console.log('Form user_id:', formData.user_id);
-    
     const submissionData = {
       ...registrationData,
       ...formData,
@@ -381,8 +443,6 @@ export default function RegistrationEditModal({
       // שלח רק את שעת ההתחלה
       selected_time: formData.selected_time?.split(' עד ')[0] || formData.selected_time
     };
-
-    console.log('Sending registration data:', submissionData);
 
     onSave(submissionData);
     
@@ -402,7 +462,7 @@ export default function RegistrationEditModal({
       setFormData(prev => ({ 
         ...prev, 
         class_id: '', 
-        purchase_price: '', 
+        purchase_price: 0, 
         credit_type: '', 
         used_credit: false 
       }));
@@ -454,7 +514,7 @@ export default function RegistrationEditModal({
             }
           }
         } catch (error) {
-          console.error('Error checking availability:', error);
+          // console.error('Error checking availability:', error); // Removed console.error
         }
       };
       
