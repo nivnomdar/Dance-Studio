@@ -130,7 +130,7 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     logger.info('Validation passed, proceeding with registration creation');
     
     const {
-      user_id, // נוסיף user_id מה-body
+      user_id: bodyUserId, // נוסיף user_id מה-body
       class_id,
       session_id,
       session_class_id,
@@ -148,11 +148,16 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       session_selection // לא קיים בטבלה - נשתמש רק לוולידציה
     } = req.body;
 
-    console.log('Extracted user_id:', user_id);
+    // השתמש ב-user_id מה-body אם קיים, אחרת השתמש ב-req.user?.id
+    const user_id = bodyUserId || req.user?.id;
+
+    console.log('Extracted user_id from body:', bodyUserId);
     console.log('Current user ID:', req.user?.id);
+    console.log('Final user_id to use:', user_id);
 
     // הגנה: רק אדמין או המשתמש עצמו יכול ליצור הרשמה
-    if (req.user?.id !== user_id) {
+    // אם user_id לא קיים, נאפשר רק לאדמין ליצור הרשמה
+    if (user_id && req.user?.id !== user_id) {
       console.log('User is creating registration for different user, checking admin role...');
       // נבדוק אם המשתמש המחובר הוא אדמין
       const { data: profile, error: profileError } = await supabase
@@ -166,6 +171,22 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       if (profileError || !profile || profile.role !== 'admin') {
         logger.error('User is not admin and tries to create registration for another user');
         throw new AppError('אין הרשאה ליצור הרשמה עבור משתמש אחר', 403);
+      }
+      console.log('User is admin, proceeding...');
+    } else if (!user_id) {
+      console.log('No user_id provided, checking if current user is admin...');
+      // נבדוק אם המשתמש המחובר הוא אדמין
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', req.user?.id)
+        .single();
+      
+      console.log('Profile check result:', { profile, profileError });
+      
+      if (profileError || !profile || profile.role !== 'admin') {
+        logger.error('User is not admin and tries to create registration without user_id');
+        throw new AppError('אין הרשאה ליצור הרשמה ללא user_id', 403);
       }
       console.log('User is admin, proceeding...');
     } else {
@@ -213,38 +234,44 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     logger.info('Class found:', classData);
 
     // Check if user already has an active registration for this class on the same date and time
-    console.log(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
-    logger.info(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
-    
-    const { data: existingRegistration, error: checkError } = await supabase
-      .from('registrations')
-      .select('*')
-      .eq('user_id', user_id)
-      .eq('class_id', class_id)
-      .eq('selected_date', selected_date)
-      .eq('selected_time', selected_time)
-      .eq('status', 'active')
-      .single();
+    // Only check if user_id is provided
+    if (user_id) {
+      console.log(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
+      logger.info(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
+      
+      const { data: existingRegistration, error: checkError } = await supabase
+        .from('registrations')
+        .select('*')
+        .eq('user_id', user_id)
+        .eq('class_id', class_id)
+        .eq('selected_date', selected_date)
+        .eq('selected_time', selected_time)
+        .eq('status', 'active')
+        .single();
 
-    console.log('Existing registration check result:', { existingRegistration, checkError });
+      console.log('Existing registration check result:', { existingRegistration, checkError });
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.log('Error checking existing registration:', checkError);
-      logger.error('Error checking existing registration:', checkError);
-      throw new AppError('Failed to check existing registration', 500);
-    }
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.log('Error checking existing registration:', checkError);
+        logger.error('Error checking existing registration:', checkError);
+        throw new AppError('Failed to check existing registration', 500);
+      }
 
-    if (existingRegistration) {
-      console.log(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
-      logger.info(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
-      throw new AppError('Already registered for this class on this date and time', 400);
+      if (existingRegistration) {
+        console.log(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
+        logger.info(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
+        throw new AppError('Already registered for this class on this date and time', 400);
+      } else {
+        console.log('No existing active registration found for this date and time');
+        logger.info('No existing active registration found for this date and time');
+      }
     } else {
-      console.log('No existing active registration found for this date and time');
-      logger.info('No existing active registration found for this date and time');
+      console.log('No user_id provided, skipping existing registration check');
+      logger.info('No user_id provided, skipping existing registration check');
     }
 
     // Check if this is a trial class and user has already used it
-    if (classData.slug === 'trial-class') {
+    if (classData.slug === 'trial-class' && user_id) {
       logger.info(`Trial class registration attempt - user_id: ${user_id}`);
       
       const { data: userProfile, error: profileError } = await supabase
@@ -266,6 +293,8 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       } else {
         logger.info(`User ${user_id} can register for trial class`);
       }
+    } else if (classData.slug === 'trial-class' && !user_id) {
+      logger.info('Trial class registration attempt without user_id, skipping trial class check');
     }
 
     // Find or create session_class_id if we have session_id and class_id
@@ -313,12 +342,19 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       }
     }
 
+    // בדיקה שיש user_id תקין לפני יצירת ההרשמה
+    if (!user_id) {
+      console.log('No user_id available, cannot create registration');
+      logger.error('No user_id available, cannot create registration');
+      throw new AppError('לא ניתן ליצור הרשמה ללא user_id', 400);
+    }
+
     // Create registration - only include fields that exist in the database
     const registrationData = {
       class_id: class_id || null, // Convert empty string to null
       session_id: session_id || null, // Convert empty string to null
       session_class_id: finalSessionClassId, // Use the found or created session_class_id
-      user_id: user_id || null, // מה-body
+      user_id: user_id, // עכשיו זה תמיד יהיה תקין
       first_name: first_name || null, // Convert empty string to null
       last_name: last_name || null, // Convert empty string to null
       phone: phone || null, // Convert empty string to null
