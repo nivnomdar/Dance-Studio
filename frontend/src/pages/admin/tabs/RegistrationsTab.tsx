@@ -282,8 +282,9 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
       }
 
       await fetchClasses();
-      setRegistrationEditModalOpen(false);
-      setEditingRegistration(null);
+      // Don't close the modal immediately - let the success modal handle it
+      // setRegistrationEditModalOpen(false);
+      // setEditingRegistration(null);
     } catch (error) {
       console.error('=== FRONTEND: ERROR SAVING REGISTRATION ===');
       console.error('Error saving registration:', error);

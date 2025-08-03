@@ -7,6 +7,7 @@ import {
 import { FaCalendar } from 'react-icons/fa';
 import UserDetailsSection from '../../../components/common/UserDetailsSection';
 import RegistrationDetailsSection from '../../../components/common/RegistrationDetailsSection';
+import { SuccessModal } from '../../../components/common';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 
 interface RegistrationEditModalProps {
@@ -98,6 +99,19 @@ export default function RegistrationEditModal({
       };
     }
   }, [showSuccessModal]);
+
+  // Listen for close event from success modal
+  useEffect(() => {
+    const handleCloseModal = () => {
+      onClose();
+    };
+
+    window.addEventListener('closeRegistrationModal', handleCloseModal);
+    
+    return () => {
+      window.removeEventListener('closeRegistrationModal', handleCloseModal);
+    };
+  }, [onClose]);
 
   // Reset search results when opening modal or profiles prop changes
   useEffect(() => {
@@ -712,152 +726,15 @@ export default function RegistrationEditModal({
       </div>
 
       {/* Success Modal */}
-      {showSuccessModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={(e) => {
-            // Prevent closing when clicking outside
-            e.stopPropagation();
-          }}
-          onKeyDown={(e) => {
-            // Prevent closing with Escape key
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-        >
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl transform transition-all">
-            <div className="text-center">
-              {/* Success Icon */}
-              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              
-              {/* Title */}
-              <h2 className="text-3xl font-bold text-gray-900 mb-4 font-agrandir-grand">
-                {isNewReg ? 'הרשמה נוצרה בהצלחה! 🎉' : 'הרשמה עודכנה בהצלחה! ✅'}
-              </h2>
-              
-              {/* Registration Details */}
-              <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-6 mb-6">
-                <h3 className="text-lg font-semibold text-[#4B2E83] mb-4">פרטי ההרשמה:</h3>
-                
-                <div className="space-y-3 text-sm text-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">משתמש:</span>
-                    <span className="font-bold text-[#4B2E83]">
-                      {searchResults.find(p => p.id === formData.user_id)?.first_name} {searchResults.find(p => p.id === formData.user_id)?.last_name}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">שיעור:</span>
-                    <span className="font-bold text-[#4B2E83]">
-                      {classes.find(c => c.id === formData.class_id)?.name}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">תאריך:</span>
-                    <span className="font-bold text-[#4B2E83]">
-                      {formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      }) : 'לא נבחר'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">שעה:</span>
-                    <span className="font-bold text-[#4B2E83]">
-                      {formData.selected_time ? formData.selected_time.split(' עד ')[0] : 'לא נבחרה'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">מחיר:</span>
-                    <span className="font-bold text-[#EC4899]">{formData.purchase_price} ש"ח</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">תשלום:</span>
-                    <span className="font-bold text-[#4B2E83]">
-                      {formData.payment_method === 'cash' ? 'מזומן' : 
-                       formData.payment_method === 'credit' ? 'כרטיס אשראי' : 
-                       formData.payment_method === 'card_online' ? 'כרטיס אשראי באתר' : 
-                       formData.payment_method === 'bit' ? 'ביט' : 
-                       formData.payment_method === 'credit_usage' ? 'קרדיט' : formData.payment_method}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Additional Info */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="text-right">
-                    <h4 className="font-semibold text-blue-900 mb-2">מה הלאה?</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• ההרשמה נשמרה במערכת</li>
-                      <li>• המשתמש יקבל אימייל אישור</li>
-                      <li>• אפשר לערוך או לבטל מהפאנל הניהול</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    onClose();
-                  }}
-                  className="w-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] hover:from-[#4B2E83] hover:to-[#EC4899] text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-                >
-                  סגור
-                </button>
-                
-                <button
-                  onClick={() => {
-                    setShowSuccessModal(false);
-                    onClose();
-                    // רענון הדף כדי לראות את ההרשמה החדשה
-                    window.location.reload();
-                  }}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors duration-200"
-                >
-                  רענן דף
-                </button>
-              </div>
-              
-              {/* Close button in top-right corner */}
-              <button
-                onClick={() => {
-                  setShowSuccessModal(false);
-                  onClose();
-                }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                aria-label="סגור"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        isNewRegistration={isNewReg}
+        formData={formData}
+        searchResults={searchResults}
+        classes={classes}
+        sessions={sessions}
+      />
     </div>
   );
 } 
