@@ -53,7 +53,6 @@ export default function RegistrationEditModal({
     purchase_price: registrationData.purchase_price || '',
     used_credit: registrationData.used_credit || false,
     credit_type: registrationData.credit_type || '',
-    payment_method: registrationData.payment_method || 'cash',
     
     // Session selection
     session_selection: registrationData.session_selection || 'custom',
@@ -142,7 +141,6 @@ export default function RegistrationEditModal({
         purchase_price: '',
         used_credit: false,
         credit_type: '',
-        payment_method: 'cash',
         session_selection: 'custom',
         first_name: '',
         last_name: '',
@@ -162,7 +160,6 @@ export default function RegistrationEditModal({
         purchase_price: registrationData.purchase_price || '',
         used_credit: registrationData.used_credit || false,
         credit_type: registrationData.credit_type || '',
-        payment_method: registrationData.payment_method || 'cash',
         session_selection: registrationData.session_selection || 'custom',
         first_name: registrationData.first_name || '',
         last_name: registrationData.last_name || '',
@@ -290,23 +287,10 @@ export default function RegistrationEditModal({
       // Step 5: Payment details (only if date and time are selected)
       if (formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time) {
         if (!formData.purchase_price || formData.purchase_price <= 0) newErrors.purchase_price = 'מחיר רכישה הוא שדה חובה';
-        if (!formData.payment_method) newErrors.payment_method = 'שיטת תשלום היא שדה חובה';
         
         // Check phone number
         const phone = formData.phone || searchResults.find(p => p.id === formData.user_id)?.phone || searchResults.find(p => p.id === formData.user_id)?.phone_number || '';
         if (!phone) newErrors.phone = 'מספר טלפון הוא שדה חובה';
-        
-        // Check credits if payment method is credit_usage
-        if (formData.payment_method === 'credit_usage') {
-          if (!userCredits || !userCredits.credits || userCredits.credits.length === 0) {
-            newErrors.payment_method = 'אין קרדיטים זמינים למשתמש זה';
-          } else {
-            const totalCredits = userCredits.credits.reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0);
-            if (totalCredits <= 0) {
-              newErrors.payment_method = 'אין קרדיטים זמינים למשתמש זה';
-            }
-          }
-        }
       }
       
       // Conditional validation based on class type
@@ -390,7 +374,6 @@ export default function RegistrationEditModal({
       email: selectedUser?.email || '', // Always use email from profile
       phone: formData.phone || selectedUser?.phone || selectedUser?.phone_number || '',
       // Ensure all new fields are included
-      payment_method: formData.payment_method,
       used_credit: formData.used_credit,
       credit_type: formData.credit_type,
       session_selection: formData.session_selection,
@@ -478,27 +461,7 @@ export default function RegistrationEditModal({
       checkAvailabilityForSelection();
     }
 
-    // Check credits when payment method changes to credit_usage
-    if (field === 'payment_method' && value === 'credit_usage') {
-      if (userCredits && userCredits.credits && userCredits.credits.length > 0) {
-        const totalCredits = userCredits.credits.reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0);
-        if (totalCredits <= 0) {
-          setErrors(prev => ({
-            ...prev,
-            payment_method: 'אין קרדיטים זמינים למשתמש זה'
-          }));
-          // Reset payment method to empty
-          setFormData(prev => ({ ...prev, payment_method: '' }));
-        }
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          payment_method: 'אין קרדיטים זמינים למשתמש זה'
-        }));
-        // Reset payment method to empty
-        setFormData(prev => ({ ...prev, payment_method: '' }));
-      }
-    }
+
   };
 
   const formatDateForInput = (date: Date) => {
@@ -606,7 +569,7 @@ export default function RegistrationEditModal({
             />
 
             {/* Registration Summary - Only show when all required fields are filled */}
-            {isNewReg && formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time && formData.purchase_price && formData.purchase_price > 0 && formData.payment_method && (
+            {isNewReg && formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time && formData.purchase_price && formData.purchase_price > 0 && (
               <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center">
@@ -646,14 +609,6 @@ export default function RegistrationEditModal({
                     {' '}במחיר של{' '}
                     <span className="font-semibold text-[#EC4899]">
                       {formData.purchase_price} ש"ח
-                    </span>
-                    {' '}בתשלום{' '}
-                    <span className="font-semibold text-[#4B2E83]">
-                      {formData.payment_method === 'cash' ? 'מזומן' : 
-                       formData.payment_method === 'credit' ? 'כרטיס אשראי' : 
-                       formData.payment_method === 'card_online' ? 'כרטיס אשראי באתר' : 
-                       formData.payment_method === 'bit' ? 'ביט' : 
-                       formData.payment_method === 'credit_usage' ? 'קרדיט' : formData.payment_method}
                     </span>
                     ?
                   </p>

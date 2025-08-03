@@ -76,6 +76,53 @@ router.get('/my', auth, async (req: Request, res: Response, next: NextFunction) 
   }
 });
 
+// Get user registrations by user_id and class_id (admin only)
+router.get('/user/:userId', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const { class_id } = req.query;
+    
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    let query = supabase
+      .from('registrations')
+      .select(`
+        *,
+        class:classes(id, name, price, duration, level, category)
+      `)
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    // Add class_id filter if provided
+    if (class_id) {
+      query = query.eq('class_id', class_id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+      throw new AppError('Failed to fetch user registrations', 500);
+    }
+
+    res.json(data || []);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get registration by ID
 router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -347,6 +394,52 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       console.log('No user_id available, cannot create registration');
       logger.error('No user_id available, cannot create registration');
       throw new AppError('לא ניתן ליצור הרשמה ללא user_id', 400);
+    }
+
+    // Check availability before creating registration
+    if (session_id && selected_date && selected_time) {
+      console.log(`Checking availability before registration - session_id: ${session_id}, date: ${selected_date}, time: ${selected_time}`);
+      logger.info(`Checking availability before registration - session_id: ${session_id}, date: ${selected_date}, time: ${selected_time}`);
+      
+      // Get the session to check max capacity
+      const { data: session, error: sessionError } = await supabase
+        .from('schedule_sessions')
+        .select('max_capacity')
+        .eq('id', session_id)
+        .single();
+
+      if (sessionError || !session) {
+        console.log('Error fetching session for availability check:', sessionError);
+        logger.error('Error fetching session for availability check:', sessionError);
+        throw new AppError('Session not found for availability check', 404);
+      }
+
+      // Count existing registrations for this session, date, and time
+      const { count, error: countError } = await supabase
+        .from('registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('session_id', session_id)
+        .eq('selected_date', selected_date)
+        .eq('selected_time', selected_time)
+        .eq('status', 'active');
+
+      if (countError) {
+        console.log('Error counting registrations for availability check:', countError);
+        logger.error('Error counting registrations for availability check:', countError);
+        throw new AppError('Failed to check availability', 500);
+      }
+
+      const takenSpots = count || 0;
+      const availableSpots = session.max_capacity - takenSpots;
+      
+      console.log(`Availability check result: ${takenSpots}/${session.max_capacity} taken, ${availableSpots} available`);
+      logger.info(`Availability check result: ${takenSpots}/${session.max_capacity} taken, ${availableSpots} available`);
+
+      if (availableSpots <= 0) {
+        console.log('No available spots for this session');
+        logger.warn('Registration attempt for full session:', { session_id, selected_date, selected_time, takenSpots, maxCapacity: session.max_capacity });
+        throw new AppError('אין מקום פנוי בקבוצה זו. הקבוצה מלאה.', 400);
+      }
     }
 
     // Create registration - only include fields that exist in the database
