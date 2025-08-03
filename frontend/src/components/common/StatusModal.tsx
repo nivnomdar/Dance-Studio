@@ -10,7 +10,7 @@ interface StatusModalProps {
   buttonText?: string;
 }
 
-const StatusModal: React.FC<StatusModalProps> = ({
+export const StatusModal: React.FC<StatusModalProps> = ({
   isOpen,
   onClose,
   type,
@@ -57,4 +57,4 @@ const StatusModal: React.FC<StatusModalProps> = ({
   );
 };
 
-export default StatusModal; 
+ 

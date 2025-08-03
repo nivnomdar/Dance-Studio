@@ -269,11 +269,7 @@ export default function RegistrationDetailsSection({
 
   // קבוצה - options
   const sessionOptions = sessions.map((session) => {
-    // מצא את השיעור הקשור לקבוצה זו
-    const sessionClass = session_classes.find(sc => sc.session_id === session.id);
-    const classInfo = sessionClass ? classes.find(c => c.id === sessionClass.class_id) : null;
     let label = session.name || session.session_name || 'קבוצה ללא שם';
-    if (classInfo) label += ` - ${classInfo.name}`;
     if (session.weekdays && session.weekdays.length > 0) {
       const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
       label += ' (' + session.weekdays.map(d => dayNames[d]).join(', ') + ')';
@@ -372,7 +368,6 @@ export default function RegistrationDetailsSection({
                             const onlyClass = relatedClasses[0];
                             return (
                               <div className="flex items-center gap-2 px-3 py-2.5 text-sm border rounded-xl bg-gray-50 text-[#4B2E83] font-semibold">
-                                {onlyClass ? `${onlyClass.name} - ${onlyClass.price} ש"ח` : 'שיעור אחד'}
                                 <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-normal">נבחר אוטומטית</span>
                               </div>
                             );

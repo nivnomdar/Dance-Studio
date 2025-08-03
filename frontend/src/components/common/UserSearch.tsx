@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FaSearch, FaUser, FaEnvelope, FaPhone, FaCheck } from 'react-icons/fa';
+import { FaSearch, FaUser, FaEnvelope, FaPhone, FaCheck, FaTimes } from 'react-icons/fa';
 
 interface User {
   id: string;
@@ -178,10 +178,9 @@ export default function UserSearch({
 
   return (
     <div className="relative">
-      {/* Search and Result Row */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search Input - Full width on mobile, 2/3 on desktop */}
-        <div className="relative w-full lg:w-2/3">
+      {/* Enhanced Search Input */}
+      <div className="relative">
+        <div className="relative">
           <input
             ref={inputRef}
             type="text"
@@ -192,152 +191,168 @@ export default function UserSearch({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={isLoading}
-            className={`w-full px-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] focus:outline-none transition-all duration-200 bg-white shadow-sm ${
+            className={`w-full px-12 py-3 text-sm border-2 rounded-xl focus:ring-4 focus:ring-[#EC4899]/20 focus:border-[#EC4899] focus:outline-none transition-all duration-300 bg-white shadow-sm hover:shadow-md ${
               error 
                 ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                : 'hover:border-gray-400'
+                : 'border-gray-200 hover:border-gray-300'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
-          <div className="absolute top-6 left-0 pl-3 transform -translate-y-1/2 flex items-center pointer-events-none">
+          
+          {/* Search Icon */}
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             {isSearching ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#EC4899]"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#EC4899] border-t-transparent"></div>
             ) : (
-              <FaSearch className="w-4 h-4 text-gray-400" />
+              <FaSearch className="w-5 h-5 text-gray-400" />
             )}
           </div>
+          
+          {/* Clear Button */}
           {searchTerm && (
             <button
               type="button"
               onClick={() => setSearchTerm('')}
-              className="absolute top-6 right-0 pr-3 transform -translate-y-1/2 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-50 rounded-md p-1"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:bg-gray-50 rounded-r-xl p-1"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              <FaTimes className="w-4 h-4" />
             </button>
           )}
-
-          {/* Dropdown - Positioned relative to the input container */}
-          {isOpen && filteredUsers.length > 0 && (
-            <div
-              ref={dropdownRef}
-              className="absolute left-0 right-0 mt-1 lg:mt-0 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
-              style={{
-                maxHeight: '200px',
-                overflowY: 'auto'
-              }}
-            >
-              {filteredUsers.map((user, index) => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => handleUserSelect(user)}
-                  className={`w-full p-2.5 text-left hover:bg-gray-50 transition-colors duration-200 border-b border-gray-100 last:border-b-0 h-16 flex items-center ${
-                    index === selectedIndex ? 'bg-[#EC4899]/5 border-l-2 border-l-[#EC4899]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3 w-full">
-                    <div className="w-8 h-8 bg-gradient-to-br from-[#EC4899]/10 to-[#EC4899]/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <FaUser className="w-3.5 h-3.5 text-[#EC4899]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {user.first_name} {user.last_name}
-                        </h4>
-                      </div>
-                      <div className="space-y-0">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <FaEnvelope className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{user.email}</span>
-                        </div>
-                        {user.phone_number && (
-                          <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <FaPhone className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">{user.phone_number}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {index === selectedIndex && (
-                      <div className="flex-shrink-0">
-                        <div className="w-4 h-4 bg-[#EC4899] rounded-full flex items-center justify-center">
-                          <FaCheck className="w-2 h-2 text-white" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* No Results - Positioned relative to the input container */}
-          {isOpen && searchTerm.trim() && filteredUsers.length === 0 && !isSearching && (
-            <div 
-              className="absolute top-full left-0 right-0 mt-1 lg:mt-0 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-6"
-            >
-              <div className="text-center">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <FaSearch className="w-4 h-4 text-gray-400" />
-                </div>
-                <h4 className="text-sm font-medium text-gray-900 mb-1">לא נמצאו משתמשים</h4>
-                <p className="text-xs text-gray-500">נסי לחפש בשם או באימייל</p>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Selected User Display - Full width on mobile, 1/3 on desktop */}
-        <div className="w-full lg:w-1/3">
-          {selectedUser ? (
-            <div className="h-full p-3 bg-gradient-to-r from-[#EC4899]/5 to-[#EC4899]/10 border border-[#EC4899]/20 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between h-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="w-8 h-8 bg-[#EC4899] rounded-full flex items-center justify-center flex-shrink-0">
-                    <FaUser className="w-4 h-4 text-white" />
+        {/* Enhanced Dropdown */}
+        {isOpen && filteredUsers.length > 0 && (
+          <div
+            ref={dropdownRef}
+            className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden"
+            style={{
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}
+          >
+            {filteredUsers.map((user, index) => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => handleUserSelect(user)}
+                className={`w-full p-4 text-left hover:bg-gradient-to-r hover:from-[#EC4899]/5 hover:to-[#4B2E83]/5 transition-all duration-200 border-b border-gray-50 last:border-b-0 ${
+                  index === selectedIndex ? 'bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 border-l-4 border-l-[#EC4899]' : ''
+                }`}
+              >
+                <div className="flex items-center gap-4 w-full">
+                  {/* User Avatar */}
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <FaUser className="w-5 h-5 text-white" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1 mb-1">
-                      <h4 className="text-xs font-semibold text-gray-900 truncate">
-                        {selectedUser.first_name} {selectedUser.last_name}
+                  
+                  {/* User Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                        {user.first_name} {user.last_name}
                       </h4>
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 bg-[#EC4899] text-white text-xs rounded-full flex-shrink-0">
-                        <FaCheck className="w-2.5 h-2.5" />
-                        <span className="text-xs">נבחר</span>
-                      </div>
+                      {index === selectedIndex && (
+                        <div className="flex items-center gap-1 px-2 py-0.5 bg-[#EC4899] text-white text-xs rounded-full flex-shrink-0">
+                          <FaCheck className="w-2.5 h-2.5" />
+                          <span>נבחר</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-600 truncate">
-                      {selectedUser.email}
+                    
+                    {/* Contact Info */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <FaEnvelope className="w-3 h-3 flex-shrink-0 text-[#EC4899]" />
+                        <span className="truncate">{user.email}</span>
+                      </div>
+                      {user.phone_number && (
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <FaPhone className="w-3 h-3 flex-shrink-0 text-[#4B2E83]" />
+                          <span className="truncate">{user.phone_number}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+                  
+                  {/* Selection Indicator */}
+                  {index === selectedIndex && (
+                    <div className="flex-shrink-0">
+                      <div className="w-6 h-6 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center shadow-sm">
+                        <FaCheck className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={clearSelection}
-                  className="p-1 text-gray-400 hover:text-red-500 transition-colors duration-200 rounded-md hover:bg-red-50 flex-shrink-0"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Enhanced No Results */}
+        {isOpen && searchTerm.trim() && filteredUsers.length === 0 && !isSearching && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-100 rounded-xl shadow-xl z-20 p-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <FaSearch className="w-5 h-5 text-gray-400" />
               </div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-1">לא נמצאו משתמשים</h4>
+              <p className="text-xs text-gray-500">נסי לחפש בשם או באימייל</p>
             </div>
-          ) : (
-            <div className="h-full p-3 bg-gray-50 border border-gray-200 rounded-lg shadow-sm flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <FaUser className="w-4 h-4 mx-auto mb-1" />
-                <p className="text-xs">לא נבחר משתמש</p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Error Message */}
+      {/* Enhanced Selected User Display */}
+      {selectedUser && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border-2 border-[#EC4899]/20 rounded-xl shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-12 h-12 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                <FaUser className="w-6 h-6 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="text-sm font-semibold text-gray-900 truncate">
+                    {selectedUser.first_name} {selectedUser.last_name}
+                  </h4>
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-full flex-shrink-0 shadow-sm">
+                    <FaCheck className="w-2.5 h-2.5" />
+                    <span>נבחר</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <FaEnvelope className="w-3 h-3 flex-shrink-0 text-[#EC4899]" />
+                    <span className="truncate">{selectedUser.email}</span>
+                  </div>
+                  {selectedUser.phone_number && (
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <FaPhone className="w-3 h-3 flex-shrink-0 text-[#4B2E83]" />
+                      <span className="truncate">{selectedUser.phone_number}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200 rounded-lg hover:bg-red-50 flex-shrink-0"
+            >
+              <FaTimes className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Error Message */}
       {error && (
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="mt-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <FaTimes className="w-3 h-3 text-white" />
+            </div>
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+          </div>
         </div>
       )}
     </div>

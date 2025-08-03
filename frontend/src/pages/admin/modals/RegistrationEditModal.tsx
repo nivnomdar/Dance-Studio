@@ -646,11 +646,11 @@ export default function RegistrationEditModal({
                     <span className="font-semibold text-[#4B2E83]">
                       {classes.find(c => c.id === formData.class_id)?.name}
                     </span>
-                    {' '}בקבוצה{' '}
+            {''} ב-
                     <span className="font-semibold text-[#4B2E83]">
                       {sessions.find(s => s.id === formData.session_id)?.name}
                     </span>
-                    {' '}ל
+                    {' '}ל-
                     <span className="font-semibold text-[#4B2E83]">
                       {searchResults.find(p => p.id === formData.user_id)?.first_name} {searchResults.find(p => p.id === formData.user_id)?.last_name}
                     </span>
@@ -658,7 +658,7 @@ export default function RegistrationEditModal({
                     <span className="font-semibold text-[#4B2E83]">
                       {new Date(formData.selected_date).toLocaleDateString('he-IL')}
                     </span>
-                    {' '}ב
+                    {' '}ב-
                     <span className="font-semibold text-[#4B2E83]">
                       {new Date(formData.selected_date).toLocaleDateString('he-IL', { weekday: 'long' })}
                     </span>
