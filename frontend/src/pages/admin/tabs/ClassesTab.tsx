@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClassEditModal, ClassSessionsModal } from '../modals';
 import { Class } from '../../../types';
 import { getCategoryColorScheme } from '../../../utils/colorUtils';
+import { ADMIN_STYLES } from '../../../utils/adminStyles';
 
 interface ClassesTabProps {
   data: any;
@@ -23,14 +24,6 @@ const ALLOWED_FIELDS = [
   'image_url', 'video_url', 'category', 'color_scheme', 'registration_type',
   'group_credits', 'private_credits', 'is_active'
 ];
-
-const STYLES = {
-  input: "w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none",
-  button: "px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300",
-  buttonSecondary: "flex-1 px-4 py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300",
-  actionButton: "px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs",
-  actionButtonAlt: "px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
-};
 
 export default function ClassesTab({ data, session, fetchClasses }: ClassesTabProps) {
   // State
@@ -300,7 +293,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                           e.stopPropagation();
                           handleEditClass(cls);
                         }}
-                        className={`${STYLES.actionButton} text-xs px-1 sm:px-2 py-1`}
+                        className={`${ADMIN_STYLES.actionButton} text-xs px-1 sm:px-2 py-1`}
                       >
                         ערוך
                       </button>
@@ -309,7 +302,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                           e.stopPropagation();
                           handleViewClassSessions(cls);
                         }}
-                        className={`${STYLES.actionButtonAlt} text-xs px-1 sm:px-2 py-1`}
+                        className={`${ADMIN_STYLES.actionButtonAlt} text-xs px-1 sm:px-2 py-1`}
                       >
                         קבוצות
                       </button>

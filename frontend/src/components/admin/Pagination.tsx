@@ -1,4 +1,5 @@
 import React from 'react';
+import { ADMIN_STYLES } from '../../utils/adminStyles';
 
 interface PaginationProps {
   currentPage: number;
@@ -11,21 +12,6 @@ interface PaginationProps {
   itemsPerPageOptions?: number[];
   className?: string;
 }
-
-const STYLES = {
-  container: "flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white border-t border-gray-200",
-  info: "text-sm text-gray-600",
-  controls: "flex items-center gap-2",
-  button: "px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed",
-  buttonPrimary: "bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white hover:from-[#4B2E83] hover:to-[#EC4899] shadow-sm",
-  buttonSecondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300",
-  buttonActive: "bg-[#4B2E83] text-white border border-[#4B2E83]",
-  pageNumbers: "flex items-center gap-1",
-  pageNumber: "px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 min-w-[40px] text-center",
-  pageNumberActive: "bg-[#4B2E83] text-white",
-  pageNumberInactive: "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300",
-  select: "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-};
 
 export default function Pagination({
   currentPage,
@@ -116,9 +102,9 @@ export default function Pagination({
   }
 
   return (
-    <div className={`${STYLES.container} ${className}`}>
+    <div className={`${ADMIN_STYLES.container} ${className}`}>
       {/* Items info */}
-      <div className={STYLES.info}>
+      <div className={ADMIN_STYLES.info}>
         {totalItems > 0 ? (
           <>
             מציג {startItem}-{endItem} מתוך {totalItems.toLocaleString()} פריטים
@@ -129,7 +115,7 @@ export default function Pagination({
       </div>
 
       {/* Controls */}
-      <div className={STYLES.controls}>
+      <div className={ADMIN_STYLES.controls}>
         {/* Items per page selector */}
         {showItemsPerPage && onItemsPerPageChange && (
           <div className="flex items-center gap-2">
@@ -137,7 +123,7 @@ export default function Pagination({
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className={STYLES.select}
+              className={ADMIN_STYLES.select}
             >
               {itemsPerPageOptions.map(option => (
                 <option key={option} value={option}>
@@ -155,7 +141,7 @@ export default function Pagination({
             <button
               onClick={handlePrevious}
               disabled={currentPage === 1}
-              className={`${STYLES.button} ${STYLES.buttonSecondary}`}
+              className={`${ADMIN_STYLES.button} ${ADMIN_STYLES.buttonSecondary}`}
               title="עמוד קודם"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,18 +150,18 @@ export default function Pagination({
             </button>
 
             {/* Page numbers */}
-            <div className={STYLES.pageNumbers}>
+            <div className={ADMIN_STYLES.pageNumbers}>
               {getPageNumbers().map((page, index) => (
                 <button
                   key={index}
                   onClick={() => handlePageClick(page)}
                   disabled={page === '...'}
-                  className={`${STYLES.pageNumber} ${
+                  className={`${ADMIN_STYLES.pageNumber} ${
                     page === currentPage 
-                      ? STYLES.pageNumberActive 
+                      ? ADMIN_STYLES.pageNumberActive 
                       : page === '...'
                         ? 'cursor-default'
-                        : STYLES.pageNumberInactive
+                        : ADMIN_STYLES.pageNumberInactive
                   }`}
                   title={typeof page === 'number' ? `עמוד ${page}` : undefined}
                 >
@@ -188,12 +174,12 @@ export default function Pagination({
             <button
               onClick={handleNext}
               disabled={currentPage === totalPages}
-              className={`${STYLES.button} ${STYLES.buttonSecondary}`}
+              className={`${ADMIN_STYLES.button} ${ADMIN_STYLES.buttonSecondary}`}
               title="עמוד הבא"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+  </svg>
             </button>
           </>
         )}
