@@ -26,6 +26,11 @@ export default function SuccessModal({
     // Close the main modal after success
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('closeRegistrationModal'));
+      
+      // Trigger refresh of admin data to update RegistrationsTab
+      if (isNewRegistration) {
+        window.dispatchEvent(new CustomEvent('refreshAdminData'));
+      }
     }
   };
 
@@ -37,7 +42,7 @@ export default function SuccessModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-3 md:p-4">
-      <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-md xl:max-w-sm 2xl:max-w-xs w-full mx-auto overflow-hidden border border-white/20 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-2xl max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-lg 2xl:max-w-md w-full mx-auto overflow-hidden border border-white/20 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-3 sm:p-4 md:p-4 lg:p-3 xl:p-2 text-white text-center relative overflow-hidden">
           {/* Background Pattern */}
@@ -119,15 +124,38 @@ export default function SuccessModal({
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
                 <span className="font-medium text-right sm:text-left">תשלום:</span>
                 <span className="font-bold text-[#4B2E83] text-right sm:text-left">
-                  {formData.payment_method === 'cash' ? 'מזומן' : 
-                   formData.payment_method === 'credit' ? 'כרטיס אשראי' : 
-                   formData.payment_method === 'card_online' ? 'כרטיס אשראי באתר' : 
-                   formData.payment_method === 'bit' ? 'ביט' : 
-                   formData.payment_method === 'credit_usage' ? 'קרדיט' : formData.payment_method}
+                  {formData.used_credit ? 
+                    `קרדיט ${formData.credit_type === 'group' ? 'קבוצתי' : 'פרטי'}` : 
+                    `${formData.purchase_price} ש"ח`
+                  }
                 </span>
               </div>
+              
+              {/* Credit Information - Only show if credits were used */}
+              {formData.used_credit && formData.credit_type && (
+                <>
+                  {/* Show subscription credit addition for subscription classes */}
+                  {classes.find(c => c.id === formData.class_id)?.category === 'subscription' && (
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                      <span className="font-medium text-right sm:text-left">הוספת מנוי:</span>
+                      <span className="font-bold text-blue-600 text-right sm:text-left">
+                        ✓ נוספו {formData.credit_type === 'group' ? classes.find(c => c.id === formData.class_id)?.group_credits : classes.find(c => c.id === formData.class_id)?.private_credits} קרדיטים למשתמש
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                    <span className="font-medium text-right sm:text-left">סטטוס קרדיט:</span>
+                    <span className="font-bold text-green-600 text-right sm:text-left">
+                      ✓ הורד קרדיט אחד למשתמש
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+
+
           
           {/* Additional Info */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-3 lg:p-2 xl:p-1.5 mb-2 sm:mb-3 md:mb-3 lg:mb-2">
@@ -141,8 +169,10 @@ export default function SuccessModal({
                 <h4 className="font-semibold text-blue-900 mb-1 text-xs sm:text-sm md:text-sm lg:text-xs">מה הלאה?</h4>
                 <ul className="text-xs sm:text-xs md:text-xs lg:text-xs text-blue-800 space-y-0.5">
                   <li>• ההרשמה נשמרה במערכת</li>
-                  <li>• המשתמש יקבל אימייל אישור</li>
                   <li>• אפשר לערוך או לבטל מהפאנל הניהול</li>
+                  {formData.used_credit && formData.credit_type && classes.find(c => c.id === formData.class_id)?.category === 'subscription' && (
+                    <li>• המשתמש קיבל {(formData.credit_type === 'group' ? classes.find(c => c.id === formData.class_id)?.group_credits : classes.find(c => c.id === formData.class_id)?.private_credits) - 1} קרדיטים זמינים לשימוש עתידי</li>
+                  )}
                 </ul>
               </div>
             </div>

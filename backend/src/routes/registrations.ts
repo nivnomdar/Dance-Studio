@@ -5,8 +5,220 @@ import { logger } from '../utils/logger';
 import { validateRegistration } from '../middleware/validation';
 import { auth } from '../middleware/auth';
 import { RegistrationWithDetails } from '../types/models';
+import { 
+  deductCredit, 
+  addCredit, 
+  getUserCredits, 
+  checkUserCredits, 
+  addCreditsToUser, 
+  updateUserCredits, 
+  deleteUserCredits, 
+  getCreditStatistics, 
+  getUserCreditHistory 
+} from '../utils/creditManager';
 
 const router = Router();
+
+// Get user's subscription credits
+router.get('/user/:userId/credits', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    
+    // Check if user is admin or requesting own credits
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    // Only admin can check other users' credits, or user can check their own
+    if (profile.role !== 'admin' && req.user!.id !== userId) {
+      throw new AppError('Access denied. Admin only or own credits.', 403);
+    }
+
+    const credits = await getUserCredits(userId);
+    res.json(credits);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Check if user has enough credits for a specific type
+router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, creditType } = req.params;
+    
+    // Check if user is admin or requesting own credits
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    // Only admin can check other users' credits, or user can check their own
+    if (profile.role !== 'admin' && req.user!.id !== userId) {
+      throw new AppError('Access denied. Admin only or own credits.', 403);
+    }
+
+    const creditInfo = await checkUserCredits(userId, creditType);
+    res.json(creditInfo);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add credits to user (admin only)
+router.post('/user/:userId/credits', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const { credit_group, remaining_credits, expires_at } = req.body;
+    
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    // Validate required fields
+    if (!credit_group || !remaining_credits) {
+      throw new AppError('credit_group and remaining_credits are required', 400);
+    }
+
+    const creditData = await addCreditsToUser(userId, credit_group, remaining_credits, expires_at);
+    res.json(creditData);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update user credits (admin only)
+router.put('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, creditId } = req.params;
+    const { remaining_credits, expires_at } = req.body;
+    
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    // Validate required fields
+    if (remaining_credits === undefined) {
+      throw new AppError('remaining_credits is required', 400);
+    }
+
+    const creditData = await updateUserCredits(userId, creditId, remaining_credits, expires_at);
+    res.json(creditData);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete user credits (admin only)
+router.delete('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, creditId } = req.params;
+    
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    await deleteUserCredits(userId, creditId);
+    res.json({ message: 'Credits deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get credit statistics (admin only)
+router.get('/credits/statistics', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    const statistics = await getCreditStatistics();
+    res.json(statistics);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get credit history for a user (admin only)
+router.get('/user/:userId/credits/history', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', req.user!.id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new AppError('User profile not found', 404);
+    }
+
+    if (profile.role !== 'admin') {
+      throw new AppError('Access denied. Admin only.', 403);
+    }
+
+    const history = await getUserCreditHistory(userId);
+    res.json(history);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Get all registrations with class and user details (admin only)
 router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
@@ -195,6 +407,9 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       session_selection // לא קיים בטבלה - נשתמש רק לוולידציה
     } = req.body;
 
+    logger.info('Raw request body:', req.body);
+    logger.info('Extracted credit fields:', { used_credit, credit_type, user_id: bodyUserId });
+
     // השתמש ב-user_id מה-body אם קיים, אחרת השתמש ב-req.user?.id
     const user_id = bodyUserId || req.user?.id;
 
@@ -258,6 +473,15 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       payment_method,
       session_selection
     });
+    
+    logger.info('Credit fields check:', {
+      used_credit: typeof used_credit,
+      credit_type: typeof credit_type,
+      user_id: typeof user_id,
+      used_credit_value: used_credit,
+      credit_type_value: credit_type,
+      user_id_value: user_id
+    });
 
     // Check if class exists and is active
     console.log('Checking if class exists and is active...');
@@ -286,23 +510,32 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       console.log(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
       logger.info(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
       
-      const { data: existingRegistration, error: checkError } = await supabase
+      // Normalize time format for comparison (remove "עד" part if exists)
+      const normalizedTime = selected_time.split(' עד ')[0].trim();
+      
+      // Check for existing registrations with both time formats
+      const { data: existingRegistrations, error: checkError } = await supabase
         .from('registrations')
         .select('*')
         .eq('user_id', user_id)
         .eq('class_id', class_id)
         .eq('selected_date', selected_date)
-        .eq('selected_time', selected_time)
-        .eq('status', 'active')
-        .single();
+        .eq('status', 'active');
 
-      console.log('Existing registration check result:', { existingRegistration, checkError });
-
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.log('Error checking existing registration:', checkError);
         logger.error('Error checking existing registration:', checkError);
         throw new AppError('Failed to check existing registration', 500);
       }
+
+      // Check if any existing registration matches the time (with or without "עד")
+      const existingRegistration = existingRegistrations?.find(reg => {
+        const regTime = reg.selected_time?.split(' עד ')[0]?.trim() || reg.selected_time;
+        const inputTime = selected_time?.split(' עד ')[0]?.trim() || selected_time;
+        return regTime === inputTime || regTime === selected_time || regTime === normalizedTime;
+      });
+
+      console.log('Existing registration check result:', { existingRegistration, checkError: checkError || null });
 
       if (existingRegistration) {
         console.log(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
@@ -500,52 +733,62 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     }
 
     // If registration uses credits, deduct one credit from user's subscription
+    logger.info(`Credit check - used_credit: ${used_credit}, credit_type: ${credit_type}, user_id: ${user_id}`);
+    logger.info(`Credit check types - used_credit: ${typeof used_credit}, credit_type: ${typeof credit_type}, user_id: ${typeof user_id}`);
+    logger.info(`Credit check truthy - used_credit: ${!!used_credit}, credit_type: ${!!credit_type}, user_id: ${!!user_id}`);
+    
     if (used_credit && credit_type) {
       logger.info(`Registration uses credits - user_id: ${user_id}, credit_type: ${credit_type}`);
       
-      try {
-        // Get current credits for the user
-        const { data: currentCredits, error: creditsError } = await supabase
-          .from('subscription_credits')
-          .select('*')
-          .eq('user_id', user_id)
-          .eq('credit_group', credit_type)
-          .gt('remaining_credits', 0)
-          .order('created_at', { ascending: true }) // Use oldest credits first
-          .limit(1)
-          .single();
-
-        if (creditsError && creditsError.code !== 'PGRST116') {
-          logger.error('Error fetching current credits:', creditsError);
-          throw new AppError('Failed to check current credits', 500);
-        }
-
-        if (currentCredits && currentCredits.remaining_credits > 0) {
-          // Update existing credits
-          const { error: updateError } = await supabase
-            .from('subscription_credits')
-            .update({ 
-              remaining_credits: currentCredits.remaining_credits - 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', currentCredits.id);
-
-          if (updateError) {
-            logger.error('Failed to update credits:', updateError);
-            throw new AppError('Failed to update credits', 500);
-          }
-
-          logger.info(`Credit deducted successfully for user ${user_id}, remaining: ${currentCredits.remaining_credits - 1}`);
+      // Check if this is a subscription class and user has no credits
+      const isSubscriptionClass = classData.category === 'subscription';
+      const userCredits = await getUserCredits(user_id);
+      const userHasCredits = userCredits.some((credit: any) => 
+        credit.credit_group === credit_type && credit.remaining_credits > 0
+      );
+      
+      // If it's a subscription class and user has no credits, add credits based on class configuration
+      if (isSubscriptionClass && !userHasCredits) {
+        // Get the number of credits from the class configuration
+        const creditsToAdd = credit_type === 'group' ? classData.group_credits : classData.private_credits;
+        
+        logger.info(`Subscription class registration for user without credits - adding ${creditsToAdd} credits (${credit_type})`);
+        
+        const creditsAdded = await addCreditsToUser(user_id, credit_type, creditsToAdd);
+        
+        if (creditsAdded) {
+          logger.info(`Successfully added ${creditsToAdd} credits for user ${user_id}, credit_type: ${credit_type}`);
+          
+          // Verify credits were added
+          const creditsAfterAddition = await getUserCredits(user_id);
+          logger.info(`Credits after addition for user ${user_id}:`, creditsAfterAddition);
         } else {
-          logger.warn(`No credits available for user ${user_id}, credit_type: ${credit_type}`);
-          // Don't fail the registration, just log the warning
-          // This allows registration to proceed even without credits
+          logger.warn(`Failed to add credits for user ${user_id}, credit_type: ${credit_type}`);
         }
-      } catch (error) {
-        logger.error('Error handling credits:', error);
-        // Don't fail the registration, just log the error
-        // This ensures registration can still succeed even if credit handling fails
       }
+      
+      // Always deduct one credit for the current registration (after adding credits if needed)
+      logger.info(`Deducting one credit for registration - user_id: ${user_id}, credit_type: ${credit_type}`);
+      
+      // Check credits before deduction
+      const creditsBeforeDeduction = await getUserCredits(user_id);
+      logger.info(`Credits before deduction for user ${user_id}:`, creditsBeforeDeduction);
+      
+      const creditDeducted = await deductCredit(user_id, credit_type);
+      
+      // Check credits after deduction
+      const creditsAfterDeduction = await getUserCredits(user_id);
+      logger.info(`Credits after deduction for user ${user_id}:`, creditsAfterDeduction);
+      
+      if (creditDeducted) {
+        logger.info(`Credit deducted successfully for user ${user_id}, credit_type: ${credit_type}`);
+      } else {
+        logger.warn(`Failed to deduct credit for user ${user_id}, credit_type: ${credit_type}. Registration will proceed without credit deduction.`);
+        // Don't fail the registration, just log the warning
+        // This allows registration to proceed even if credit handling fails
+      }
+    } else {
+      logger.info(`No credits used - used_credit: ${used_credit}, credit_type: ${credit_type}`);
     }
 
     res.status(201).json(data);
@@ -558,7 +801,7 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, returnCredit } = req.body; // Add returnCredit parameter
 
     // Check if user is admin
     const { data: profile, error: profileError } = await supabase
@@ -630,60 +873,24 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
       }
     }
 
-    // If this is a subscription class being cancelled and was paid with credit, return the credit
+    // If this is a subscription class being cancelled and was paid with credit, handle credit return
     if (registrationData.used_credit && registrationData.credit_type && status === 'cancelled') {
-      logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+      logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}, returnCredit: ${returnCredit}`);
       
-      try {
-        // Check if user already has credits for this group
-        const { data: existingCredits, error: checkError } = await supabase
-          .from('subscription_credits')
-          .select('*')
-          .eq('user_id', registrationData.user_id)
-          .eq('credit_group', registrationData.credit_type)
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          logger.error('Error checking existing credits:', checkError);
-        }
-
-        if (existingCredits) {
-          // Update existing credits
-          const { error: updateError } = await supabase
-            .from('subscription_credits')
-            .update({ 
-              remaining_credits: existingCredits.remaining_credits + 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingCredits.id);
-
-          if (updateError) {
-            logger.error('Failed to update existing credits:', updateError);
-          } else {
-            logger.info(`Credit returned successfully to existing record for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
-          }
+      // If returnCredit is explicitly set to false, don't return the credit
+      if (returnCredit === false) {
+        logger.info(`Admin chose not to return credit for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+      } else {
+        // Return credit by default or if returnCredit is true
+        const creditAdded = await addCredit(registrationData.user_id, registrationData.credit_type);
+        
+        if (!creditAdded) {
+          logger.warn(`Failed to add credit for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}. Status update will proceed without credit return.`);
+          // Don't fail the status update, just log the warning
+          // This ensures registration can still succeed even if credit handling fails
         } else {
-          // Create new credit record
-          const { data: creditData, error: creditError } = await supabase
-            .from('subscription_credits')
-            .insert([{
-              user_id: registrationData.user_id,
-              credit_group: registrationData.credit_type,
-              remaining_credits: 1,
-              expires_at: null
-            }])
-            .select()
-            .single();
-
-          if (creditError) {
-            logger.error('Failed to create new credit record:', creditError);
-          } else {
-            logger.info(`New credit record created successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
-          }
+          logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
         }
-      } catch (error) {
-        logger.error('Error returning credit on status update:', error);
-        // Don't fail the status update, just log the error
       }
     }
 
@@ -808,56 +1015,12 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
     if (registrationData.used_credit && registrationData.credit_type) {
       logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
       
-      try {
-        // Check if user already has credits for this group
-        const { data: existingCredits, error: checkError } = await supabase
-          .from('subscription_credits')
-          .select('*')
-          .eq('user_id', registrationData.user_id)
-          .eq('credit_group', registrationData.credit_type)
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          logger.error('Error checking existing credits:', checkError);
-        }
-
-        if (existingCredits) {
-          // Update existing credits
-          const { error: updateError } = await supabase
-            .from('subscription_credits')
-            .update({ 
-              remaining_credits: existingCredits.remaining_credits + 1,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingCredits.id);
-
-          if (updateError) {
-            logger.error('Failed to update existing credits:', updateError);
-          } else {
-            logger.info(`Credit returned successfully to existing record for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
-          }
-        } else {
-          // Create new credit record
-          const { data: creditData, error: creditError } = await supabase
-            .from('subscription_credits')
-            .insert([{
-              user_id: registrationData.user_id,
-              credit_group: registrationData.credit_type,
-              remaining_credits: 1,
-              expires_at: null
-            }])
-            .select()
-            .single();
-
-          if (creditError) {
-            logger.error('Failed to create new credit record:', creditError);
-          } else {
-            logger.info(`New credit record created successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
-          }
-        }
-      } catch (error) {
-        logger.error('Error returning credit on cancellation:', error);
-        // Don't fail the cancellation, just log the error
+      const creditAdded = await addCredit(registrationData.user_id, registrationData.credit_type);
+      
+      if (!creditAdded) {
+        logger.warn(`Failed to add credit for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}. Cancellation will proceed without credit return.`);
+        // Don't fail the cancellation, just log the warning
+        // This ensures registration can still succeed even if credit handling fails
       }
     }
 

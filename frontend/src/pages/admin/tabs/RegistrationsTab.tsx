@@ -223,14 +223,14 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     setRegistrationEditModalOpen(true);
   };
 
-  const handleSaveRegistration = async (updatedRegistration: any) => {
+  const handleSaveRegistration = async (updatedRegistration: any, returnCredit?: boolean) => {
     if (!session) return;
     
     const isNewRegistration = !updatedRegistration.id;
     setIsSavingRegistration(true);
     
     console.log('=== FRONTEND: SAVING REGISTRATION ===');
-    console.log('Saving registration:', { isNewRegistration, updatedRegistration, session: !!session });
+    console.log('Saving registration:', { isNewRegistration, updatedRegistration, returnCredit, session: !!session });
     console.log('Full registration data:', JSON.stringify(updatedRegistration, null, 2));
     
     try {
@@ -242,6 +242,11 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         console.log('Creating new registration with data:', updatedRegistration);
         console.log('Session access token:', session.access_token ? 'Present' : 'Missing');
         console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/registrations`);
+        
+        console.log('=== FRONTEND: SENDING REGISTRATION DATA ===');
+        console.log('Used credit:', updatedRegistration.used_credit);
+        console.log('Credit type:', updatedRegistration.credit_type);
+        console.log('User ID:', updatedRegistration.user_id);
         
         response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations`, {
           method: 'POST',
@@ -267,18 +272,37 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
       } else {
         // Update existing registration
         console.log('=== FRONTEND: UPDATING EXISTING REGISTRATION ===');
+        const updateData = { 
+          status: updatedRegistration.status,
+          ...(returnCredit !== undefined && { returnCredit })
+        };
+        console.log('Update data:', updateData);
+        
         response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/${updatedRegistration.id}/status`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`
           },
-          body: JSON.stringify({ status: updatedRegistration.status })
+          body: JSON.stringify(updateData)
         });
       }
 
       if (!response.ok) {
-        throw new Error(isNewRegistration ? 'Failed to create registration' : 'Failed to update registration');
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        
+        // Try to parse error message
+        let errorMessage = 'שגיאה לא ידועה';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // If not JSON, use the raw text
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       await fetchClasses();
@@ -288,7 +312,9 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     } catch (error) {
       console.error('=== FRONTEND: ERROR SAVING REGISTRATION ===');
       console.error('Error saving registration:', error);
-      alert(isNewRegistration ? 'שגיאה ביצירת ההרשמה' : 'שגיאה בעדכון ההרשמה');
+      
+      const errorMessage = error instanceof Error ? error.message : 'שגיאה לא ידועה';
+      alert(`שגיאה: ${errorMessage}`);
     } finally {
       setIsSavingRegistration(false);
     }
@@ -418,11 +444,31 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                   {reg.phone || '-'}
                 </div>
               </td>
-              <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
-                <div className="flex justify-center">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83] whitespace-nowrap" title={reg.class_name}>
+                            <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
+                <div className="flex flex-col items-center gap-1.5">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold bg-[#4B2E83]/15 text-[#4B2E83] border border-[#4B2E83]/20 whitespace-nowrap" title={reg.class_name}>
                     {reg.class_name}
                   </span>
+                  {/* Show credit usage for subscription classes */}
+                  {data.classes?.find((c: any) => c.id === reg.class_id)?.category === 'subscription' && (
+                    <div className="flex items-center gap-1">
+                      {reg.used_credit && reg.credit_type ? (
+                        <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                          <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          מנוי {reg.credit_type === 'group' ? 'קבוצתי' : 'פרטי'}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                          <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                          </svg>
+                          תוספת
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </td>
               <td className="px-3 py-3 border-l border-[#EC4899]/10 text-center">
@@ -650,9 +696,31 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-[#4B2E83]/60">שיעור:</span>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#4B2E83]/10 text-[#4B2E83]">
-                                    {reg.class_name}
-                                  </span>
+                                  <div className="flex flex-col items-start gap-1.5">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#4B2E83]/15 text-[#4B2E83] border border-[#4B2E83]/20">
+                                      {reg.class_name}
+                                    </span>
+                                    {/* Show credit usage for subscription classes */}
+                                    {data.classes?.find((c: any) => c.id === reg.class_id)?.category === 'subscription' && (
+                                      <div className="flex items-center gap-1">
+                                        {reg.used_credit && reg.credit_type ? (
+                                          <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-100">
+                                            <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                            מנוי {reg.credit_type === 'group' ? 'קבוצתי' : 'פרטי'}
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 px-1 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                            <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                                              <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                            </svg>
+                                            תוספת
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <span className="text-[#4B2E83]/60">תאריך ביטול:</span>

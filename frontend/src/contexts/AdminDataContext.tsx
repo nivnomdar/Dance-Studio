@@ -501,6 +501,20 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     }
   }, [session?.user?.id]);
 
+  // Listen for refresh admin data event
+  useEffect(() => {
+    const handleRefreshAdminData = () => {
+      console.log('Refreshing admin data due to new registration');
+      fetchClasses(true); // Force refresh
+    };
+
+    window.addEventListener('refreshAdminData', handleRefreshAdminData);
+    
+    return () => {
+      window.removeEventListener('refreshAdminData', handleRefreshAdminData);
+    };
+  }, [fetchClasses]);
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {

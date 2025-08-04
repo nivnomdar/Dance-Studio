@@ -831,29 +831,60 @@ export default function RegistrationDetailsSection({
 
                   {formData.used_credit && userCredits && userCredits.credits && userCredits.credits.length > 0 && userCredits.credits.reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0) > 0 && (
                     <div className="mt-3">
-                      <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                        סוג קרדיט *
-                      </label>
-                      <select
-                        required
-                        value={formData.credit_type}
-                        onChange={(e) => onInputChange('credit_type', e.target.value)}
-                        className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white registration-select ${
-                          errors.credit_type 
-                            ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
-                            : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
-                        }`}
-                      >
-                        <option value="" className="text-xs sm:text-sm">בחרי סוג קרדיט</option>
-                        {userCredits.credits.filter((credit: any) => credit.remaining_credits > 0).map((credit: any) => (
-                          <option key={credit.id} value={credit.credit_group} className="text-xs sm:text-sm py-1">
-                            {credit.credit_group === 'group' ? 'קבוצה' : 'פרטי'} - {credit.remaining_credits} זמינים
-                          </option>
-                        ))}
-                      </select>
-                      {errors.credit_type && (
-                        <p className="text-red-500 text-xs mt-2">{errors.credit_type}</p>
-                      )}
+                      {(() => {
+                        const availableCredits = userCredits.credits.filter((credit: any) => credit.remaining_credits > 0);
+                        const hasMultipleCreditTypes = availableCredits.length > 1;
+                        
+                        // אם יש רק סוג קרדיט אחד, הצג אותו אוטומטית
+                        if (!hasMultipleCreditTypes && availableCredits.length === 1) {
+                          const singleCredit = availableCredits[0];
+                          // עדכן את הערך אוטומטית אם הוא לא נבחר עדיין
+                          if (!formData.credit_type) {
+                            setTimeout(() => onInputChange('credit_type', singleCredit.credit_group), 0);
+                          }
+                          
+                          return (
+                            <div>
+                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                סוג קרדיט
+                              </label>
+                              <div className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl bg-gray-50 text-[#4B2E83] font-medium">
+                                {singleCredit.credit_group === 'group' ? 'קבוצה' : 'פרטי'} - {singleCredit.remaining_credits} זמינים
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">נבחר אוטומטית (סוג קרדיט יחיד זמין)</p>
+                            </div>
+                          );
+                        }
+                        
+                        // אם יש מספר סוגי קרדיטים, הצג dropdown
+                        return (
+                          <>
+                            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                              סוג קרדיט *
+                            </label>
+                            <select
+                              required
+                              value={formData.credit_type}
+                              onChange={(e) => onInputChange('credit_type', e.target.value)}
+                              className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white registration-select ${
+                                errors.credit_type 
+                                  ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
+                                  : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
+                              }`}
+                            >
+                              <option value="" className="text-xs sm:text-sm">בחרי סוג קרדיט</option>
+                              {availableCredits.map((credit: any) => (
+                                <option key={credit.id} value={credit.credit_group} className="text-xs sm:text-sm py-1">
+                                  {credit.credit_group === 'group' ? 'קבוצה' : 'פרטי'} - {credit.remaining_credits} זמינים
+                                </option>
+                              ))}
+                            </select>
+                            {errors.credit_type && (
+                              <p className="text-red-500 text-xs mt-2">{errors.credit_type}</p>
+                            )}
+                          </>
+                        );
+                      })()}
                   </div>
                   )}
                 </div>

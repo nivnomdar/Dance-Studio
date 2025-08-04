@@ -86,7 +86,7 @@ interface RegistrationEditModalProps {
   registrationData: RegistrationData;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedRegistration: RegistrationData) => void;
+  onSave: (updatedRegistration: RegistrationData, returnCredit?: boolean) => void;
   isLoading: boolean;
   isNewRegistration?: boolean;
   classes?: Class[];
@@ -157,6 +157,8 @@ export default function RegistrationEditModal({
   const [userCredits, setUserCredits] = useState<any>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [returnCredit, setReturnCredit] = useState<boolean>(true); // Default to return credit
+  const [successFormData, setSuccessFormData] = useState<any>(null);
 
   // Prevent modal from closing automatically
   useEffect(() => {
@@ -427,6 +429,12 @@ export default function RegistrationEditModal({
     // Get selected user details
     const selectedUser = searchResults.find(p => p.id === formData.user_id);
     
+    // Ensure we have all required data
+    if (!selectedUser) {
+      console.error('No selected user found');
+      return;
+    }
+
     const submissionData = {
       ...registrationData,
       ...formData,
@@ -441,10 +449,88 @@ export default function RegistrationEditModal({
       session_selection: formData.session_selection,
       session_class_id: formData.session_class_id,
       // שלח רק את שעת ההתחלה
-      selected_time: formData.selected_time?.split(' עד ')[0] || formData.selected_time
+      selected_time: formData.selected_time?.split(' עד ')[0] || formData.selected_time,
+      // Ensure user_id is always included
+      user_id: formData.user_id
     };
 
-    onSave(submissionData);
+    // Validate that all required fields are present
+    if (!submissionData.first_name || !submissionData.last_name || !submissionData.phone || !submissionData.email || !submissionData.selected_date || !submissionData.selected_time || !submissionData.user_id) {
+      console.error('Missing required fields:', submissionData);
+      return;
+    }
+
+    // Clean up empty strings and convert them to undefined for backend
+    const cleanedSubmissionData = {
+      ...submissionData,
+      first_name: submissionData.first_name?.trim() || undefined,
+      last_name: submissionData.last_name?.trim() || undefined,
+      phone: submissionData.phone?.trim() || undefined,
+      email: submissionData.email?.trim() || undefined,
+      selected_date: submissionData.selected_date?.trim() || undefined,
+      selected_time: submissionData.selected_time?.trim() || undefined,
+      class_id: submissionData.class_id || undefined,
+      session_id: submissionData.session_id || undefined,
+      session_class_id: submissionData.session_class_id || undefined,
+      user_id: submissionData.user_id || undefined,
+      // Ensure credit fields are preserved
+      used_credit: Boolean(submissionData.used_credit),
+      credit_type: submissionData.credit_type
+    };
+
+    // Log the data being sent
+    console.log('=== REGISTRATION EDIT MODAL: SENDING DATA ===');
+    console.log('Is new registration:', isNewReg);
+    console.log('Used credit:', cleanedSubmissionData.used_credit);
+    console.log('Credit type:', cleanedSubmissionData.credit_type);
+    console.log('User ID:', cleanedSubmissionData.user_id);
+    console.log('Used credit type:', typeof cleanedSubmissionData.used_credit);
+    console.log('Credit type type:', typeof cleanedSubmissionData.credit_type);
+    console.log('Full data:', cleanedSubmissionData);
+    
+    // Additional validation for credits
+    if (cleanedSubmissionData.used_credit && !cleanedSubmissionData.credit_type) {
+      console.error('Used credit is true but no credit type specified');
+    }
+    
+    if (cleanedSubmissionData.credit_type && !cleanedSubmissionData.used_credit) {
+      console.error('Credit type specified but used_credit is false');
+    }
+    
+    // Check if this is a subscription class and user has no credits
+    const selectedClass = classes.find(c => c.id === cleanedSubmissionData.class_id);
+    const isSubscriptionClass = selectedClass?.category === 'subscription';
+    const userHasCredits = userCredits && (
+      (cleanedSubmissionData.credit_type === 'group' && userCredits.total_group_credits > 0) ||
+      (cleanedSubmissionData.credit_type === 'private' && userCredits.total_private_credits > 0)
+    );
+
+    // If it's a subscription class and user has no credits, set up credit usage
+    if (isNewReg && isSubscriptionClass && !userHasCredits && !cleanedSubmissionData.used_credit) {
+      console.log('Subscription class with no credits - setting up credit usage');
+      
+      // Determine credit type based on class
+      const creditType = selectedClass?.group_credits ? 'group' : 'private';
+      
+      // Update the submission data to use credits
+      cleanedSubmissionData.used_credit = true;
+      cleanedSubmissionData.credit_type = creditType;
+      
+      console.log('Updated submission data for credit usage:', {
+        used_credit: cleanedSubmissionData.used_credit,
+        credit_type: cleanedSubmissionData.credit_type
+      });
+    }
+
+    // Send returnCredit parameter if it's an existing registration with credits
+    if (!isNewReg && registrationData.used_credit && registrationData.credit_type) {
+      onSave(cleanedSubmissionData, returnCredit);
+    } else {
+      onSave(cleanedSubmissionData);
+    }
+    
+    // שמור את הנתונים למודל ההצלחה
+    setSuccessFormData(cleanedSubmissionData);
     
     // הצג מודל הצלחה
     setShowSuccessModal(true);
@@ -481,7 +567,13 @@ export default function RegistrationEditModal({
     
     // Handle credit type selection
     if (field === 'credit_type' && value) {
-      setFormData(prev => ({ ...prev, used_credit: true }));
+      console.log('Credit type selected:', value);
+      setFormData(prev => ({ 
+        ...prev, 
+        used_credit: true,
+        credit_type: value 
+      }));
+      console.log('Updated form data - used_credit: true, credit_type:', value);
     }
     
     // Handle session selection
@@ -683,7 +775,7 @@ export default function RegistrationEditModal({
                         <div className="flex justify-between">
                           <span>סוג קרדיט:</span>
                           <span className="font-medium">
-                            {formData.credit_type === 'group' ? 'קבוצה' : 'פרטי'}
+                            {formData.credit_type === 'group' ? 'קרדיט קבוצתי' : 'קרדיט פרטי'}
                           </span>
                         </div>
                       )}
@@ -694,6 +786,30 @@ export default function RegistrationEditModal({
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Credit Return Option - Only for existing registrations with credits */}
+                {!isNewReg && registrationData.used_credit && registrationData.credit_type && (
+                  <div className="mt-4 pt-3 border-t border-[#EC4899]/20">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="returnCredit"
+                        checked={returnCredit}
+                        onChange={(e) => setReturnCredit(e.target.checked)}
+                        className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2"
+                      />
+                      <label htmlFor="returnCredit" className="text-sm font-medium text-[#4B2E83]">
+                        החזר קרדיט {registrationData.credit_type === 'group' ? 'קבוצתי' : 'פרטי'} למשתמש
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {returnCredit 
+                        ? 'הקרדיט יוחזר ליתרת הקרדיטים של המשתמש' 
+                        : 'הקרדיט לא יוחזר למשתמש'
+                      }
+                    </p>
                   </div>
                 )}
 
@@ -745,7 +861,7 @@ export default function RegistrationEditModal({
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         isNewRegistration={isNewReg}
-        formData={formData}
+        formData={successFormData || formData}
         searchResults={searchResults}
         classes={classes}
         sessions={sessions}

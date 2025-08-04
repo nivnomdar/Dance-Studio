@@ -294,15 +294,22 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       selectedTime;
 
     // Check if user is already registered for this class at this time
-    const existingRegistration = registrations.find(reg => 
-      reg.class_id === classData.id && 
-      reg.selected_date === selectedDate && 
-      (reg.selected_time === selectedTime || reg.selected_time === timeForBackend) &&
-      reg.status !== 'cancelled'
-    );
+    const normalizedSelectedTime = selectedTime.split(' עד ')[0].trim();
+    const normalizedTimeForBackend = timeForBackend.split(' עד ')[0].trim();
+    
+    const existingRegistration = registrations.find(reg => {
+      const regTime = reg.selected_time?.split(' עד ')[0]?.trim() || reg.selected_time;
+      return reg.class_id === classData.id && 
+             reg.selected_date === selectedDate && 
+             reg.status === 'active' &&
+             (regTime === selectedTime || 
+              regTime === timeForBackend ||
+              regTime === normalizedSelectedTime ||
+              regTime === normalizedTimeForBackend);
+    });
 
     if (existingRegistration) {
-      setRegistrationError('כבר נרשמת לשיעור זה בתאריך ובשעה שנבחרו. אנא בחרי תאריך או שעה אחרת.');
+      setRegistrationError(`כבר נרשמת לשיעור זה בתאריך ${selectedDate} בשעה ${selectedTime}. אנא בחרי תאריך או שעה אחרת.`);
       return;
     }
 
@@ -351,11 +358,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       await registrationsService.createRegistration(registrationData, session?.access_token);
 
       // Handle credits logic
-      const availableCredits = getAvailableCredits();
-      
-      if (availableCredits > 0) {
-        // Use existing credit
-        console.log(`Using existing credit for user ${user.id}, credit_group: ${creditGroup}, available: ${availableCredits}`);
+      if (hasCredits) {
+        // User used existing credits - deduct one credit
+        console.log(`Using existing credit for user ${user.id}, credit_group: ${creditGroup}`);
+        
         try {
           await subscriptionCreditsService.useCredit(user.id, creditGroup);
           console.log(`Successfully used credit for user ${user.id}`);
@@ -364,26 +370,22 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
           // Don't fail the registration, just log the error
         }
       } else {
-        // Create new subscription with credits based on class data
-        // User pays for the class and gets credits for future use
+        // User is purchasing a new subscription - add credits
         const totalCredits = getCreditAmount();
-        
         console.log(`Creating new subscription for user ${user.id}, credit_group: ${creditGroup}, total_credits: ${totalCredits}`);
         
         try {
-          // First, create the subscription with full credits
+          // Add new credits for the subscription (full amount, since one is already used for this registration)
           await subscriptionCreditsService.addCredits({
             user_id: user.id,
             credit_group: creditGroup,
-            remaining_credits: totalCredits, // Full amount - they paid for all credits
+            remaining_credits: totalCredits - 1, // Full amount minus one used for this registration
             expires_at: undefined
           });
           
-          // Then, immediately use one credit for this registration
-          await subscriptionCreditsService.useCredit(user.id, creditGroup);
-          console.log(`Successfully created subscription and used credit for user ${user.id}`);
+          console.log(`Successfully added ${totalCredits - 1} credits for user ${user.id}`);
         } catch (creditError) {
-          console.error('Error creating subscription or using credit:', creditError);
+          console.error('Error adding subscription credits:', creditError);
           // Don't fail the registration, just log the error
         }
       }
@@ -912,6 +914,26 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
 
             {/* Content */}
             <div className="p-2 sm:p-3 md:p-4 lg:p-3 xl:p-2">
+              {/* Success Message */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 lg:p-3 xl:p-2 mb-3 sm:mb-4 md:mb-4 lg:mb-3">
+                <div className="flex items-start gap-2 sm:gap-3 md:gap-3 lg:gap-2">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-6 md:h-6 lg:w-5 lg:h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-3 lg:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="text-right flex-1">
+                    <h4 className="font-semibold text-green-800 mb-1 text-sm sm:text-base md:text-base lg:text-sm">ההרשמה בוצעה בהצלחה!</h4>
+                    <p className="text-xs sm:text-sm md:text-sm lg:text-xs text-green-700 leading-relaxed">
+                      {hasCredits 
+                        ? 'שיעור אחד יורד מיתרת השיעורים שלך. תוכלי לראות את פרטי ההרשמה המלאים בפרופיל האישי שלך.'
+                        : `שילמת ${classData.price} ש"ח וקיבלת מנוי ${creditGroup === 'group' ? 'קבוצתי' : 'פרטי'} חדש עם ${getCreditAmount()} שיעורים. תוכלי לראות את פרטי ההרשמה המלאים בפרופיל האישי שלך.`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               {/* Registration Details */}
               <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 lg:p-3 xl:p-2 mb-2 sm:mb-3 md:mb-3 lg:mb-2">
                 <h3 className="text-sm sm:text-base md:text-lg lg:text-base xl:text-sm font-semibold text-[#4B2E83] mb-2 sm:mb-3 md:mb-3 lg:mb-2 text-center">פרטי ההרשמה שלך</h3>
@@ -956,8 +978,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                   </div>
                   
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
-                    <span className="font-medium text-right sm:text-left">מחיר:</span>
-                    <span className="font-bold text-[#EC4899] text-right sm:text-left">{classData?.price} ש"ח</span>
+                    <span className="font-medium text-right sm:text-left">תשלום:</span>
+                    <span className={`font-bold text-right sm:text-left ${hasCredits ? 'text-green-600' : 'text-[#EC4899]'}`}>
+                      {hasCredits ? 'שימוש בקרדיט זמין' : `${classData?.price} ש"ח`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -973,9 +997,11 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                   <div className="text-right flex-1">
                     <h4 className="font-semibold text-blue-900 mb-1 text-xs sm:text-sm md:text-sm lg:text-xs">מה הלאה?</h4>
                     <ul className="text-xs sm:text-xs md:text-xs lg:text-xs text-blue-800 space-y-0.5">
-                      <li>• תקבלי אימייל אישור עם פרטי השיעור</li>
                       <li>• פרטי ההרשמה שלך זמינים בפרופיל האישי</li>
-                      <li>• הקרדיטים שלך זמינים לשימוש מיידי</li>
+                      {hasCredits 
+                        ? <li>• שיעור אחד יורד מיתרת השיעורים שלך</li>
+                        : <li>• קיבלת מנוי חדש עם {getCreditAmount()} שיעורים זמינים</li>
+                      }
                       <li>• אפשר לבטל עד 48 שעות לפני השיעור</li>
                     </ul>
                   </div>

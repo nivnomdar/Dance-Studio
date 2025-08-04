@@ -20,7 +20,7 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
   console.log('=== VALIDATION MIDDLEWARE STARTED ===');
   console.log('Validation middleware received:', req.body);
   
-  const { class_id, first_name, last_name, phone, email, selected_date, selected_time } = req.body;
+  const { class_id, first_name, last_name, phone, email, selected_date, selected_time, user_id } = req.body;
 
   // Check required fields - phone is required again since admin can update it
   if (!class_id || !first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
@@ -28,6 +28,23 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
     console.log('Missing required fields:', { class_id, first_name, last_name, phone, email, selected_date, selected_time });
     return res.status(400).json({
       error: 'כל השדות הם חובה: שיעור, שם פרטי, שם משפחה, טלפון, אימייל, תאריך ושעה'
+    });
+  }
+
+  // Check for empty strings and convert them to null for validation
+  if (!first_name || !last_name || !phone || !email || !selected_date || !selected_time || 
+      first_name.trim() === '' || last_name.trim() === '' || phone.trim() === '' || email.trim() === '' || selected_date.trim() === '' || selected_time.trim() === '') {
+    console.log('=== VALIDATION FAILED - EMPTY STRINGS ===');
+    return res.status(400).json({
+      error: 'כל השדות חייבים להיות מלאים ולא ריקים'
+    });
+  }
+
+  // For admin registrations, user_id is also required
+  if (!user_id || user_id.trim() === '') {
+    console.log('=== VALIDATION FAILED - NO USER_ID ===');
+    return res.status(400).json({
+      error: 'user_id הוא שדה חובה להרשמה'
     });
   }
 
