@@ -5,6 +5,7 @@ import type { UserProfile } from '../../../types/auth';
 // ... existing code ...
 import { ClassDetailsModal, RegistrationEditModal } from '../../../pages/admin/modals';
 import { RefreshButton } from '../../admin';
+import AdminCalendar from './AdminCalendar';
 
 // Types
 interface SessionData {
@@ -329,70 +330,11 @@ export default function AdminOverview({ profile }: AdminOverviewProps) {
         />
       </div>
 
-      {/* Quick Action Buttons */}
+      {/* Calendar Component */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <h3 className="text-lg font-semibold text-[#4B2E83] mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          פעולות מהירות
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Add Class Button */}
-          <button
-            onClick={() => {
-              alert('למעבר להוספת שיעור: לחצי על הטאב "שיעורים" ואז על כפתור "הוספת שיעור"');
-            }}
-            className="flex items-center gap-3 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300"
-          >
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <h4 className="font-medium text-sm">הוספת שיעור</h4>
-              <p className="text-xs text-blue-600">צור שיעור חדש</p>
-            </div>
-          </button>
-
-          {/* Add Session Button */}
-          <button
-            onClick={() => {
-              alert('למעבר להוספת קבוצה: לחצי על הטאב "שיעורים" ואז על "קבוצות" ואז על כפתור "הוספת קבוצה"');
-            }}
-            className="flex items-center gap-3 p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 text-purple-700 rounded-lg transition-all duration-200 border border-purple-200 hover:border-purple-300"
-          >
-            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <h4 className="font-medium text-sm">הוספת קבוצה</h4>
-              <p className="text-xs text-purple-600">צור קבוצה חדשה</p>
-            </div>
-          </button>
-
-          {/* Add Registration Button */}
-          <button
-            onClick={() => {
-              alert('למעבר להוספת הרשמה: לחצי על הטאב "שיעורים" ואז על "הרשמות" ואז על כפתור "הוספת הרשמה"');
-            }}
-            className="flex items-center gap-3 p-3 sm:p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 text-green-700 rounded-lg transition-all duration-200 border border-green-200 hover:border-green-300"
-          >
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div className="text-left">
-              <h4 className="font-medium text-sm">הוספת הרשמה</h4>
-              <p className="text-xs text-green-600">צור הרשמה חדשה</p>
-            </div>
-          </button>
-        </div>
+        <AdminCalendar profile={profile} />
       </div>
+
       
 
 

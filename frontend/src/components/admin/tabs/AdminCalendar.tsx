@@ -1,27 +1,16 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAdminData } from '../../../contexts/AdminDataContext';
 import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../admin';
-import { isSessionActiveOnDay } from '../../../utils/weekdaysUtils';
 import CalendarDetailsModal from '../modals/CalendarDetailsModal';
 
-// Fallback for motion components if framer-motion is not available
-const motion = {
-  div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  button: ({ children, ...props }: any) => <button {...props}>{children}</button>
-};
-
-const AnimatePresence = ({ children }: any) => <>{children}</>;
-
-// Constants
+// Calendar Constants
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
 const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-
-const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 const OCCUPANCY_COLORS = {
   FULL: 'bg-green-500',
@@ -82,7 +71,7 @@ interface AdminCalendarProps {
   profile: UserProfile;
 }
 
-// Utility functions
+// Calendar utility functions
 const getDaysInMonth = (year: number, month: number): Date[] => {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -109,7 +98,11 @@ const getDaysInMonth = (year: number, month: number): Date[] => {
 };
 
 const formatDateString = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  // Format date in Israel timezone (UTC+3)
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const getHebrewMonthName = (month: number): string => {
@@ -120,7 +113,7 @@ const getHebrewDayName = (day: number): string => {
   return HEBREW_DAYS[day];
 };
 
-const getOccupancyColor = (occupancyRate?: number) => {
+const getCalendarOccupancyColor = (occupancyRate?: number) => {
   if (!occupancyRate) return OCCUPANCY_COLORS.LOW;
   
   if (occupancyRate >= 100) return OCCUPANCY_COLORS.FULL;
@@ -129,7 +122,7 @@ const getOccupancyColor = (occupancyRate?: number) => {
   return OCCUPANCY_COLORS.LOW;
 };
 
-const getOccupancyTextColor = (occupancyRate?: number) => {
+const getCalendarOccupancyTextColor = (occupancyRate?: number) => {
   if (!occupancyRate) return OCCUPANCY_TEXT_COLORS.LOW;
   
   if (occupancyRate >= 100) return OCCUPANCY_TEXT_COLORS.FULL;
@@ -138,164 +131,18 @@ const getOccupancyTextColor = (occupancyRate?: number) => {
   return OCCUPANCY_TEXT_COLORS.LOW;
 };
 
-// Day Circle Component
-const DayCircle: React.FC<{
-  day: DayData;
-  onSelect: (date: string) => void;
-  isMobile: boolean;
-}> = ({ day, onSelect, isMobile }) => {
-  const hasEvents = day.events.length > 0;
-  const isToday = day.isToday;
-  const isSelected = day.isSelected;
-  const isCurrentMonth = day.isCurrentMonth;
-  
-  const baseClasses = `
-    relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer
-    ${isMobile ? 'w-6 h-6 text-[9px]' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-xs sm:text-sm md:text-base'}
-    ${isToday 
-      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
-      : isSelected 
-        ? 'bg-[#EC4899] text-white shadow-lg shadow-[#EC4899]/30'
-        : isCurrentMonth 
-          ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-          : 'bg-gray-50 text-gray-400'
-    }
-    ${hasEvents ? 'ring-2 ring-[#EC4899]/30' : ''}
-  `;
-
-  return (
-    <motion.div
-      className={baseClasses}
-      onClick={() => onSelect(day.date)}
-    >
-      <span className="relative z-10">{day.dayNumber}</span>
-      
-      {/* Event indicators */}
-      {hasEvents && (
-        <div className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-          {day.events.slice(0, 3).map((event) => (
-            <div
-              key={event.id}
-              className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getOccupancyColor(event.occupancyRate)}`}
-            />
-          ))}
-          {day.events.length > 3 && (
-            <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-gray-400 text-[6px] sm:text-[8px] text-white flex items-center justify-center">
-              +
-            </div>
-          )}
-        </div>
-      )}
-    </motion.div>
-  );
-};
-
-// Events List Component
-const EventsList: React.FC<{
-  events: Event[];
-  selectedDate: string;
-  onEventClick?: (event: Event) => void;
-  isMobile: boolean;
-}> = ({ events, selectedDate, onEventClick, isMobile }) => {
-  if (events.length === 0) {
-    return (
-      <motion.div className="text-center py-8">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <p className="text-gray-500 text-sm">אין פעילויות ביום זה</p>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div className="space-y-3">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-[#4B2E83]">
-          פעילויות ליום {new Date(selectedDate).toLocaleDateString('he-IL')}
-        </h3>
-        <span className="text-xs text-gray-500">{events.length} פעילויות</span>
-      </div>
-      
-      <div className="space-y-2">
-        {events.map((event) => (
-          <motion.div
-            key={event.id}
-            className={`
-              bg-white rounded-lg border-2 border-[#EC4899]/20 shadow-sm hover:shadow-md hover:border-[#EC4899]/40 transition-all duration-200 cursor-pointer touch-manipulation
-              ${isMobile ? 'p-2.5' : 'p-3 sm:p-4'}
-            `}
-            onClick={() => onEventClick?.(event)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-[#4B2E83] mb-1 leading-tight text-sm">
-                  {event.title}
-                </h4>
-                
-                {event.description && (
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                    {event.description}
-                  </p>
-                )}
-                
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {event.start_time && (
-                    <div className="flex items-center gap-1 text-blue-600">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                      </svg>
-                      {event.start_time.substring(0, 5)}
-                    </div>
-                  )}
-                  
-                  {event.max_capacity && event.activeRegistrationsCount !== undefined && (
-                    <div className="flex items-center gap-1 text-purple-600">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                      </svg>
-                      {event.activeRegistrationsCount}/{event.max_capacity}
-                    </div>
-                  )}
-                  
-                  {event.occupancyRate !== undefined && (
-                    <div className={`flex items-center gap-1 ${getOccupancyTextColor(event.occupancyRate)}`}>
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {event.occupancyRate.toFixed(0)}%
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex-shrink-0 ml-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${getOccupancyColor(event.occupancyRate)}`} />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </motion.div>
-  );
-};
-
-// Main Calendar Component
 export default function AdminCalendar({ profile }: AdminCalendarProps) {
-  const { data, isLoading, error, fetchCalendar, fetchClasses, isFetching } = useAdminData();
+  const { data, isLoading, error, fetchClasses, isFetching } = useAdminData();
   const [selectedSession, setSelectedSession] = useState<SessionDetails | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
 
-  // Responsive detection with better breakpoints
+  // Responsive detection
   useEffect(() => {
     const checkMobile = () => {
       const width = window.innerWidth;
-      // Mobile: < 640px, Tablet: 640px-1024px, Desktop: > 1024px
       setIsMobile(width < 640);
     };
     
@@ -304,25 +151,29 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Load data if missing
-  useEffect(() => {
-    if (!data.calendar || !data.sessions || !data.session_classes || !data.classes) {
-      fetchClasses();
-      fetchCalendar();
-    }
-  }, [data.calendar, data.sessions, data.session_classes, data.classes, fetchCalendar, fetchClasses]);
+  // Get current date in Israel timezone for display
+  const getCurrentIsraelDate = () => {
+    const now = new Date();
+    // Israel is UTC+3, but we'll use the local date which should be correct
+    return formatDateString(now);
+  };
 
   // Function to get sessions for a specific date
   const getSessionsForDate = (dateKey: string) => {
     if (!data.sessions || !data.session_classes) return [];
     
     const [year, month, day] = dateKey.split('-').map(Number);
+    // Use Israel timezone
     const date = new Date(year, month - 1, day, 12, 0, 0);
+    // Get day of week in Israel timezone
     const dayOfWeek = date.getDay();
-    const dayName = DAY_NAMES[dayOfWeek];
     
     const daySessions = data.sessions.filter((session: any) => {
-      return isSessionActiveOnDay(session, dayName);
+      // Check if session is active on this day of week
+      if (!session.weekdays || !Array.isArray(session.weekdays)) return false;
+      
+      // weekdays is JSONB array like [3,4] where 0=Sunday, 1=Monday, etc.
+      return session.weekdays.includes(dayOfWeek);
     });
     
     return daySessions.map((session: any) => {
@@ -339,15 +190,11 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
         });
       
       const sessionRegistrations = data.registrations?.filter((reg: any) => {
-        const [regYear, regMonth, regDay] = reg.selected_date.split('-').map(Number);
-        const regDate = new Date(regYear, regMonth - 1, regDay, 12, 0, 0);
-        return reg.session_id === session.id && regDate.getTime() === date.getTime() && reg.status === 'active';
+        return reg.session_id === session.id && reg.selected_date === dateKey && reg.status === 'active';
       }) || [];
       
       const cancelledRegistrations = data.registrations?.filter((reg: any) => {
-        const [regYear, regMonth, regDay] = reg.selected_date.split('-').map(Number);
-        const regDate = new Date(regYear, regMonth - 1, regDay, 12, 0, 0);
-        return reg.session_id === session.id && regDate.getTime() === date.getTime() && reg.status === 'cancelled';
+        return reg.session_id === session.id && reg.selected_date === dateKey && reg.status === 'cancelled';
       }) || [];
       
       const activeRegistrationsCount = sessionRegistrations.length;
@@ -369,8 +216,8 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
   const calendarData = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const today = new Date();
-    const todayString = formatDateString(today);
+    // Get today's date in Israel timezone
+    const todayString = getCurrentIsraelDate();
     
     const days = getDaysInMonth(year, month);
     
@@ -400,9 +247,9 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
         events
       };
     });
-  }, [currentDate, selectedDate, data.sessions, data.session_classes, data.registrations]);
+  }, [currentDate, selectedDate, data.sessions, data.session_classes, data.registrations, getCurrentIsraelDate]);
 
-  // Navigation handlers
+  // Calendar navigation handlers
   const goToPreviousMonth = () => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
@@ -423,13 +270,13 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
       const sessionWithRegistrations = daySessions.find(s => s.id === event.id);
       
       if (sessionWithRegistrations) {
-    setSelectedSession({
+        setSelectedSession({
           ...sessionWithRegistrations,
           date: event.date,
           activeRegistrationsCount: sessionWithRegistrations.activeRegistrationsCount,
           occupancyRate: sessionWithRegistrations.occupancyRate
-    });
-    setShowSessionModal(true);
+        });
+        setShowSessionModal(true);
       }
     }
   };
@@ -450,12 +297,156 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     }));
   }, [selectedDate, data.sessions, data.session_classes, data.registrations]);
 
+  // Calendar Components
+  const DayCircle: React.FC<{
+    day: DayData;
+    onSelect: (date: string) => void;
+    isMobile: boolean;
+  }> = ({ day, onSelect, isMobile }) => {
+    const hasEvents = day.events.length > 0;
+    const isToday = day.isToday;
+    const isSelected = day.isSelected;
+    const isCurrentMonth = day.isCurrentMonth;
+    
+    const baseClasses = `
+      relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer
+      ${isMobile ? 'w-6 h-6 text-[9px]' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-xs sm:text-sm md:text-base'}
+      ${isToday 
+        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
+        : isSelected 
+          ? 'bg-[#EC4899] text-white shadow-lg shadow-[#EC4899]/30'
+          : isCurrentMonth 
+            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+            : 'bg-gray-50 text-gray-400'
+      }
+      ${hasEvents ? 'ring-2 ring-[#EC4899]/30' : ''}
+    `;
+
+    return (
+      <div
+        className={baseClasses}
+        onClick={() => onSelect(day.date)}
+      >
+        <span className="relative z-10">{day.dayNumber}</span>
+        
+        {/* Event indicators */}
+        {hasEvents && (
+          <div className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+            {day.events.slice(0, 3).map((event) => (
+              <div
+                key={event.id}
+                className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${getCalendarOccupancyColor(event.occupancyRate)}`}
+              />
+            ))}
+            {day.events.length > 3 && (
+              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-gray-400 text-[6px] sm:text-[8px] text-white flex items-center justify-center">
+                +
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Events List Component
+  const EventsList: React.FC<{
+    events: Event[];
+    selectedDate: string;
+    onEventClick?: (event: Event) => void;
+    isMobile: boolean;
+  }> = ({ events, selectedDate, onEventClick, isMobile }) => {
+    if (events.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-sm">אין פעילויות ביום זה</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-[#4B2E83]">
+            פעילויות ליום {new Date(selectedDate + 'T00:00:00').toLocaleDateString('he-IL')}
+          </h3>
+          <span className="text-xs text-gray-500">{events.length} פעילויות</span>
+        </div>
+        
+        <div className="space-y-2">
+          {events.map((event) => (
+            <div
+              key={event.id}
+              className={`
+                bg-white rounded-lg border-2 border-[#EC4899]/20 shadow-sm hover:shadow-md hover:border-[#EC4899]/40 transition-all duration-200 cursor-pointer touch-manipulation
+                ${isMobile ? 'p-2.5' : 'p-3 sm:p-4'}
+              `}
+              onClick={() => onEventClick?.(event)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-[#4B2E83] mb-1 leading-tight text-sm">
+                    {event.title}
+                  </h4>
+                  
+                  {event.description && (
+                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                      {event.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {event.start_time && (
+                      <div className="flex items-center gap-1 text-blue-600">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        </svg>
+                        {event.start_time.substring(0, 5)}
+                      </div>
+                    )}
+                    
+                    {event.max_capacity && event.activeRegistrationsCount !== undefined && (
+                      <div className="flex items-center gap-1 text-purple-600">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                        </svg>
+                        {event.activeRegistrationsCount}/{event.max_capacity}
+                      </div>
+                    )}
+                    
+                    {event.occupancyRate !== undefined && (
+                      <div className={`flex items-center gap-1 ${getCalendarOccupancyTextColor(event.occupancyRate)}`}>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        {event.occupancyRate.toFixed(0)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex-shrink-0 ml-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${getCalendarOccupancyColor(event.occupancyRate)}`} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading || isFetching) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px] sm:min-h-[250px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-[#EC4899] mx-auto mb-3 sm:mb-4"></div>
-          <p className="text-gray-600 text-sm sm:text-base">טוען לוח שנה...</p>
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-[#EC4899] mx-auto mb-2 sm:mb-3"></div>
+          <p className="text-gray-600 text-xs sm:text-sm">טוען לוח שנה...</p>
         </div>
       </div>
     );
@@ -463,15 +454,15 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[200px] sm:min-h-[250px]">
         <div className="text-center">
-          <div className="text-red-500 mb-3 sm:mb-4">
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-red-500 mb-2 sm:mb-3">
+            <svg className="w-8 h-8 sm:w-10 sm:h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <p className="text-gray-600 mb-3 sm:mb-4 text-sm sm:text-base">שגיאה בטעינת לוח השנה</p>
-          <RefreshButton onClick={() => { fetchCalendar(); fetchClasses(); }} isFetching={isFetching} />
+          <p className="text-gray-600 mb-2 sm:mb-3 text-xs sm:text-sm">שגיאה בטעינת לוח השנה</p>
+          <RefreshButton onClick={() => { fetchClasses(); }} isFetching={isFetching} />
         </div>
       </div>
     );
@@ -479,43 +470,34 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-bold text-[#4B2E83]">לוח שנה</h2>
-        <RefreshButton onClick={() => { fetchCalendar(); fetchClasses(); }} isFetching={isFetching} />
-      </div>
-
-            {/* iOS Calendar View */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden max-w-4xl mx-auto w-full">
+      {/* iOS Calendar View */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-full">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-3 sm:p-4 md:p-6 text-white">
           <div className="flex items-center justify-between">
-            <motion.button
+            <button
               onClick={goToPreviousMonth}
               className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </motion.button>
+            </button>
             
-            <motion.div
-              key={`${currentDate.getFullYear()}-${currentDate.getMonth()}`}
-              className="text-center px-2"
-            >
+            <div className="text-center px-2">
               <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold leading-tight">
                 {getHebrewMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
               </h2>
-            </motion.div>
+            </div>
             
-            <motion.button
+            <button
               onClick={goToNextMonth}
               className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </motion.button>
+            </button>
           </div>
         </div>
         
@@ -527,41 +509,37 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
               <div key={day} className="text-center min-h-[1.5rem] sm:min-h-[1.75rem] md:min-h-[2rem] flex items-center justify-center">
                 <span className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-500">
                   {getHebrewDayName(index)}
-                  </span>
+                </span>
               </div>
             ))}
           </div>
 
           {/* Calendar days */}
           <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2">
-            <AnimatePresence mode="wait">
-              {calendarData.map((day) => (
-                <motion.div
-                  key={day.date}
-                  className="flex justify-center items-center min-h-[2rem] sm:min-h-[2.5rem] md:min-h-[3rem]"
-                >
-                  <DayCircle
-                    day={day}
-                    onSelect={handleDaySelect}
-                    isMobile={isMobile}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {calendarData.map((day) => (
+              <div
+                key={day.date}
+                className="flex justify-center items-center min-h-[2rem] sm:min-h-[2.5rem] md:min-h-[3rem]"
+              >
+                <DayCircle
+                  day={day}
+                  onSelect={handleDaySelect}
+                  isMobile={isMobile}
+                />
+              </div>
+            ))}
           </div>
           
           {/* Events section */}
           {selectedDate && (
-            <motion.div
-              className="mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t border-gray-200"
-            >
+            <div className="mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t border-gray-200">
               <EventsList
                 events={selectedDayEvents}
                 selectedDate={selectedDate}
                 onEventClick={handleEventClick}
                 isMobile={isMobile}
               />
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
