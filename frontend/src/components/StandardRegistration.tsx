@@ -159,7 +159,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               return { time, ...spots };
             } catch (spotsError) {
               console.error('Error fetching spots for time:', time, spotsError);
-              return { time, available: classData.max_participants || 10, message: 'זמין' };
+              return { time, available: 10, message: 'זמין' }; // Default capacity
             }
           });
           const spotsArray = await Promise.all(spotsPromises);
@@ -197,7 +197,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               return { time, ...spots };
             } catch (spotsError) {
               console.error('Error fetching spots for time:', time, spotsError);
-              return { time, available: classData.max_participants || 10, message: 'זמין' };
+              return { time, available: 10, message: 'זמין' }; // Default capacity
             }
           });
           const spotsArray = await Promise.all(spotsPromises);
@@ -210,7 +210,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
           // On other errors, show as available
           const times = timesCache[key] || [];
           const spotsData = times.reduce((acc, time) => {
-            acc[time] = { available: classData.max_participants || 10, message: 'זמין' };
+            acc[time] = { available: 10, message: 'זמין' }; // Default capacity
             return acc;
           }, {} as any);
           setSpotsCache(prev => ({ ...prev, [key]: spotsData }));
@@ -392,7 +392,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
           spotsInfo = await getAvailableSpotsFromSessions(classData.id, selectedDate, selectedTime);
         } catch (spotsError) {
           spotsInfo = { 
-            available: classData.max_participants || 10, 
+            available: 10, 
             message: 'זמין',
             sessionId: undefined,
             sessionClassId: undefined
@@ -693,7 +693,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                       const isSelected = selectedTime === time;
                       const spotsKey = classData.id + '_' + selectedDate;
                       const spotsData = spotsCache[spotsKey] || {};
-                      const spotsInfo = spotsData[time] || { available: classData.max_participants || 10, message: 'זמין' };
+                      const spotsInfo = spotsData[time] || { available: 10, message: 'זמין' };
                       const isLoading = loadingSpots[spotsKey];
                       
                       return (

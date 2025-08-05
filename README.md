@@ -143,7 +143,7 @@ create table public.classes (
   duration integer,
   level text,
   age_group text,
-  max_participants integer,
+
   location text,
   included text,
   image_url text,

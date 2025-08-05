@@ -18,7 +18,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     duration: classData.duration || 60,
     level: classData.level || 'מתחילות',
     age_group: classData.age_group || '18+',
-    max_participants: classData.max_participants || 5,
+    
     location: classData.location || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
     included: classData.included || '',
     image_url: classData.image_url || '/carousel/image4.png',
@@ -41,7 +41,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
       duration: classData.duration || 60,
       level: classData.level || 'מתחילות',
       age_group: classData.age_group || '18+',
-      max_participants: classData.max_participants || 5,
+
       location: classData.location || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
       included: classData.included || '',
       image_url: classData.image_url || '/carousel/image4.png',
@@ -179,19 +179,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                     className="w-full px-4 py-3 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
-                    מקסימום משתתפות
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.max_participants || 5}
-                    onChange={(e) => setFormData({ ...formData, max_participants: Number(e.target.value) })}
-                    placeholder="5"
-                    className="w-full px-4 py-3 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                  />
-                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     רמה

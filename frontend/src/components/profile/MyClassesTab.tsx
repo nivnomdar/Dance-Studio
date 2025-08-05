@@ -634,10 +634,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                       <span className="text-[#4B2E83]/70 font-medium">משך השיעור:</span>
                       <span className="font-semibold text-[#4B2E83]">{selectedRegistration.class.duration} דקות</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-xl">
-                      <span className="text-[#4B2E83]/70 font-medium">מספר משתתפים מקסימלי:</span>
-                      <span className="font-semibold text-[#4B2E83]">{selectedRegistration.class.max_participants}</span>
-                    </div>
+                    
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-xl">
                       <span className="text-[#4B2E83]/70 font-medium">מחיר השיעור:</span>
                       <span className="font-semibold text-[#EC4899] text-lg">{selectedRegistration.class.price} ש"ח</span>

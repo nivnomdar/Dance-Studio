@@ -20,7 +20,7 @@ interface ProcessedClass extends Class {
 // Constants
 const ALLOWED_FIELDS = [
   'name', 'slug', 'description', 'long_description', 'price', 'duration', 
-  'level', 'age_group', 'max_participants', 'location', 'included',
+          'level', 'age_group', 'location', 'included',
   'image_url', 'video_url', 'category', 'color_scheme', 'registration_type',
   'group_credits', 'private_credits', 'is_active'
 ];
@@ -50,7 +50,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         duration: cls.duration,
         level: cls.level,
         age_group: cls.age_group,
-        max_participants: cls.max_participants,
+
         location: cls.location,
         included: cls.included,
         image_url: cls.image_url,

@@ -327,7 +327,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
           spotsInfo = await getAvailableSpotsFromSessions(classData.id, selectedDate, selectedTime);
         } catch (spotsError) {
           spotsInfo = { 
-            available: classData.max_participants || 10, 
+            available: 10, // Default capacity 
             message: 'זמין',
             sessionId: undefined,
             sessionClassId: undefined
@@ -629,7 +629,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                       const isSelected = selectedTime === time;
                       const spotsKey = classData.id + '_' + selectedDate;
                       const spotsData = spotsCache[spotsKey] || {};
-                      const spotsInfo = spotsData[time] || { available: classData.max_participants || 10, message: 'זמין' };
+                      const spotsInfo = spotsData[time] || { available: 10, message: 'זמין' }; // Default capacity
                       const isLoading = loadingSpots[spotsKey];
                       
                       return (

@@ -311,15 +311,7 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
                       </div>
                     </div>
                   )}
-                  {classData.max_participants && (
-                    <div className={`flex items-start ${colors.textColor}`}>
-                      <FaUsers className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
-                      <div>
-                        <p className="font-bold">גודל קבוצה</p>
-                        <p className="text-[#2B2B2B]">עד {classData.max_participants} משתתפות</p>
-                      </div>
-                    </div>
-                  )}
+
                   <div className={`flex items-start ${colors.textColor}`}>
                     <FaMapMarkerAlt className="w-6 h-6 ml-3 mt-1 flex-shrink-0" />
                     <div>

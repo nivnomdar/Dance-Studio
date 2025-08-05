@@ -14,7 +14,7 @@ export interface Class {
   duration?: number;
   level?: string;
   age_group?: string;
-  max_participants?: number;
+
   location?: string;
   included?: string;
   image_url?: string;
