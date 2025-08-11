@@ -7,4 +7,4 @@ export * from './common';
 export * from './class';
 export * from './registration';
 export * from './subscription';
-export * from './admin'; 
+export * from '../admin/types/admin'; 

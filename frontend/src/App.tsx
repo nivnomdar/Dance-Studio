@@ -17,8 +17,8 @@ import TermsOfService from './pages/TermsOfService';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import ClassesReportsWrapper from './pages/admin/ClassesReportsWrapper';
+import AdminDashboard from './admin/pages/dashboard/AdminDashboard';
+import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper';
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
 
 function AppContent() {

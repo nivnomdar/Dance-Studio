@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
 import { TIMEOUTS } from '../utils/constants';
-import { RefreshButton } from '../components/admin';
+import { RefreshButton } from '../admin';
 
 // Cache key for sessionStorage
 const CLASSES_CACHE_KEY = 'classes_cache';
