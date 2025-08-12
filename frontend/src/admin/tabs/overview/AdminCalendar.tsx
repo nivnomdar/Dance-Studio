@@ -64,6 +64,7 @@ interface DayData {
   isCurrentMonth: boolean;
   isToday: boolean;
   isSelected: boolean;
+  isPastDate: boolean;
   events: Event[];
 }
 
@@ -225,6 +226,11 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
       const dateString = formatDateString(date);
       const daySessions = getSessionsForDate(dateString);
       
+      // Check if date is in the past
+      const today = new Date(todayString + 'T00:00:00');
+      const currentDate = new Date(dateString + 'T00:00:00');
+      const isPastDate = currentDate < today;
+      
       // Convert sessions to events format
       const events: Event[] = daySessions.map(session => ({
         id: session.id,
@@ -244,6 +250,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
         isCurrentMonth: date.getMonth() === month,
         isToday: dateString === todayString,
         isSelected: dateString === selectedDate,
+        isPastDate,
         events
       };
     });
@@ -307,6 +314,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     const isToday = day.isToday;
     const isSelected = day.isSelected;
     const isCurrentMonth = day.isCurrentMonth;
+    const isPastDate = day.isPastDate;
     
     const baseClasses = `
       relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer
@@ -315,11 +323,14 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
         ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
         : isSelected 
           ? 'bg-[#EC4899] text-white shadow-lg shadow-[#EC4899]/30'
-          : isCurrentMonth 
-            ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-            : 'bg-gray-50 text-gray-400'
+          : isPastDate
+            ? 'bg-gray-300 text-gray-600 opacity-75 hover:bg-gray-400'
+            : isCurrentMonth 
+              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              : 'bg-gray-50 text-gray-400'
       }
-      ${hasEvents ? 'ring-2 ring-[#EC4899]/30' : ''}
+      ${hasEvents && !isPastDate ? 'ring-2 ring-[#EC4899]/30' : ''}
+      ${isPastDate ? 'ring-2 ring-gray-400' : ''}
     `;
 
     return (
@@ -328,6 +339,8 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
         onClick={() => onSelect(day.date)}
       >
         <span className="relative z-10">{day.dayNumber}</span>
+        
+
         
         {/* Event indicators */}
         {hasEvents && (
@@ -541,6 +554,34 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
               />
             </div>
           )}
+          
+          {/* Calendar Legend */}
+          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
+            <div className="text-xs text-gray-600 space-y-2">
+              <h4 className="font-medium text-gray-700 mb-2">הסבר סמלים:</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>היום</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-[#EC4899] rounded-full"></div>
+                  <span>נבחר</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-gray-300 rounded-full opacity-75"></div>
+                  <span>עבר</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span>פעילות</span>
+                </div>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                <p><strong>הערה:</strong> תאריכים שעברו מוצגים בצבע אפור אך ניתן לצפות בפעילויות שהיו בהם</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
