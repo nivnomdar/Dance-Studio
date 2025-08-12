@@ -9,7 +9,7 @@ dotenv.config({ path: '.env.development' }); // Load .env.development
 
 
 export const config = {
-  port: process.env.PORT || 5000,
+  port: process.env.PORT || 5001, // Changed from 5000 to 5001
   nodeEnv: process.env.NODE_ENV || 'development',
   supabase: {
     url: process.env.SUPABASE_URL || '',

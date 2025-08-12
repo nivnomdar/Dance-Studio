@@ -4,7 +4,7 @@ import { RegistrationWithDetails, CreateRegistrationRequest } from '../types/reg
 import { calculateRetryDelay } from '../utils/constants';
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 // Request queue system to prevent rate limiting
 class RequestQueue {

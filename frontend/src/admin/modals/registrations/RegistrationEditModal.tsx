@@ -5,7 +5,7 @@ import {
   getAvailableDatesMessageForSession
 } from '../../../utils/sessionsUtils';
 import UserDetailsSection from '../../../components/common/UserDetailsSection';
-import RegistrationDetailsSection from '../../../components/common/RegistrationDetailsSection';
+
 import { SuccessModal } from '../../../components/common';
 import { useAdminData } from '../../contexts/AdminDataContext';
 
@@ -16,8 +16,8 @@ interface Class {
   price: number;
   category: string;
   slug: string;
-  group_credits?: number;
-  private_credits?: number;
+  group_credits: boolean;
+  private_credits: boolean;
 }
 
 interface Session {
@@ -43,6 +43,24 @@ interface Profile {
   email: string;
   phone: string;
   phone_number: string;
+}
+
+interface SubscriptionCredit {
+  id: string;
+  user_id: string;
+  credit_group: 'group' | 'private';
+  remaining_credits: number;
+  total_credits: number;
+  used_credits: number;
+}
+
+interface UserCredits {
+  group_credits: SubscriptionCredit[];
+  private_credits: SubscriptionCredit[];
+  total_group_credits: number;
+  total_private_credits: number;
+  available_group_credits: number;
+  available_private_credits: number;
 }
 
 interface RegistrationData {
@@ -154,7 +172,7 @@ export default function RegistrationEditModal({
   const previousProfilesRef = useRef<Profile[]>([]);
   
   // Add state for user credits
-  const [userCredits, setUserCredits] = useState<any>(null);
+  const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [returnCredit, setReturnCredit] = useState<boolean>(true); // Default to return credit
@@ -261,6 +279,44 @@ export default function RegistrationEditModal({
     }
   }, [formData.user_id, isNewReg]);
 
+  // Check credit availability when class changes
+  useEffect(() => {
+    if (formData.class_id && formData.used_credit && userCredits) {
+      const selectedClass = classes.find(c => c.id === formData.class_id);
+      if (selectedClass) {
+        const isSubscriptionClass = selectedClass.category === 'subscription';
+        const supportsCredits = isSubscriptionClass && (selectedClass.group_credits || selectedClass.private_credits);
+        
+        if (!supportsCredits) {
+          // Class doesn't support credits, disable credit usage
+          setFormData(prev => ({ 
+            ...prev, 
+            used_credit: false, 
+            credit_type: '' 
+          }));
+        } else if (formData.credit_type) {
+          // Check if user has enough credits for selected type
+          const hasEnoughCredits = (() => {
+            if (formData.credit_type === 'group' && selectedClass.group_credits) {
+              return userCredits.available_group_credits > 0;
+            } else if (formData.credit_type === 'private' && selectedClass.private_credits) {
+              return userCredits.available_private_credits > 0;
+            }
+            return false;
+          })();
+          
+          if (!hasEnoughCredits) {
+            // User doesn't have enough credits, clear credit type
+            setFormData(prev => ({ 
+              ...prev, 
+              credit_type: '' 
+            }));
+          }
+        }
+      }
+    }
+  }, [formData.class_id, formData.used_credit, formData.credit_type, userCredits, classes]);
+
   const loadUserCredits = async (userId: string) => {
     try {
       setLoadingCredits(true);
@@ -272,7 +328,18 @@ export default function RegistrationEditModal({
       
       if (response.ok) {
         const credits = await response.json();
-        setUserCredits(credits);
+        
+        // Transform the credits data to match our interface
+        const transformedCredits: UserCredits = {
+          group_credits: credits.filter((credit: any) => credit.credit_group === 'group'),
+          private_credits: credits.filter((credit: any) => credit.credit_group === 'private'),
+          total_group_credits: credits.filter((credit: any) => credit.credit_group === 'group').reduce((sum: number, credit: any) => sum + credit.total_credits, 0),
+          total_private_credits: credits.filter((credit: any) => credit.credit_group === 'private').reduce((sum: number, credit: any) => sum + credit.total_credits, 0),
+          available_group_credits: credits.filter((credit: any) => credit.credit_group === 'group').reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0),
+          available_private_credits: credits.filter((credit: any) => credit.credit_group === 'private').reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0)
+        };
+        
+        setUserCredits(transformedCredits);
       } else {
         setUserCredits(null);
       }
@@ -366,9 +433,29 @@ export default function RegistrationEditModal({
       // Conditional validation based on class type
       const selectedClass = classes.find(c => c.id === formData.class_id);
       if (selectedClass) {
-        // Check if class requires credits
-        if (((selectedClass.group_credits || 0) > 0 || (selectedClass.private_credits || 0) > 0) && formData.used_credit && !formData.credit_type) {
+        // Check if class supports credits
+        const isSubscriptionClass = selectedClass.category === 'subscription';
+        const supportsCredits = isSubscriptionClass && (selectedClass.group_credits || selectedClass.private_credits);
+        
+        if (supportsCredits && formData.used_credit) {
+          // Validate credit type selection
+          if (!formData.credit_type) {
           newErrors.credit_type = 'יש לבחור סוג קרדיט';
+          } else {
+            // Validate credit availability
+            const hasEnoughCredits = (() => {
+              if (formData.credit_type === 'group' && selectedClass.group_credits) {
+                return userCredits && userCredits.available_group_credits > 0;
+              } else if (formData.credit_type === 'private' && selectedClass.private_credits) {
+                return userCredits && userCredits.available_private_credits > 0;
+              }
+              return false;
+            })();
+            
+            if (!hasEnoughCredits) {
+              newErrors.credit_type = 'אין מספיק קרדיטים זמינים מהסוג הנבחר';
+            }
+          }
         }
         
         // Check if class is a trial class
@@ -500,26 +587,41 @@ export default function RegistrationEditModal({
     // Check if this is a subscription class and user has no credits
     const selectedClass = classes.find(c => c.id === cleanedSubmissionData.class_id);
     const isSubscriptionClass = selectedClass?.category === 'subscription';
-    const userHasCredits = userCredits && (
-      (cleanedSubmissionData.credit_type === 'group' && userCredits.total_group_credits > 0) ||
-      (cleanedSubmissionData.credit_type === 'private' && userCredits.total_private_credits > 0)
-    );
-
-    // If it's a subscription class and user has no credits, set up credit usage
-    if (isNewReg && isSubscriptionClass && !userHasCredits && !cleanedSubmissionData.used_credit) {
-      console.log('Subscription class with no credits - setting up credit usage');
+    const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
+    
+    if (supportsCredits && cleanedSubmissionData.used_credit) {
+      // Validate that user has enough credits
+      const hasEnoughCredits = (() => {
+        if (cleanedSubmissionData.credit_type === 'group' && selectedClass?.group_credits) {
+          return userCredits && userCredits.available_group_credits > 0;
+        } else if (cleanedSubmissionData.credit_type === 'private' && selectedClass?.private_credits) {
+          return userCredits && userCredits.available_private_credits > 0;
+        }
+        return false;
+      })();
       
-      // Determine credit type based on class
-      const creditType = selectedClass?.group_credits ? 'group' : 'private';
+      if (!hasEnoughCredits) {
+        console.error('User does not have enough credits for this class');
+        setErrors(prev => ({
+          ...prev,
+          credit_type: 'אין מספיק קרדיטים זמינים מהסוג הנבחר'
+        }));
+        return;
+      }
       
-      // Update the submission data to use credits
-      cleanedSubmissionData.used_credit = true;
-      cleanedSubmissionData.credit_type = creditType;
+      // Set purchase price to 0 when using credits
+      cleanedSubmissionData.purchase_price = 0;
       
-      console.log('Updated submission data for credit usage:', {
+      console.log('Using credits for class:', {
         used_credit: cleanedSubmissionData.used_credit,
-        credit_type: cleanedSubmissionData.credit_type
+        credit_type: cleanedSubmissionData.credit_type,
+        purchase_price: cleanedSubmissionData.purchase_price
       });
+    } else if (supportsCredits && !cleanedSubmissionData.used_credit) {
+      // If it's a subscription class but user chose not to use credits, ensure purchase price is set
+      if (!cleanedSubmissionData.purchase_price || cleanedSubmissionData.purchase_price <= 0) {
+        cleanedSubmissionData.purchase_price = selectedClass?.price || 0;
+      }
     }
 
     // Send returnCredit parameter if it's an existing registration with credits
@@ -574,6 +676,32 @@ export default function RegistrationEditModal({
         credit_type: value 
       }));
       console.log('Updated form data - used_credit: true, credit_type:', value);
+    }
+  
+  // Handle class selection - check credit eligibility
+  if (field === 'class_id' && value) {
+    const selectedClass = classes.find(cls => cls.id === value);
+    if (selectedClass) {
+      // Auto-set price when class is selected
+      if (selectedClass.price) {
+        setFormData(prev => ({ ...prev, purchase_price: selectedClass.price }));
+      }
+      
+      // Check if class supports credits
+      const supportsCredits = selectedClass.category === 'subscription' && (selectedClass.group_credits || selectedClass.private_credits);
+      
+      if (!supportsCredits) {
+        // If class doesn't support credits, disable credit usage
+        setFormData(prev => ({ 
+          ...prev, 
+          used_credit: false, 
+          credit_type: '' 
+        }));
+      }
+      
+      // Reset credit type when class changes
+      setFormData(prev => ({ ...prev, credit_type: '' }));
+    }
     }
     
     // Handle session selection
@@ -689,39 +817,589 @@ export default function RegistrationEditModal({
               isLoadingProfiles={isSearchingProfiles}
             />
 
-            <RegistrationDetailsSection
-              isNewRegistration={isNewReg}
-              formData={formData}
-              registrationData={registrationData}
-              classes={classes}
-              sessions={sessions}
-              session_classes={session_classes}
-              errors={errors}
-              onInputChange={handleInputChange}
-              useCustomDateTime={useCustomDateTime}
-              setUseCustomDateTime={setUseCustomDateTime}
-              showDatePicker={showDatePicker}
-              setShowDatePicker={setShowDatePicker}
-              showTimePicker={showTimePicker}
-              setShowTimePicker={setShowTimePicker}
-              showCustomTimePicker={showCustomTimePicker}
-              setShowCustomTimePicker={setShowCustomTimePicker}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
-              availableDates={availableDates}
-              availableTimes={availableTimes}
-              loadingDates={loadingDates}
-              loadingTimes={loadingTimes}
-              datesMessage={datesMessage}
-              onDateSelect={handleDateSelect}
-              onTimeSelect={(time: string) => handleInputChange('selected_time', time)}
-              onMonthChange={handleMonthChange}
-              userCredits={userCredits}
-              loadingCredits={loadingCredits}
-            />
+            {/* Registration Details Section */}
+            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-4">
+              <h3 className="text-sm sm:text-base font-bold text-[#4B2E83] mb-2 sm:mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {isNewReg && !formData.user_id ? 'בחרי משתמש תחילה' : 'פרטי הרשמה'}
+              </h3>
+              <div className="space-y-3">
+                {isNewReg ? (
+                  <div className="space-y-4">
+                    {formData.user_id ? (
+                      <>
+                        {/* Step 2 & 3: Group and Class Selection */}
+                        <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
+                          <h4 className="text-sm font-semibold text-[#4B2E83] mb-3 flex items-center gap-2">
+                            <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">2</span>
+                            בחירת קבוצה ושיעור
+                          </h4>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {/* Group Selection */}
+                            <div>
+                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                קבוצה *
+                              </label>
+                              <select
+                                required
+                                value={formData.session_id}
+                                onChange={(e) => handleInputChange('session_id', e.target.value)}
+                                className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
+                              >
+                                <option value="">בחרי קבוצה...</option>
+                                {sessions.map((session) => {
+                                  let label = session.name || session.session_name || 'קבוצה ללא שם';
+                                  if (session.weekdays && session.weekdays.length > 0) {
+                                    const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+                                    label += ' (' + session.weekdays.map(d => dayNames[d]).join(', ') + ')';
+                                  }
+                                  if (session.start_time && session.end_time) label += ` ${session.start_time}-${session.end_time}`;
+                                  return (
+                                    <option key={session.id} value={session.id}>
+                                      {label}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              {errors.session_id && (
+                                <p className="text-red-500 text-xs mt-2">{errors.session_id}</p>
+                              )}
+                            </div>
+
+                            {/* Class Selection */}
+                            {formData.session_id && (
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                  שיעור *
+                                </label>
+                                <select
+                                  required
+                                  value={formData.class_id}
+                                  onChange={(e) => handleInputChange('class_id', e.target.value)}
+                                  className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
+                                >
+                                  <option value="">בחרי שיעור...</option>
+                                  {(() => {
+                                    const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
+                                    const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
+                                    const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
+                                    return relatedClasses.map(cls => (
+                                      <option key={cls.id} value={cls.id}>
+                                        {cls.name} - {cls.price} ש"ח
+                                      </option>
+                                    ));
+                                  })()}
+                                </select>
+                                {errors.class_id && (
+                                  <p className="text-red-500 text-xs mt-2">{errors.class_id}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Step 4: Date and Time Selection */}
+                        {formData.class_id && (
+                          <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
+                            <h4 className="text-sm font-semibold text-[#4B2E83] mb-3 flex items-center gap-2">
+                              <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">4</span>
+                              בחירת תאריך ושעה
+                            </h4>
+                            
+                            <div className="mb-4">
+                              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">
+                                שיטת בחירת תאריך ושעה
+                              </label>
+                              <div className="flex gap-3">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="dateTimeMethod"
+                                    value="automatic"
+                                    checked={!useCustomDateTime}
+                                    onChange={() => setUseCustomDateTime(false)}
+                                    className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 focus:ring-[#EC4899] focus:ring-2"
+                                  />
+                                  <span className="text-sm text-[#4B2E83]">לפי הקבוצה</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="dateTimeMethod"
+                                    value="manual"
+                                    checked={useCustomDateTime}
+                                    onChange={() => setUseCustomDateTime(true)}
+                                    className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 focus:ring-[#EC4899] focus:ring-2"
+                                  />
+                                  <span className="text-sm text-[#4B2E83]">התאמה אישית</span>
+                                </label>
+                              </div>
+                            </div>
+
+                            {useCustomDateTime ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">
+                                    תאריך מותאם אישית *
+                                  </label>
+                                  <div className="relative">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 relative">
+                                        <input
+                                          type="text"
+                                          required
+                                          value={formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL') : ''}
+                                          onChange={(e) => handleInputChange('selected_date', e.target.value)}
+                                          placeholder="בחרי תאריך"
+                                          readOnly
+                                          className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white ${
+                                            errors.selected_date 
+                                              ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
+                                              : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
+                                          }`}
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowDatePicker(!showDatePicker)}
+                                        className="px-4 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-lg hover:shadow-xl"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Calendar Picker would go here */}
+                                  </div>
+                                  {errors.selected_date && (
+                                    <p className="text-red-500 text-xs mt-2">{errors.selected_date}</p>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">
+                                    שעה מותאמת אישית *
+                                  </label>
+                                  <div className="relative">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex-1 relative">
+                                        <input
+                                          type="text"
+                                          required
+                                          value={formData.selected_time}
+                                          onChange={(e) => handleInputChange('selected_time', e.target.value)}
+                                          placeholder="בחרי שעה"
+                                          readOnly
+                                          className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white ${
+                                            errors.selected_time 
+                                              ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
+                                              : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
+                                          }`}
+                                        />
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowCustomTimePicker(!showCustomTimePicker)}
+                                        className="px-4 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-lg hover:shadow-xl"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                    
+                                    {/* Time Picker would go here */}
+                                  </div>
+                                  {errors.selected_time && (
+                                    <p className="text-red-500 text-xs mt-2">{errors.selected_time}</p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-4">
+                                {/* Date Selection */}
+                                <div>
+                                  <label className="block text-sm font-bold text-[#4B2E83] mb-3">
+                                    <svg className="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    בחרי תאריך לשיעור *
+                                  </label>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 lg:gap-3 px-1 sm:px-0">
+                                    {loadingDates ? (
+                                      Array.from({ length: 3 }).map((_, index) => (
+                                        <div key={index} className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                      ))
+                                    ) : availableDates.length > 0 ? (
+                                      availableDates.map((date) => {
+                                        const dateObj = new Date(date);
+                                        const isSelected = formData.selected_date === date;
+                                        const today = new Date().toISOString().split('T')[0];
+                                        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                        const isToday = date === today;
+                                        const isTomorrow = date === tomorrow;
+                                        
+                                        return (
+                                          <button
+                                            key={date}
+                                            type="button"
+                                            onClick={() => {
+                                              handleInputChange('selected_date', date);
+                                              handleInputChange('selected_time', '');
+                                            }}
+                                            className={`
+                                              p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
+                                              ${isSelected 
+                                                ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-lg' 
+                                                : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
+                                              }
+                                            `}
+                                          >
+                                            {isToday && (
+                                              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
+                                                היום
+                                              </div>
+                                            )}
+                                            {isTomorrow && (
+                                              <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md transform rotate-12">
+                                                מחר
+                                              </div>
+                                            )}
+
+                                            <div className="text-center leading-tight">
+                                              <div className="text-xs lg:text-sm">
+                                                <div className="hidden sm:block">
+                                                  {dateObj.toLocaleDateString('he-IL', { 
+                                                    day: 'numeric', 
+                                                    month: 'numeric', 
+                                                    year: 'numeric' 
+                                                  })} - {dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}
+                                                </div>
+                                                <div className="sm:hidden">
+                                                  <div>{dateObj.toLocaleDateString('he-IL', { 
+                                                    day: 'numeric', 
+                                                    month: 'numeric' 
+                                                  })}</div>
+                                                  <div className="text-xs">{dateObj.toLocaleDateString('he-IL', { weekday: 'short' })}</div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </button>
+                                        );
+                                      })
+                                    ) : (
+                                      <div className="col-span-2 sm:col-span-3 text-center text-gray-500">אין תאריכים זמינים</div>
+                                    )}
+                                  </div>
+                                  {errors.selected_date && (
+                                    <p className="text-red-500 text-xs mt-2">{errors.selected_date}</p>
+                                  )}
+                                  {datesMessage && (
+                                    <p className="text-xs text-[#4B2E83]/60 mt-2 font-medium">{datesMessage}</p>
+                                  )}
+                                  {formData.selected_date && (
+                                    <p className="text-xs text-[#4B2E83]/80 mt-2 font-medium">
+                                      {new Date(formData.selected_date).toLocaleDateString('he-IL', { weekday: 'long' })}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Time Selection */}
+                                {formData.selected_date && (
+                                  <div>
+                                    <label className="block text-sm font-bold text-[#4B2E83] mb-3">
+                                      <svg className="w-4 h-4 inline ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      בחרי שעה לשיעור *
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 lg:gap-3 px-1 sm:px-0">
+                                      {loadingTimes ? (
+                                        Array.from({ length: 3 }).map((_, index) => (
+                                          <div key={index} className="h-16 bg-gray-100 rounded-xl animate-pulse"></div>
+                                        ))
+                                      ) : availableTimes.length > 0 ? (
+                                        availableTimes.map((time) => {
+                                          const isSelected = formData.selected_time === time;
+                                          
+                                          return (
+                                            <button
+                                              key={time}
+                                              type="button"
+                                              onClick={() => handleInputChange('selected_time', time)}
+                                              className={`
+                                                p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
+                                                ${isSelected 
+                                                  ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-lg' 
+                                                  : 'bg-white border-gray-200 hover:border-gray-300 text-[#2B2B2B] hover:shadow-md'
+                                                }
+                                              `}
+                                            >
+                                              <div className="text-center leading-tight">
+                                                <div className="text-xs lg:text-sm">{time}</div>
+                                              </div>
+                                            </button>
+                                          );
+                                        })
+                                      ) : (
+                                        <div className="col-span-2 sm:col-span-3 text-center text-gray-500">אין שעות זמינות</div>
+                                      )}
+                                    </div>
+                                    {errors.selected_time && (
+                                      <p className="text-red-500 text-xs mt-2">{errors.selected_time}</p>
+                                    )}
+                                    {formData.selected_time && (
+                                      <p className="text-sm text-gray-600 mt-2 font-medium">
+                                        השעה שנבחרה: {formData.selected_time}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Step 5: Payment Details */}
+                        {formData.selected_date && formData.selected_time && (
+                          <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
+                            <h4 className="text-sm font-semibold text-[#4B2E83] mb-3 flex items-center gap-2">
+                              <span className="w-6 h-6 bg-[#EC4899] text-white rounded-full flex items-center justify-center text-xs">5</span>
+                              פרטי תשלום
+                            </h4>
+                            
+                            {/* Credit Eligibility Check */}
+                            {(() => {
+                              const selectedClass = classes.find(c => c.id === formData.class_id);
+                              const isSubscriptionClass = selectedClass?.category === 'subscription';
+                              const supportsGroupCredits = selectedClass?.group_credits;
+                              const supportsPrivateCredits = selectedClass?.private_credits;
+                              const canUseCredits = isSubscriptionClass && (supportsGroupCredits || supportsPrivateCredits);
+                              
+                              if (!canUseCredits) {
+                                return (
+                                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                      </svg>
+                                      <span className="text-sm font-medium text-amber-800">שיעור זה אינו תומך בקרדיטים</span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-sm font-medium text-blue-800">שיעור זה תומך בקרדיטים</span>
+                                  </div>
+                                  <div className="text-xs text-blue-700 space-y-1">
+                                    {supportsGroupCredits && (
+                                      <div className="flex justify-between">
+                                        <span>קרדיטים קבוצתיים:</span>
+                                        <span className={`font-medium ${(userCredits?.available_group_credits || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {userCredits?.available_group_credits || 0} זמינים
+                                          {(userCredits?.available_group_credits || 0) === 0 && ' (לא זמינים)'}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {supportsPrivateCredits && (
+                                      <div className="flex justify-between">
+                                        <span>קרדיטים פרטיים:</span>
+                                        <span className={`font-medium ${(userCredits?.available_private_credits || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {userCredits?.available_private_credits || 0} זמינים
+                                          {(userCredits?.available_private_credits || 0) === 0 && ' (לא זמינים)'}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {(userCredits?.available_group_credits || 0) === 0 && (userCredits?.available_private_credits || 0) === 0 && (
+                                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                                      למשתמשת אין קרדיטים זמינים.
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                  מחיר רכישה *
+                                </label>
+                                <input
+                                  type="number"
+                                  required
+                                  value={formData.purchase_price}
+                                  onChange={(e) => handleInputChange('purchase_price', parseFloat(e.target.value))}
+                                  placeholder="הכנסי מחיר"
+                                  className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white ${
+                                    errors.purchase_price 
+                                      ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
+                                      : 'border-[#EC4899]/20 focus:ring-[#EC4899]/20 focus:border-[#EC4899]'
+                                  }`}
+                                />
+                                {errors.purchase_price && (
+                                  <p className="text-red-500 text-xs mt-2">{errors.purchase_price}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                  שימוש בקרדיט
+                                </label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.used_credit}
+                                    onChange={(e) => handleInputChange('used_credit', e.target.checked)}
+                                    disabled={(() => {
+                                      const selectedClass = classes.find(c => c.id === formData.class_id);
+                                      const isSubscriptionClass = selectedClass?.category === 'subscription';
+                                      const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
+                                      return !supportsCredits;
+                                    })()}
+                                    className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
+                                  <span className={`text-sm ${(() => {
+                                    const selectedClass = classes.find(c => c.id === formData.class_id);
+                                    const isSubscriptionClass = selectedClass?.category === 'subscription';
+                                    const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
+                                    return supportsCredits ? 'text-[#4B2E83]' : 'text-gray-500';
+                                  })()}`}>
+                                    השתמשי בקרדיט
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {formData.used_credit && (() => {
+                              const selectedClass = classes.find(c => c.id === formData.class_id);
+                              const supportsGroupCredits = selectedClass?.group_credits;
+                              const supportsPrivateCredits = selectedClass?.private_credits;
+                              const availableGroupCredits = userCredits?.available_group_credits || 0;
+                              const availablePrivateCredits = userCredits?.available_private_credits || 0;
+                              
+                              // Check if user has any available credits
+                              const hasGroupCredits = supportsGroupCredits && availableGroupCredits > 0;
+                              const hasPrivateCredits = supportsPrivateCredits && availablePrivateCredits > 0;
+                              
+                              if (!hasGroupCredits && !hasPrivateCredits) {
+                                return (
+                                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                      </svg>
+                                      <span className="text-sm font-medium text-red-800">אין קרדיטים זמינים</span>
+                                    </div>
+                                    <p className="text-xs text-red-700">
+                                      למשתמש אין קרדיטים זמינים מהסוג הנדרש לשיעור זה. יש לבחור בתשלום במזומן.
+                                    </p>
+                                    <div className="mt-2 text-xs text-red-600">
+                                      <p><strong>סוגי קרדיטים נדרשים לשיעור זה:</strong></p>
+                                      <ul className="list-disc list-inside ml-2 mt-1">
+                                        {supportsGroupCredits && <li>קרדיט קבוצתי</li>}
+                                        {supportsPrivateCredits && <li>קרדיט פרטי</li>}
+                                      </ul>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleInputChange('used_credit', false)}
+                                      className="mt-2 px-3 py-1 bg-red-100 text-red-700 text-xs rounded-lg hover:bg-red-200 transition-colors"
+                                    >
+                                      עבור לתשלום במזומן
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="mt-3">
+                                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                                    סוג קרדיט *
+                                  </label>
+                                  <select
+                                    required
+                                    value={formData.credit_type}
+                                    onChange={(e) => handleInputChange('credit_type', e.target.value)}
+                                    className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
+                                  >
+                                    <option value="">בחרי סוג קרדיט</option>
+                                    {hasGroupCredits && (
+                                      <option value="group">
+                                        קרדיט קבוצתי ({availableGroupCredits} זמינים)
+                                      </option>
+                                    )}
+                                    {hasPrivateCredits && (
+                                      <option value="private">
+                                        קרדיט פרטי ({availablePrivateCredits} זמינים)
+                                      </option>
+                                    )}
+                                  </select>
+                                  {errors.credit_type && (
+                                    <p className="text-red-500 text-xs mt-2">{errors.credit_type}</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center text-gray-500 py-4">
+                        יש לבחור משתמש תחילה
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Editing existing registration
+                  <div className="space-y-4">
+                    <div className="bg-white rounded-lg p-4 border border-[#EC4899]/10">
+                      <h4 className="text-sm font-semibold text-[#4B2E83] mb-3">פרטי הרשמה קיימת</h4>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                            תאריך
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.selected_date ? new Date(formData.selected_date).toLocaleDateString('he-IL') : ''}
+                            onChange={(e) => handleInputChange('selected_date', e.target.value)}
+                            className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl bg-white"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                            שעה
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.selected_time}
+                            onChange={(e) => handleInputChange('selected_time', e.target.value)}
+                            className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Registration Summary - Only show when all required fields are filled */}
-            {isNewReg && formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time && formData.purchase_price && formData.purchase_price > 0 && (
+            {isNewReg && formData.user_id && formData.session_id && formData.class_id && formData.selected_date && formData.selected_time && (
+              (formData.purchase_price && formData.purchase_price > 0) || (formData.used_credit && formData.credit_type)
+            ) && (
               <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-full flex items-center justify-center">
@@ -758,10 +1436,22 @@ export default function RegistrationEditModal({
                     <span className="font-semibold text-[#4B2E83]">
                       {formData.selected_time}
                     </span>
+                    {formData.used_credit && formData.credit_type ? (
+                      <>
+                        {' '}בשימוש ב-
+                        <span className="font-semibold text-[#EC4899]">
+                          {formData.credit_type === 'group' ? 'קרדיט קבוצתי' : 'קרדיט פרטי'}
+                        </span>
+                        {' '}(ללא עלות)
+                      </>
+                    ) : (
+                      <>
                     {' '}במחיר של{' '}
                     <span className="font-semibold text-[#EC4899]">
                       {formData.purchase_price} ש"ח
                     </span>
+                      </>
+                    )}
                     ?
                   </p>
                 </div>
@@ -834,7 +1524,9 @@ export default function RegistrationEditModal({
             )}
 
             {/* כפתורים - רק כשאין סיכום */}
-            {(!isNewReg || !formData.user_id || !formData.class_id || !formData.selected_date || !formData.selected_time || !formData.purchase_price || formData.purchase_price <= 0) && (
+            {(!isNewReg || !formData.user_id || !formData.class_id || !formData.selected_date || !formData.selected_time || (
+              !formData.purchase_price || formData.purchase_price <= 0
+            ) && !formData.used_credit) && (
               <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
                 <button
                   type="button"
