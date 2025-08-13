@@ -6,7 +6,7 @@ import {
 } from '../../../utils/sessionsUtils';
 import UserDetailsSection from '../../../components/common/UserDetailsSection';
 
-import { SuccessModal } from '../../../components/common';
+import SuccessModal from './SuccessModal';
 import { useAdminData } from '../../contexts/AdminDataContext';
 
 // Define specific types instead of using 'any'

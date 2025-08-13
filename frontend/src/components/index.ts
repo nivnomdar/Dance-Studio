@@ -4,4 +4,3 @@ export { default as RegistrationByAppointment } from './RegistrationByAppointmen
 export { default as SubscriptionRegistration } from './SubscriptionRegistration';
 
 // Common Components
-export { SuccessModal } from './common'; 
