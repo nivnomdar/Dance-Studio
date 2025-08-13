@@ -914,26 +914,6 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
 
             {/* Content */}
             <div className="p-2 sm:p-3 md:p-4 lg:p-3 xl:p-2">
-              {/* Success Message */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 lg:p-3 xl:p-2 mb-3 sm:mb-4 md:mb-4 lg:mb-3">
-                <div className="flex items-start gap-2 sm:gap-3 md:gap-3 lg:gap-2">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 md:w-6 md:h-6 lg:w-5 lg:h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-3 lg:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <div className="text-right flex-1">
-                    <h4 className="font-semibold text-green-800 mb-1 text-sm sm:text-base md:text-base lg:text-sm">ההרשמה בוצעה בהצלחה!</h4>
-                    <p className="text-xs sm:text-sm md:text-sm lg:text-xs text-green-700 leading-relaxed">
-                      {hasCredits 
-                        ? 'שיעור אחד יורד מיתרת השיעורים שלך. תוכלי לראות את פרטי ההרשמה המלאים בפרופיל האישי שלך.'
-                        : `שילמת ${classData.price} ש"ח וקיבלת מנוי ${classData.class_type === 'both' ? 'קבוצתי או פרטי' : 
-                         classData.class_type === 'group' ? 'קבוצתי' : 'פרטי'} חדש עם ${getCreditAmount()} שיעורים. תוכלי לראות את פרטי ההרשמה המלאים בפרופיל האישי שלך.`
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
               
               {/* Registration Details */}
               <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 border border-[#EC4899]/20 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 lg:p-3 xl:p-2 mb-2 sm:mb-3 md:mb-3 lg:mb-2">
