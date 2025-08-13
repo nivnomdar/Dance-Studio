@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePopup } from '../../../contexts/PopupContext';
 import { RegistrationEditModal } from '../../modals';
 import { Pagination } from '../../components';
 import { StatusChangeModal } from '../../../components/common';
@@ -54,6 +55,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   const [statusChangeRegistration, setStatusChangeRegistration] = useState<any>(null);
   const [newStatus, setNewStatus] = useState<string>('');
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const { showPopup } = usePopup();
   
   // Pagination state for history tab
   const [currentPage, setCurrentPage] = useState(1);
@@ -247,7 +249,10 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         } catch (e) {
           errorMessage = errorText || errorMessage;
         }
-        throw new Error(errorMessage);
+        // Show user-friendly popup and return
+        showPopup({ type: 'error', message: errorMessage });
+        setIsChangingStatus(false);
+        return;
       }
 
       // עדכון מיידי של הנתונים
@@ -263,7 +268,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     } catch (error) {
       console.error('Error changing status:', error);
       const errorMessage = error instanceof Error ? error.message : 'שגיאה לא ידועה';
-      alert(`שגיאה: ${errorMessage}`);
+      showPopup({ type: 'error', message: errorMessage });
     } finally {
       setIsChangingStatus(false);
     }

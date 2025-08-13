@@ -962,6 +962,27 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
       throw new AppError('Registration not found', 404);
     }
 
+    // Before updating: if activating, ensure no duplicate active registration exists for same user/class/date/time
+    if (status === 'active') {
+      const { data: dupList, error: dupError } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('user_id', registrationData.user_id)
+        .eq('class_id', registrationData.class_id)
+        .eq('selected_date', registrationData.selected_date)
+        .eq('selected_time', registrationData.selected_time)
+        .eq('status', 'active');
+
+      if (dupError) {
+        throw new AppError('Failed to check existing registrations', 500);
+      }
+
+      const hasOtherActive = (dupList || []).some(r => r.id !== id);
+      if (hasOtherActive) {
+        throw new AppError('כבר קיימת הרשמה פעילה למשתמש זה לשיעור זה בתאריך ובשעה אלו', 400);
+      }
+    }
+
     // Update registration status
     const { data, error } = await supabase
       .from('registrations')

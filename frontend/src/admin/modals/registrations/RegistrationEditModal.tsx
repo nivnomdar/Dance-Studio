@@ -200,9 +200,19 @@ export default function RegistrationEditModal({
     const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
     const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
     if (relatedClasses.length === 1 && formData.class_id !== relatedClasses[0].id) {
-      setFormData(prev => ({ ...prev, class_id: relatedClasses[0].id }));
+      const only = relatedClasses[0];
+      setFormData(prev => ({ ...prev, class_id: only.id, purchase_price: only.price || prev.purchase_price }));
     }
   }, [formData.session_id, session_classes, classes]);
+
+  // Ensure purchase_price defaults to the class price when class changes (including auto-select)
+  useEffect(() => {
+    if (!formData.class_id) return;
+    const selectedClass = classes.find(c => c.id === formData.class_id);
+    if (selectedClass && (formData.purchase_price === undefined || formData.purchase_price === null || formData.purchase_price <= 0)) {
+      setFormData(prev => ({ ...prev, purchase_price: selectedClass.price || 0 }));
+    }
+  }, [formData.class_id, classes]);
 
   // Auto-select credit type if only one possible and user chose to use credit
   useEffect(() => {
