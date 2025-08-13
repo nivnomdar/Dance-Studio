@@ -16,8 +16,9 @@ interface Class {
   price: number;
   category: string;
   slug: string;
-  group_credits: boolean;
-  private_credits: boolean;
+  class_type?: 'group' | 'private' | 'both';
+  group_credits?: number; // total credits included for group (if relevant)
+  private_credits?: number; // total credits included for private (if relevant)
 }
 
 interface Session {
@@ -127,6 +128,20 @@ export default function RegistrationEditModal({
 }: RegistrationEditModalProps) {
   const { fetchProfiles } = useAdminData();
   const isNewReg = isNewRegistration || !registrationData.id;
+
+  // Helper: determine allowed credit types per class_type/category
+  const getAllowedCreditTypesForClass = (cls?: Class): Array<'group' | 'private'> => {
+    if (!cls) return [];
+    if (cls.class_type === 'group') return ['group'];
+    if (cls.class_type === 'private') return ['private'];
+    if (cls.class_type === 'both') {
+      return cls.category === 'private' ? ['private'] : ['group'];
+    }
+    // Fallback if class_type missing
+    if (cls.category === 'private') return ['private'];
+    if (cls.category === 'subscription') return ['group'];
+    return [];
+  };
   
   const [formData, setFormData] = useState<FormData>({
     user_id: registrationData.user_id || '',
@@ -177,6 +192,31 @@ export default function RegistrationEditModal({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [returnCredit, setReturnCredit] = useState<boolean>(true); // Default to return credit
   const [successFormData, setSuccessFormData] = useState<any>(null);
+
+  // Auto-select class if only one class is available for the chosen session
+  useEffect(() => {
+    if (!formData.session_id) return;
+    const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
+    const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
+    const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
+    if (relatedClasses.length === 1 && formData.class_id !== relatedClasses[0].id) {
+      setFormData(prev => ({ ...prev, class_id: relatedClasses[0].id }));
+    }
+  }, [formData.session_id, session_classes, classes]);
+
+  // Auto-select credit type if only one possible and user chose to use credit
+  useEffect(() => {
+    if (!formData.used_credit || !formData.class_id) return;
+    const selectedClass = classes.find(c => c.id === formData.class_id);
+    const allowed = getAllowedCreditTypesForClass(selectedClass);
+    const hasGroup = allowed.includes('group') && (userCredits?.available_group_credits || 0) > 0;
+    const hasPrivate = allowed.includes('private') && (userCredits?.available_private_credits || 0) > 0;
+    const onlyOne = (hasGroup ? 1 : 0) + (hasPrivate ? 1 : 0) === 1;
+    if (onlyOne) {
+      const type = hasGroup ? 'group' : 'private';
+      if (formData.credit_type !== type) setFormData(prev => ({ ...prev, credit_type: type }));
+    }
+  }, [formData.used_credit, formData.class_id, userCredits, classes]);
 
   // Prevent modal from closing automatically
   useEffect(() => {
@@ -284,33 +324,21 @@ export default function RegistrationEditModal({
     if (formData.class_id && formData.used_credit && userCredits) {
       const selectedClass = classes.find(c => c.id === formData.class_id);
       if (selectedClass) {
-        const isSubscriptionClass = selectedClass.category === 'subscription';
-        const supportsCredits = isSubscriptionClass && (selectedClass.group_credits || selectedClass.private_credits);
-        
+        const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
+        const supportsCredits = allowedTypes.length > 0;
         if (!supportsCredits) {
-          // Class doesn't support credits, disable credit usage
-          setFormData(prev => ({ 
-            ...prev, 
-            used_credit: false, 
-            credit_type: '' 
-          }));
+          setFormData(prev => ({ ...prev, used_credit: false, credit_type: '' }));
         } else if (formData.credit_type) {
-          // Check if user has enough credits for selected type
           const hasEnoughCredits = (() => {
-            if (formData.credit_type === 'group' && selectedClass.group_credits) {
-              return userCredits.available_group_credits > 0;
-            } else if (formData.credit_type === 'private' && selectedClass.private_credits) {
-              return userCredits.available_private_credits > 0;
+            if (formData.credit_type === 'group' && allowedTypes.includes('group')) {
+              return (userCredits.available_group_credits || 0) > 0;
+            } else if (formData.credit_type === 'private' && allowedTypes.includes('private')) {
+              return (userCredits.available_private_credits || 0) > 0;
             }
             return false;
           })();
-          
           if (!hasEnoughCredits) {
-            // User doesn't have enough credits, clear credit type
-            setFormData(prev => ({ 
-              ...prev, 
-              credit_type: '' 
-            }));
+            setFormData(prev => ({ ...prev, credit_type: '' }));
           }
         }
       }
@@ -327,16 +355,30 @@ export default function RegistrationEditModal({
       });
       
       if (response.ok) {
-        const credits = await response.json();
-        
-        // Transform the credits data to match our interface
+        const data = await response.json();
+        // API may return either an array of credits or an object { credits, total_* }
+        const creditsArray = Array.isArray(data) ? data : (data?.credits || []);
+        const totalGroupFromApi = Array.isArray(data) ? undefined : data?.total_group_credits;
+        const totalPrivateFromApi = Array.isArray(data) ? undefined : data?.total_private_credits;
+
+        const total_group_credits = typeof totalGroupFromApi === 'number'
+          ? totalGroupFromApi
+          : creditsArray.filter((c: any) => c.credit_group === 'group').reduce((s: number, c: any) => s + (c.remaining_credits || 0), 0);
+
+        const total_private_credits = typeof totalPrivateFromApi === 'number'
+          ? totalPrivateFromApi
+          : creditsArray.filter((c: any) => c.credit_group === 'private').reduce((s: number, c: any) => s + (c.remaining_credits || 0), 0);
+
+        const available_group_credits = creditsArray.filter((c: any) => c.credit_group === 'group').reduce((s: number, c: any) => s + (c.remaining_credits || 0), 0);
+        const available_private_credits = creditsArray.filter((c: any) => c.credit_group === 'private').reduce((s: number, c: any) => s + (c.remaining_credits || 0), 0);
+
         const transformedCredits: UserCredits = {
-          group_credits: credits.filter((credit: any) => credit.credit_group === 'group'),
-          private_credits: credits.filter((credit: any) => credit.credit_group === 'private'),
-          total_group_credits: credits.filter((credit: any) => credit.credit_group === 'group').reduce((sum: number, credit: any) => sum + credit.total_credits, 0),
-          total_private_credits: credits.filter((credit: any) => credit.credit_group === 'private').reduce((sum: number, credit: any) => sum + credit.total_credits, 0),
-          available_group_credits: credits.filter((credit: any) => credit.credit_group === 'group').reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0),
-          available_private_credits: credits.filter((credit: any) => credit.credit_group === 'private').reduce((sum: number, credit: any) => sum + credit.remaining_credits, 0)
+          group_credits: creditsArray.filter((c: any) => c.credit_group === 'group'),
+          private_credits: creditsArray.filter((c: any) => c.credit_group === 'private'),
+          total_group_credits,
+          total_private_credits,
+          available_group_credits,
+          available_private_credits
         };
         
         setUserCredits(transformedCredits);
@@ -585,16 +627,16 @@ export default function RegistrationEditModal({
     }
     
     // Check if this is a subscription class and user has no credits
-    const selectedClass = classes.find(c => c.id === cleanedSubmissionData.class_id);
-    const isSubscriptionClass = selectedClass?.category === 'subscription';
-    const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
+      const selectedClass = classes.find(c => c.id === cleanedSubmissionData.class_id);
+      const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
+      const supportsCredits = allowedTypes.length > 0;
     
     if (supportsCredits && cleanedSubmissionData.used_credit) {
       // Validate that user has enough credits
       const hasEnoughCredits = (() => {
-        if (cleanedSubmissionData.credit_type === 'group' && selectedClass?.group_credits) {
+        if (cleanedSubmissionData.credit_type === 'group' && allowedTypes.includes('group')) {
           return userCredits && userCredits.available_group_credits > 0;
-        } else if (cleanedSubmissionData.credit_type === 'private' && selectedClass?.private_credits) {
+        } else if (cleanedSubmissionData.credit_type === 'private' && allowedTypes.includes('private')) {
           return userCredits && userCredits.available_private_credits > 0;
         }
         return false;
@@ -679,29 +721,20 @@ export default function RegistrationEditModal({
     }
   
   // Handle class selection - check credit eligibility
-  if (field === 'class_id' && value) {
-    const selectedClass = classes.find(cls => cls.id === value);
-    if (selectedClass) {
-      // Auto-set price when class is selected
-      if (selectedClass.price) {
-        setFormData(prev => ({ ...prev, purchase_price: selectedClass.price }));
+    if (field === 'class_id' && value) {
+      const selectedClass = classes.find(cls => cls.id === value);
+      if (selectedClass) {
+        if (selectedClass.price) {
+          setFormData(prev => ({ ...prev, purchase_price: selectedClass.price }));
+        }
+        const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
+        if (allowedTypes.length === 0) {
+          setFormData(prev => ({ ...prev, used_credit: false, credit_type: '' }));
+        } else {
+          // Reset credit_type on class change
+          setFormData(prev => ({ ...prev, credit_type: '' }));
+        }
       }
-      
-      // Check if class supports credits
-      const supportsCredits = selectedClass.category === 'subscription' && (selectedClass.group_credits || selectedClass.private_credits);
-      
-      if (!supportsCredits) {
-        // If class doesn't support credits, disable credit usage
-        setFormData(prev => ({ 
-          ...prev, 
-          used_credit: false, 
-          credit_type: '' 
-        }));
-      }
-      
-      // Reset credit type when class changes
-      setFormData(prev => ({ ...prev, credit_type: '' }));
-    }
     }
     
     // Handle session selection
@@ -874,24 +907,38 @@ export default function RegistrationEditModal({
                                 <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
                                   שיעור *
                                 </label>
-                                <select
-                                  required
-                                  value={formData.class_id}
-                                  onChange={(e) => handleInputChange('class_id', e.target.value)}
-                                  className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
-                                >
-                                  <option value="">בחרי שיעור...</option>
-                                  {(() => {
-                                    const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
-                                    const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
-                                    const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
-                                    return relatedClasses.map(cls => (
-                                      <option key={cls.id} value={cls.id}>
-                                        {cls.name} - {cls.price} ש"ח
-                                      </option>
-                                    ));
-                                  })()}
-                                </select>
+                                {(() => {
+                                  const relatedSessionClasses = session_classes.filter(sc => sc.session_id === formData.session_id);
+                                  const relatedClassIds = relatedSessionClasses.map(sc => sc.class_id);
+                                  const relatedClasses = classes.filter(cls => relatedClassIds.includes(cls.id));
+                                  const single = relatedClasses.length === 1;
+                                  if (single) {
+                                    const only = relatedClasses[0];
+                                    return (
+                                      <input
+                                        type="text"
+                                        value={`${only.name} - ${only.price} ש"ח`}
+                                        readOnly
+                                        className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl bg-gray-50 text-gray-700"
+                                      />
+                                    );
+                                  }
+                                  return (
+                                    <select
+                                      required
+                                      value={formData.class_id}
+                                      onChange={(e) => handleInputChange('class_id', e.target.value)}
+                                      className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
+                                    >
+                                      <option value="">בחרי שיעור...</option>
+                                      {relatedClasses.map(cls => (
+                                        <option key={cls.id} value={cls.id}>
+                                          {cls.name} - {cls.price} ש"ח
+                                        </option>
+                                      ))}
+                                    </select>
+                                  );
+                                })()}
                                 {errors.class_id && (
                                   <p className="text-red-500 text-xs mt-2">{errors.class_id}</p>
                                 )}
@@ -1174,10 +1221,10 @@ export default function RegistrationEditModal({
                             {/* Credit Eligibility Check */}
                             {(() => {
                               const selectedClass = classes.find(c => c.id === formData.class_id);
-                              const isSubscriptionClass = selectedClass?.category === 'subscription';
-                              const supportsGroupCredits = selectedClass?.group_credits;
-                              const supportsPrivateCredits = selectedClass?.private_credits;
-                              const canUseCredits = isSubscriptionClass && (supportsGroupCredits || supportsPrivateCredits);
+                              const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
+                              const supportsGroupCredits = allowedTypes.includes('group');
+                              const supportsPrivateCredits = allowedTypes.includes('private');
+                              const canUseCredits = allowedTypes.length > 0;
                               
                               if (!canUseCredits) {
                                 return (
@@ -1201,7 +1248,7 @@ export default function RegistrationEditModal({
                                     <span className="text-sm font-medium text-blue-800">שיעור זה תומך בקרדיטים</span>
                                   </div>
                                   <div className="text-xs text-blue-700 space-y-1">
-                                    {supportsGroupCredits && (
+                                     {supportsGroupCredits && (
                                       <div className="flex justify-between">
                                         <span>קרדיטים קבוצתיים:</span>
                                         <span className={`font-medium ${(userCredits?.available_group_credits || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1210,7 +1257,7 @@ export default function RegistrationEditModal({
                                         </span>
                                       </div>
                                     )}
-                                    {supportsPrivateCredits && (
+                                     {supportsPrivateCredits && (
                                       <div className="flex justify-between">
                                         <span>קרדיטים פרטיים:</span>
                                         <span className={`font-medium ${(userCredits?.available_private_credits || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1261,9 +1308,8 @@ export default function RegistrationEditModal({
                                     checked={formData.used_credit}
                                     onChange={(e) => handleInputChange('used_credit', e.target.checked)}
                                     disabled={(() => {
-                                      const selectedClass = classes.find(c => c.id === formData.class_id);
-                                      const isSubscriptionClass = selectedClass?.category === 'subscription';
-                                      const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
+                                     const selectedClass = classes.find(c => c.id === formData.class_id);
+                                     const supportsCredits = getAllowedCreditTypesForClass(selectedClass).length > 0;
                                       return !supportsCredits;
                                     })()}
                                     className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1281,9 +1327,10 @@ export default function RegistrationEditModal({
                             </div>
 
                             {formData.used_credit && (() => {
-                              const selectedClass = classes.find(c => c.id === formData.class_id);
-                              const supportsGroupCredits = selectedClass?.group_credits;
-                              const supportsPrivateCredits = selectedClass?.private_credits;
+                               const selectedClass = classes.find(c => c.id === formData.class_id);
+                               const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
+                               const supportsGroupCredits = allowedTypes.includes('group');
+                               const supportsPrivateCredits = allowedTypes.includes('private');
                               const availableGroupCredits = userCredits?.available_group_credits || 0;
                               const availablePrivateCredits = userCredits?.available_private_credits || 0;
                               
@@ -1326,24 +1373,39 @@ export default function RegistrationEditModal({
                                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
                                     סוג קרדיט *
                                   </label>
-                                  <select
-                                    required
-                                    value={formData.credit_type}
-                                    onChange={(e) => handleInputChange('credit_type', e.target.value)}
-                                    className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
-                                  >
-                                    <option value="">בחרי סוג קרדיט</option>
-                                    {hasGroupCredits && (
-                                      <option value="group">
-                                        קרדיט קבוצתי ({availableGroupCredits} זמינים)
-                                      </option>
-                                    )}
-                                    {hasPrivateCredits && (
-                                      <option value="private">
-                                        קרדיט פרטי ({availablePrivateCredits} זמינים)
-                                      </option>
-                                    )}
-                                  </select>
+                                  {(() => {
+                                    const selectable = [
+                                      hasGroupCredits ? { value: 'group', label: `קרדיט קבוצתי (${availableGroupCredits} זמינים)` } : null,
+                                      hasPrivateCredits ? { value: 'private', label: `קרדיט פרטי (${availablePrivateCredits} זמינים)` } : null
+                                    ].filter(Boolean) as Array<{value:string;label:string}>;
+                                    if (selectable.length === 1 && formData.used_credit) {
+                                      const only = selectable[0];
+                                      return (
+                                        <input
+                                          type="text"
+                                          value={only.label}
+                                          readOnly
+                                          className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl bg-gray-50 text-gray-700"
+                                        />
+                                      );
+                                    }
+                                    return (
+                                      <select
+                                        required
+                                        value={formData.credit_type}
+                                        onChange={(e) => handleInputChange('credit_type', e.target.value)}
+                                        className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
+                                      >
+                                        <option value="">בחרי סוג קרדיט</option>
+                                        {hasGroupCredits && (
+                                          <option value="group">קרדיט קבוצתי ({availableGroupCredits} זמינים)</option>
+                                        )}
+                                        {hasPrivateCredits && (
+                                          <option value="private">קרדיט פרטי ({availablePrivateCredits} זמינים)</option>
+                                        )}
+                                      </select>
+                                    );
+                                  })()}
                                   {errors.credit_type && (
                                     <p className="text-red-500 text-xs mt-2">{errors.credit_type}</p>
                                   )}

@@ -3,7 +3,7 @@ import React from 'react';
 interface StatusChangeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (options?: { returnCredit?: boolean; deductCredit?: boolean }) => void;
   currentStatus: string;
   newStatus: string;
   registrationInfo: {
@@ -41,8 +41,11 @@ export default function StatusChangeModal({
   const currentStatusDisplay = getStatusDisplay(currentStatus);
   const newStatusDisplay = getStatusDisplay(newStatus);
 
+  const [returnCredit, setReturnCredit] = React.useState(true);
+  const [deductCredit, setDeductCredit] = React.useState(true);
+
   const handleConfirm = () => {
-    onConfirm();
+    onConfirm({ returnCredit, deductCredit });
   };
 
   return (
@@ -142,6 +145,48 @@ export default function StatusChangeModal({
               </div>
             </div>
           </div>
+
+          {/* Credit Return Toggle - only if moving to cancelled */}
+          {newStatus === 'cancelled' && (
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 lg:p-3 xl:p-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  id="returnCreditToggle"
+                  type="checkbox"
+                  checked={returnCredit}
+                  onChange={(e) => setReturnCredit(e.target.checked)}
+                  className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
+                />
+                <label htmlFor="returnCreditToggle" className="text-xs sm:text-sm text-amber-800 font-medium">
+                  החזר קרדיט למשתמש על ביטול הרשמה זו
+                </label>
+              </div>
+              <p className="text-[11px] sm:text-xs text-amber-700 mt-1">
+                אם מסומן, יוחזר קרדיט מתאים (קבוצתי/פרטי) בהתאם להרשמה. אם לא מסומן, הקרדיט לא יוחזר.
+              </p>
+            </div>
+          )}
+
+          {/* Credit Deduct Toggle - only if moving to active */}
+          {newStatus === 'active' && (
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-4 lg:p-3 xl:p-2 mb-3 sm:mb-4">
+              <div className="flex items-center gap-2">
+                <input
+                  id="deductCreditToggle"
+                  type="checkbox"
+                  checked={deductCredit}
+                  onChange={(e) => setDeductCredit(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 border-emerald-300 rounded focus:ring-emerald-500"
+                />
+                <label htmlFor="deductCreditToggle" className="text-xs sm:text-sm text-emerald-800 font-medium">
+                  ניכוי קרדיט למשתמש על הפעלה מחדש של ההרשמה
+                </label>
+              </div>
+              <p className="text-[11px] sm:text-xs text-emerald-700 mt-1">
+                אם מסומן, ינוכה קרדיט מתאים (קבוצתי/פרטי) בהתאם להרשמה. אם לא מסומן, לא ינוכה קרדיט.
+              </p>
+            </div>
+          )}
           
           {/* Buttons */}
           <div className="space-y-1.5 sm:space-y-2 md:space-y-2.5 lg:space-y-1.5 xl:space-y-1">

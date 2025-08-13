@@ -219,7 +219,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     setStatusChangeModalOpen(true);
   };
 
-  const handleStatusChange = async () => {
+  const handleStatusChange = async (options?: { returnCredit?: boolean; deductCredit?: boolean }) => {
     if (!statusChangeRegistration || !session) return;
     
     setIsChangingStatus(true);
@@ -233,7 +233,8 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         },
         body: JSON.stringify({ 
           status: newStatus,
-          returnCredit: statusChangeRegistration.used_credit && statusChangeRegistration.credit_type
+          returnCredit: options?.returnCredit,
+          deductCredit: options?.deductCredit
         })
       });
 

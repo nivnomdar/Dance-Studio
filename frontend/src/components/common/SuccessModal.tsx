@@ -131,27 +131,37 @@ export default function SuccessModal({
                 </span>
               </div>
               
-              {/* Credit Information - Only show if credits were used */}
-              {formData.used_credit && formData.credit_type && (
-                <>
-                  {/* Show subscription credit addition for subscription classes */}
-                  {classes.find(c => c.id === formData.class_id)?.category === 'subscription' && (
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
-                      <span className="font-medium text-right sm:text-left">הוספת מנוי:</span>
-                      <span className="font-bold text-blue-600 text-right sm:text-left">
-                        ✓ נוספו {formData.credit_type === 'group' ? classes.find(c => c.id === formData.class_id)?.group_credits : classes.find(c => c.id === formData.class_id)?.private_credits} קרדיטים למשתמש
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
-                    <span className="font-medium text-right sm:text-left">סטטוס קרדיט:</span>
-                    <span className="font-bold text-green-600 text-right sm:text-left">
-                      ✓ הורד קרדיט אחד למשתמש
-                    </span>
-                  </div>
-                </>
-              )}
+              {(() => {
+                const selectedClass = classes.find(c => c.id === formData.class_id);
+                const isSubscription = selectedClass?.category === 'subscription';
+                const isPrivate = selectedClass?.category === 'private';
+                const isPurchase = !formData.used_credit && Number(formData.purchase_price) > 0;
+                const didDeduct = formData.used_credit || (isPurchase && (isSubscription || isPrivate));
+
+                return (
+                  <>
+                    {/* Show credit addition only for purchase flow */}
+                    {isPurchase && (isSubscription || isPrivate) && (
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                        <span className="font-medium text-right sm:text-left">הוספת מנוי:</span>
+                        <span className="font-bold text-blue-600 text-right sm:text-left">
+                          ✓ נוספו {(isSubscription ? selectedClass?.group_credits : selectedClass?.private_credits) || 0} קרדיטים למשתמש
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Show deduction when a credit was consumed */}
+                    {didDeduct && (
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                        <span className="font-medium text-right sm:text-left">סטטוס קרדיט:</span>
+                        <span className="font-bold text-green-600 text-right sm:text-left">
+                          ✓ הורד קרדיט אחד למשתמש
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -170,9 +180,17 @@ export default function SuccessModal({
                 <ul className="text-xs sm:text-xs md:text-xs lg:text-xs text-blue-800 space-y-0.5">
                   <li>• ההרשמה נשמרה במערכת</li>
                   <li>• אפשר לערוך או לבטל מהפאנל הניהול</li>
-                  {formData.used_credit && formData.credit_type && classes.find(c => c.id === formData.class_id)?.category === 'subscription' && (
-                    <li>• המשתמש קיבל {(formData.credit_type === 'group' ? classes.find(c => c.id === formData.class_id)?.group_credits : classes.find(c => c.id === formData.class_id)?.private_credits) - 1} קרדיטים זמינים לשימוש עתידי</li>
-                  )}
+                  {(() => {
+                    const selectedClass = classes.find(c => c.id === formData.class_id);
+                    const isSubscription = selectedClass?.category === 'subscription';
+                    const isPrivate = selectedClass?.category === 'private';
+                    const isPurchase = !formData.used_credit && Number(formData.purchase_price) > 0;
+                    if (isPurchase && (isSubscription || isPrivate)) {
+                      const added = ((isSubscription ? selectedClass?.group_credits : selectedClass?.private_credits) || 0) - 1;
+                      return <li>• המשתמש קיבל {added} קרדיטים זמינים לשימוש עתידי</li>;
+                    }
+                    return null;
+                  })()}
                 </ul>
               </div>
             </div>

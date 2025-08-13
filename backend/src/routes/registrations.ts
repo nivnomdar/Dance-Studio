@@ -925,7 +925,7 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { status, returnCredit } = req.body; // Add returnCredit parameter
+    const { status, returnCredit, deductCredit: deductCreditOption } = req.body; // Admin choices
 
     // Check if user is admin
     const { data: profile, error: profileError } = await supabase
@@ -1023,6 +1023,35 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
           } else {
             logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${creditGroupToReturn}`);
           }
+        }
+      }
+    }
+
+    // If admin re-activates a previously cancelled registration, deduct the credit again (if requested)
+    if (registrationData.status === 'cancelled' && status === 'active') {
+      let creditGroupToDeduct: 'group' | 'private' | null = null;
+      if (registrationData.used_credit && registrationData.credit_type) {
+        creditGroupToDeduct = registrationData.credit_type as 'group' | 'private';
+      } else if (
+        !registrationData.used_credit &&
+        typeof registrationData.purchase_price === 'number' &&
+        registrationData.purchase_price > 0
+      ) {
+        if (registrationData.class.category === 'subscription') creditGroupToDeduct = 'group';
+        if (registrationData.class.category === 'private') creditGroupToDeduct = 'private';
+      }
+
+      if (creditGroupToDeduct) {
+        if (deductCreditOption === false) {
+          logger.info('Admin chose not to deduct credit on re-activation. Skipping deduction.');
+        } else {
+        logger.info(`Re-activation detected, attempting to deduct credit for user ${registrationData.user_id}, credit_type: ${creditGroupToDeduct}`);
+        const deducted = await deductCredit(registrationData.user_id, creditGroupToDeduct);
+        if (!deducted) {
+          logger.warn(`Failed to deduct credit on re-activation for user ${registrationData.user_id}, credit_type: ${creditGroupToDeduct}`);
+        } else {
+          logger.info(`Credit deducted successfully on re-activation for user ${registrationData.user_id}, credit_type: ${creditGroupToDeduct}`);
+        }
         }
       }
     }
