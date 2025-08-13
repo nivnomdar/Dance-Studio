@@ -90,20 +90,23 @@ export const addCredit = async (userId: string, creditType: string): Promise<boo
   try {
     logger.info(`Attempting to add credit for user ${userId}, credit_type: ${creditType}`);
     
-    // Check if user already has credits for this group
-    const { data: existingCredits, error: checkError } = await supabase
+    // Try to reuse an existing row for this user and credit_group
+    const { data: existingList, error: fetchError } = await supabase
       .from('subscription_credits')
-      .select('*')
+      .select('id, remaining_credits')
       .eq('user_id', userId)
       .eq('credit_group', creditType)
-      .single();
+      .order('created_at', { ascending: true })
+      .limit(1);
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      logger.error('Error checking existing credits:', checkError);
+    if (fetchError) {
+      logger.error('Error fetching existing credits:', fetchError);
     }
 
+    const existingCredits = existingList && existingList.length > 0 ? existingList[0] : null;
+
     if (existingCredits) {
-      // Update existing credits
+      // Update existing row by incrementing remaining_credits
       const { error: updateError } = await supabase
         .from('subscription_credits')
         .update({ 
@@ -227,25 +230,62 @@ export const addCreditsToUser = async (
       throw new Error('credit_group must be either "group" or "private"');
     }
 
-    // Add credits to user
-    const { data: creditData, error } = await supabase
+    // Try to find an existing row for this user and credit group
+    const { data: existingList, error: fetchError } = await supabase
       .from('subscription_credits')
-      .insert([{
-        user_id: userId,
-        credit_group: creditGroup,
-        remaining_credits: remainingCredits,
-        expires_at: expiresAt || null
-      }])
-      .select()
-      .single();
+      .select('id, remaining_credits')
+      .eq('user_id', userId)
+      .eq('credit_group', creditGroup)
+      .order('created_at', { ascending: true })
+      .limit(1);
 
-    if (error) {
-      logger.error('Error adding credits to user:', error);
+    if (fetchError) {
+      logger.error('Error fetching existing credits for addCreditsToUser:', fetchError);
       throw new Error('Failed to add credits to user');
     }
 
-    logger.info(`Credits added successfully for user ${userId}, credit_group: ${creditGroup}, amount: ${remainingCredits}, data: ${JSON.stringify(creditData)}`);
-    return creditData;
+    const existingCredits = existingList && existingList.length > 0 ? existingList[0] : null;
+
+    if (existingCredits) {
+      // Update existing record by adding the amount
+      const { data: updated, error: updateError } = await supabase
+        .from('subscription_credits')
+        .update({
+          remaining_credits: existingCredits.remaining_credits + remainingCredits,
+          expires_at: expiresAt || null
+        })
+        .eq('id', existingCredits.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        logger.error('Error updating existing credits in addCreditsToUser:', updateError);
+        throw new Error('Failed to add credits to user');
+      }
+
+      logger.info(`Credits incremented for user ${userId}, credit_group: ${creditGroup}, new total: ${updated?.remaining_credits}`);
+      return updated;
+    } else {
+      // Insert a new record if none exists
+      const { data: creditData, error } = await supabase
+        .from('subscription_credits')
+        .insert([{
+          user_id: userId,
+          credit_group: creditGroup,
+          remaining_credits: remainingCredits,
+          expires_at: expiresAt || null
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error adding credits to user:', error);
+        throw new Error('Failed to add credits to user');
+      }
+
+      logger.info(`Credits added successfully for user ${userId}, credit_group: ${creditGroup}, amount: ${remainingCredits}, data: ${JSON.stringify(creditData)}`);
+      return creditData;
+    }
   } catch (error) {
     logger.error('Error in addCreditsToUser:', error);
     throw error;

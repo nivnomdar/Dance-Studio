@@ -16,6 +16,12 @@ import {
   getCreditStatistics, 
   getUserCreditHistory 
 } from '../utils/creditManager';
+import { 
+  validateClassRegistration, 
+  getClassCreditInfo,
+  getAvailableCreditTypes 
+} from '../utils/classCreditValidator';
+
 
 const router = Router();
 
@@ -219,6 +225,30 @@ router.get('/user/:userId/credits/history', auth, async (req: Request, res: Resp
     next(error);
   }
 });
+
+// Get available credit types for a class
+router.get('/class/:classId/credit-types', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { classId } = req.params;
+    
+    // Get class credit information
+    const classInfo = await getClassCreditInfo(classId);
+    
+    // Get available credit types
+    const availableTypes = getAvailableCreditTypes(classInfo);
+    
+    res.json({
+      class_id: classId,
+      class_type: classInfo.class_type,
+      category: classInfo.category,
+      available_credit_types: availableTypes
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 
 // Get all registrations with class and user details (admin only)
 router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
@@ -483,26 +513,33 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       user_id_value: user_id
     });
 
-    // Check if class exists and is active
-    console.log('Checking if class exists and is active...');
-    logger.info('Checking if class exists and is active...');
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('id', class_id)
-      .eq('is_active', true)
-      .single();
-
-    console.log('Class check result:', { classData, classError });
-
-    if (classError || !classData) {
-      console.log('Class not found or inactive:', { class_id, classError });
-      logger.error('Class not found or inactive:', { class_id, classError });
-      throw new AppError('Class not found or inactive', 404);
+    // Check if class exists and get credit information
+    console.log('Checking if class exists and getting credit information...');
+    logger.info('Checking if class exists and getting credit information...');
+    
+    let classData: any;
+    try {
+      const classResult = await supabase
+        .from('classes')
+        .select('*')
+        .eq('id', class_id)
+        .eq('is_active', true)
+        .single();
+      
+      if (classResult.error || !classResult.data) {
+        console.log('Class not found or inactive:', { class_id, error: classResult.error });
+        logger.error('Class not found or inactive:', { class_id, error: classResult.error });
+        throw new AppError('Class not found or inactive', 404);
+      }
+      
+      classData = classResult.data;
+      console.log('Class found:', classData);
+      logger.info('Class found:', classData);
+    } catch (error) {
+      console.log('Error fetching class:', error);
+      logger.error('Error fetching class:', error);
+      throw new AppError('Failed to fetch class information', 500);
     }
-
-    console.log('Class found:', classData);
-    logger.info('Class found:', classData);
 
     // Check if user already has an active registration for this class on the same date and time
     // Only check if user_id is provided
@@ -575,6 +612,54 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       }
     } else if (classData.slug === 'trial-class' && !user_id) {
       logger.info('Trial class registration attempt without user_id, skipping trial class check');
+    }
+
+    // Validate credit usage with new logic
+    if (used_credit || credit_type) {
+      console.log('Validating credit usage with new logic...');
+      logger.info('Validating credit usage with new logic...');
+      
+      try {
+        // If it's a subscription class and this request includes a purchase_price > 0,
+        // allow registration even if the user currently has 0 credits (credits will be added below).
+        const shouldCheckBalance = !(
+          classData.category === 'subscription' &&
+          typeof purchase_price === 'number' &&
+          purchase_price > 0
+        );
+
+        const creditValidation = await validateClassRegistration(
+          class_id,
+          used_credit || false,
+          credit_type,
+          shouldCheckBalance ? user_id : undefined
+        );
+        
+        if (!creditValidation.isValid) {
+          // If we're in purchase flow and the only failure is lack of balance, allow
+          if (
+            !shouldCheckBalance &&
+            creditValidation.errorMessage &&
+            creditValidation.errorMessage.includes('אין מספיק קרדיטים')
+          ) {
+            console.log('Proceeding despite low balance due to purchase flow');
+          } else {
+            console.log('Credit validation failed:', creditValidation.errorMessage);
+            logger.error('Credit validation failed:', creditValidation.errorMessage);
+            throw new AppError(creditValidation.errorMessage || 'Credit validation failed', 400);
+          }
+        }
+        
+        console.log('Credit validation passed:', creditValidation);
+        logger.info('Credit validation passed:', creditValidation);
+      } catch (error) {
+        if (error instanceof AppError) {
+          throw error;
+        }
+        console.log('Error during credit validation:', error);
+        logger.error('Error during credit validation:', error);
+        throw new AppError('Failed to validate credit usage', 500);
+      }
     }
 
     // Find or create session_class_id if we have session_id and class_id
@@ -789,6 +874,45 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       }
     } else {
       logger.info(`No credits used - used_credit: ${used_credit}, credit_type: ${credit_type}`);
+      // Purchase flow: add credits for subscription/private class and deduct one for this registration
+      try {
+        const isSubscriptionClass = classData.category === 'subscription';
+        const isPrivateClass = classData.category === 'private';
+        const isPurchase = typeof purchase_price === 'number' && purchase_price > 0;
+
+        if (isPurchase && (isSubscriptionClass || isPrivateClass)) {
+          // Determine credit group and amount by class configuration
+          let purchaseCreditGroup: 'group' | 'private' | null = null;
+          let creditsToAdd = 0;
+
+          if (isSubscriptionClass) {
+            // subscription → group credits
+            purchaseCreditGroup = 'group';
+            creditsToAdd = Number(classData.group_credits) || 0;
+          } else if (isPrivateClass) {
+            // private → private credits
+            purchaseCreditGroup = 'private';
+            creditsToAdd = Number(classData.private_credits) || 0;
+          }
+
+          if (purchaseCreditGroup && creditsToAdd > 0) {
+            logger.info(`Purchase flow detected. Adding ${creditsToAdd} ${purchaseCreditGroup} credits to user ${user_id}`);
+            await addCreditsToUser(user_id, purchaseCreditGroup, creditsToAdd);
+            // Deduct one credit to account for the current registration
+            const deducted = await deductCredit(user_id, purchaseCreditGroup);
+            if (!deducted) {
+              logger.warn(`Failed to deduct 1 ${purchaseCreditGroup} credit after purchase for user ${user_id}`);
+            } else {
+              logger.info(`Deducted 1 ${purchaseCreditGroup} credit after purchase for user ${user_id}`);
+            }
+          } else {
+            logger.info('Purchase flow: No credits defined to add for this class configuration');
+          }
+        }
+      } catch (creditPurchaseError) {
+        logger.error('Error handling purchase-flow credits:', creditPurchaseError);
+        // Do not fail the registration
+      }
     }
 
     res.status(201).json(data);
@@ -873,23 +997,32 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
       }
     }
 
-    // If this is a subscription class being cancelled and was paid with credit, handle credit return
-    if (registrationData.used_credit && registrationData.credit_type && status === 'cancelled') {
-      logger.info(`Subscription class cancellation with credit detected for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}, returnCredit: ${returnCredit}`);
-      
-      // If returnCredit is explicitly set to false, don't return the credit
-      if (returnCredit === false) {
-        logger.info(`Admin chose not to return credit for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
-      } else {
-        // Return credit by default or if returnCredit is true
-        const creditAdded = await addCredit(registrationData.user_id, registrationData.credit_type);
-        
-        if (!creditAdded) {
-          logger.warn(`Failed to add credit for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}. Status update will proceed without credit return.`);
-          // Don't fail the status update, just log the warning
-          // This ensures registration can still succeed even if credit handling fails
+    // If this registration consumed a credit (either used_credit=true or purchase flow), return it on cancel
+    if (status === 'cancelled') {
+      let creditGroupToReturn: 'group' | 'private' | null = null;
+
+      if (registrationData.used_credit && registrationData.credit_type) {
+        creditGroupToReturn = registrationData.credit_type as 'group' | 'private';
+      } else if (
+        !registrationData.used_credit &&
+        typeof registrationData.purchase_price === 'number' &&
+        registrationData.purchase_price > 0
+      ) {
+        if (registrationData.class.category === 'subscription') creditGroupToReturn = 'group';
+        if (registrationData.class.category === 'private') creditGroupToReturn = 'private';
+      }
+
+      if (creditGroupToReturn) {
+        logger.info(`Cancellation credit return path detected for user ${registrationData.user_id}, credit_type: ${creditGroupToReturn}, returnCredit: ${returnCredit}`);
+        if (returnCredit === false) {
+          logger.info('Admin chose not to return credit. Skipping credit return.');
         } else {
-          logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${registrationData.credit_type}`);
+          const creditAdded = await addCredit(registrationData.user_id, creditGroupToReturn);
+          if (!creditAdded) {
+            logger.warn(`Failed to add credit for user ${registrationData.user_id}, credit_type: ${creditGroupToReturn}.`);
+          } else {
+            logger.info(`Credit returned successfully for user ${registrationData.user_id}, credit_type: ${creditGroupToReturn}`);
+          }
         }
       }
     }

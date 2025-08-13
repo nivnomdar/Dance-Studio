@@ -42,4 +42,32 @@ export interface UpdateProfileRequest {
   postal_code?: string;
   terms_accepted?: boolean;
   marketing_consent?: boolean;
+}
+
+export interface Class {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  long_description?: string;
+  price: number;
+  duration?: number;
+  level?: string;
+  age_group?: string;
+  max_participants?: number;
+  location?: string;
+  included?: string;
+  image_url?: string;
+  video_url?: string;
+  category?: string;
+  color_scheme?: string;
+  registration_type?: 'standard' | 'appointment_only';
+  class_type?: 'group' | 'private' | 'both'; // סוג הקרדיטים שהשיעור מציע
+  group_credits?: number; // כמות הקרדיטים הקבוצתיים שהמשתמש מקבל
+  private_credits?: number; // כמות הקרדיטים האישיים שהמשתמש מקבל
+  is_active: boolean;
+  start_time?: string;
+  end_time?: string;
+  created_at: string;
+  updated_at: string;
 } 

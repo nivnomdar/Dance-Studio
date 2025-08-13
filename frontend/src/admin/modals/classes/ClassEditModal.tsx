@@ -26,6 +26,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     category: classData.category || '',
     color_scheme: classData.color_scheme || 'pink',
     registration_type: classData.registration_type || 'standard',
+    class_type: classData.class_type || 'group',
     group_credits: classData.group_credits || 0,
     private_credits: classData.private_credits || 0,
     is_active: classData.is_active !== undefined ? classData.is_active : true,
@@ -49,6 +50,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
       category: classData.category || '',
       color_scheme: classData.color_scheme || 'pink',
       registration_type: classData.registration_type || 'standard',
+      class_type: classData.class_type || 'group',
       group_credits: classData.group_credits || 0,
       private_credits: classData.private_credits || 0,
       is_active: classData.is_active !== undefined ? classData.is_active : true,
@@ -450,6 +452,49 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                     placeholder="18+"
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
                   />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                    סוג קרדיטים
+                  </label>
+                  <div className="space-y-2">
+                    <select
+                      value={formData.class_type}
+                      onChange={(e) => setFormData({ ...formData, class_type: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
+                    >
+                      <option value="group">קבוצתי</option>
+                      <option value="private">פרטי</option>
+                      <option value="both">שניהם</option>
+                    </select>
+                    <p className="text-xs text-gray-600">
+                      סוג הקרדיטים שהשיעור מציע: קבוצתי, פרטי, או שניהם
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                    קטגוריה
+                  </label>
+                  <div className="space-y-2">
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
+                    >
+                      <option value="">בחרי קטגוריה</option>
+                      <option value="trial">שיעור ניסיון</option>
+                      <option value="single">שיעור בודד</option>
+                      <option value="private">שיעור פרטי</option>
+                      <option value="subscription">מנוי</option>
+                    </select>
+                    <p className="text-xs text-gray-600">
+                      קטגוריית השיעור (משפיע על סוג הקרדיטים בשיעורים מסוג 'both')
+                    </p>
+                  </div>
                 </div>
               </div>
               

@@ -22,7 +22,7 @@ const ALLOWED_FIELDS = [
   'name', 'slug', 'description', 'long_description', 'price', 'duration', 
           'level', 'age_group', 'location', 'included',
   'image_url', 'video_url', 'category', 'color_scheme', 'registration_type',
-  'group_credits', 'private_credits', 'is_active'
+  'class_type', 'group_credits', 'private_credits', 'is_active'
 ];
 
 export default function ClassesTab({ data, session, fetchClasses }: ClassesTabProps) {
@@ -58,6 +58,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         category: cls.category,
         color_scheme: cls.color_scheme,
         registration_type: cls.registration_type,
+        class_type: cls.class_type,
         group_credits: cls.group_credits,
         private_credits: cls.private_credits,
         is_active: cls.is_active,
@@ -222,6 +223,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
               <tr>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-2/5">שם השיעור</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">קטגוריה</th>
+                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סוג קרדיט</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">מחיר</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">הכנסות</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
@@ -255,6 +257,23 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                           </span>
                         );
                       })()}
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                    <div className="flex justify-center">
+                      <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-medium ${
+                        cls.class_type === 'group' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                        cls.class_type === 'private' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                        cls.class_type === 'both' ? 'bg-green-100 text-green-800 border border-green-200' :
+                        'bg-gray-100 text-gray-800 border border-gray-200'
+                      } shadow-sm hover:shadow-md transition-all duration-200 cursor-default min-w-[60px] sm:min-w-[80px] justify-center`}>
+                        <span className="truncate" title={cls.class_type || 'לא מוגדר'}>
+                          {cls.class_type === 'group' ? 'קבוצתי' :
+                           cls.class_type === 'private' ? 'פרטי' :
+                           cls.class_type === 'both' ? 'שניהם' :
+                           'לא מוגדר'}
+                        </span>
+                      </span>
                     </div>
                   </td>
                   <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-xs sm:text-sm">₪{cls.price}</td>

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 
 export const validateClass = (req: Request, res: Response, next: NextFunction) => {
-  const { name, description, price, slug } = req.body;
+  const { name, description, price, slug, class_type } = req.body;
   
   if (!name || !description || !price || !slug) {
     throw new AppError('Missing required fields: name, description, price, and slug are required', 400);
@@ -11,6 +11,11 @@ export const validateClass = (req: Request, res: Response, next: NextFunction) =
   // Validate price is a positive number
   if (typeof price !== 'number' || price <= 0) {
     throw new AppError('Price must be a positive number', 400);
+  }
+  
+  // Validate class_type if provided
+  if (class_type && !['group', 'private', 'both'].includes(class_type)) {
+    throw new AppError('class_type must be one of: group, private, or both', 400);
   }
   
   next();

@@ -2,10 +2,25 @@ import { Class } from '../types/class';
 import { CreditGroup } from '../types/subscription';
 
 /**
- * Determines which credit group a class uses based on its properties
+ * Determines which credit group a class uses based on its class_type
  */
 export const getCreditGroupForClass = (classData: Class): CreditGroup => {
-  // If the class has specific credit types defined, use them
+  // If the class has a specific class_type defined, use it
+  if (classData.class_type) {
+    switch (classData.class_type) {
+      case 'group':
+        return 'group';
+      case 'private':
+        return 'private';
+      case 'both':
+        // For 'both' type, determine by category per spec
+        return classData.category === 'private' ? 'private' : 'group';
+      default:
+        return 'group';
+    }
+  }
+  
+  // Fallback to legacy logic based on credit amounts
   if (classData.group_credits && classData.group_credits > 0) {
     return 'group';
   }
@@ -25,6 +40,43 @@ export const getCreditGroupForClass = (classData: Class): CreditGroup => {
     default:
       return 'group';
   }
+};
+
+/**
+ * Gets all available credit types for a class based on its class_type
+ */
+export const getAvailableCreditTypesForClass = (classData: Class): CreditGroup[] => {
+  if (classData.class_type === 'both') {
+    // Per spec: choose by category, not both at the same time
+    return classData.category === 'private' ? ['private'] : ['group'];
+  }
+  
+  if (classData.class_type === 'group') {
+    return ['group'];
+  }
+  
+  if (classData.class_type === 'private') {
+    return ['private'];
+  }
+  
+  // Fallback to legacy logic
+  const types: CreditGroup[] = [];
+  if (classData.group_credits && classData.group_credits > 0) {
+    types.push('group');
+  }
+  if (classData.private_credits && classData.private_credits > 0) {
+    types.push('private');
+  }
+  
+  return types.length > 0 ? types : ['group'];
+};
+
+/**
+ * Checks if a specific credit type is valid for a class
+ */
+export const isCreditTypeValidForClass = (classData: Class, creditType: CreditGroup): boolean => {
+  const availableTypes = getAvailableCreditTypesForClass(classData);
+  return availableTypes.includes(creditType);
 };
 
 /**
@@ -76,7 +128,10 @@ export const formatCreditMessage = (
     return 'השיעור ינוכה מיתרת השיעורים שלך';
   }
   
-  return `תשלמי ${classData.price} ש"ח ותקבלי מנוי ${creditGroup === 'group' ? 'קבוצתי' : 'פרטי'} עם ${creditAmount} שיעורים (כולל השיעור הנוכחי)`;
+  const classTypeLabel = classData.class_type === 'both' ? 'קבוצתי או פרטי' : 
+                        classData.class_type === 'group' ? 'קבוצתי' : 'פרטי';
+  
+  return `תשלמי ${classData.price} ש"ח ותקבלי מנוי ${classTypeLabel} עם ${creditAmount} שיעורים (כולל השיעור הנוכחי)`;
 };
 
 /**
@@ -92,5 +147,8 @@ export const formatSuccessMessage = (
     return 'שיעור אחד יורד מיתרת השיעורים שלך.';
   }
   
-  return `שילמת ${classData.price} ש"ח על השיעור וקיבלת מנוי ${creditGroup === 'group' ? 'קבוצתי' : 'פרטי'} חדש עם ${creditAmount} שיעורים (כולל השיעור הנוכחי).`;
+  const classTypeLabel = classData.class_type === 'both' ? 'קבוצתי או פרטי' : 
+                        classData.class_type === 'group' ? 'קבוצתי' : 'פרטי';
+  
+  return `שילמת ${classData.price} ש"ח על השיעור וקיבלת מנוי ${classTypeLabel} חדש עם ${creditAmount} שיעורים (כולל השיעור הנוכחי).`;
 }; 

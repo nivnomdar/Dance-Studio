@@ -150,8 +150,9 @@ create table public.classes (
   video_url text,
   category text,
   color_scheme text,
-  group_credits integer default 0,
-  private_credits integer default 0,
+  class_type text default 'group', -- סוג הקרדיטים שהשיעור מציע: group, private, או both
+  group_credits integer default 0, -- כמות הקרדיטים הקבוצתיים שהמשתמש מקבל
+  private_credits integer default 0, -- כמות הקרדיטים האישיים שהמשתמש מקבל
   registration_type text default 'standard',
   is_active boolean default true,
   start_time time,

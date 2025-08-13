@@ -159,19 +159,20 @@ export interface Class {
   duration?: number;
   level?: string;
   age_group?: string;
+  max_participants?: number;
   location?: string;
   included?: string;
   image_url?: string;
   video_url?: string;
   category?: string;
-  registration_type?: 'standard' | 'appointment_only';
   color_scheme?: string;
-  group_credits?: number;
-  private_credits?: number;
+  registration_type?: 'standard' | 'appointment_only';
+  class_type?: 'group' | 'private' | 'both'; // סוג הקרדיטים שהשיעור מציע
+  group_credits?: number; // כמות הקרדיטים הקבוצתיים שהמשתמש מקבל
+  private_credits?: number; // כמות הקרדיטים האישיים שהמשתמש מקבל
   is_active: boolean;
   start_time?: string;
   end_time?: string;
-  available_dates?: (string | number)[]; // תאריכים זמינים או ימי שבוע
   created_at: string;
   updated_at: string;
 }

@@ -4,6 +4,8 @@ export type AvailableColorScheme = 'pink' | 'purple' | 'emerald' | 'blue' | 'ora
 
 export type RegistrationType = 'standard' | 'appointment_only';
 
+export type ClassType = 'group' | 'private' | 'both';
+
 export interface Class {
   id: string;
   name: string;
@@ -22,8 +24,9 @@ export interface Class {
   category?: string;
   color_scheme?: AvailableColorScheme; // פשוט שם הצבע
   registration_type?: RegistrationType; // סוג ההרשמה: standard או appointment_only
-  group_credits?: number;
-  private_credits?: number;
+  class_type?: ClassType; // סוג הקרדיטים שהשיעור מציע: group, private, או both
+  group_credits?: number; // כמות הקרדיטים הקבוצתיים שהמשתמש מקבל
+  private_credits?: number; // כמות הקרדיטים האישיים שהמשתמש מקבל
   is_active: boolean;
   start_time?: string;
   end_time?: string;
