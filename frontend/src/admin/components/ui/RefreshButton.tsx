@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface RefreshButtonProps {
-  onClick: () => void;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isFetching: boolean;
   className?: string;
 }

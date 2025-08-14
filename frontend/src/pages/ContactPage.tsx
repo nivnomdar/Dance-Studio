@@ -1,7 +1,44 @@
 import { motion } from "framer-motion";
 import { FaWaze } from "react-icons/fa";
+import { useState } from "react";
+import { apiService } from "../lib/api";
+import { ContactSuccessModal } from "../components/common";
 
 function ContactPage() {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", subject: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    setShowSuccess(false);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone?.trim() || undefined,
+        subject: form.subject?.trim() || undefined,
+        message: form.message.trim()
+      };
+      await apiService.contact.submitMessage(payload);
+      setShowSuccess(true);
+      setForm({ name: "", email: "", phone: "", message: "", subject: "" });
+    } catch (err: any) {
+      setError(err?.message || "אירעה שגיאה בשליחת ההודעה");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +55,12 @@ function ContactPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Contact Form */}
           <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
-            <form className="space-y-4 sm:space-y-6">
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="p-3 sm:p-4 rounded-md bg-red-50 text-red-700 text-sm sm:text-base">
+                  {error}
+                </div>
+              )}
               <div>
                 <label htmlFor="name" className="block text-xs sm:text-sm font-medium text-[#2B2B2B] mb-1.5 sm:mb-2">
                   שם מלא
@@ -28,6 +70,8 @@ function ContactPage() {
                   id="name"
                   name="name"
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm"
+                  value={form.name}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -40,6 +84,8 @@ function ContactPage() {
                   id="email"
                   name="email"
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm"
+                  value={form.email}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -52,7 +98,22 @@ function ContactPage() {
                   id="phone"
                   name="phone"
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm"
+                  value={form.phone}
+                  onChange={handleChange}
                   required
+                />
+              </div>
+              <div>
+                <label htmlFor="subject" className="block text-xs sm:text-sm font-medium text-[#2B2B2B] mb-1.5 sm:mb-2">
+                  נושא
+                </label>
+                <input
+                  type="text"
+                  id="subject"
+                  name="subject"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm"
+                  value={form.subject}
+                  onChange={handleChange}
                 />
               </div>
               <div>
@@ -64,14 +125,17 @@ function ContactPage() {
                   name="message"
                   rows={4}
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm resize-none"
+                  value={form.message}
+                  onChange={handleChange}
                   required
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base"
+                disabled={isSubmitting}
+                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                שלח הודעה
+                {isSubmitting ? 'שולח...' : 'שלח הודעה'}
               </button>
             </form>
           </div>
@@ -176,6 +240,7 @@ function ContactPage() {
           </div>
         </div>
       </div>
+      <ContactSuccessModal isOpen={showSuccess} onClose={() => setShowSuccess(false)} />
     </div>
   );
 }

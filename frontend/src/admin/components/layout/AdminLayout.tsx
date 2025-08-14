@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { UserProfile } from '../../types/auth';
+import { useState, useEffect } from 'react';
+import { useAdminData } from '../../contexts';
+import type { UserProfile } from '../../../types/auth';
 
 interface Tab {
   key: string;
@@ -14,6 +15,13 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const { data, fetchContact } = useAdminData();
+  const newMessages = (data?.messages || []).filter((m: any) => m.status === 'new').length;
+
+  // Ensure contact messages are fetched even when not on the contact tab
+  useEffect(() => {
+    fetchContact();
+  }, [fetchContact]);
 
   const ActiveComponent = tabs.find(tab => tab.key === activeTab)?.component || tabs[0].component;
 
@@ -23,7 +31,7 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
         {/* Header Section */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">
-            דשבורד מנהלים
+            דשבורד מנהלת
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-[#4B2E83]/70 max-w-2xl mx-auto">
             ברוכה הבאה לפאנל הניהול של סטודיו אביגיל
@@ -46,7 +54,12 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
                         : 'text-white/80 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {tab.label}
+                    <span className="inline-flex items-center gap-2">
+                      {tab.label}
+                      {tab.key === 'contact' && newMessages > 0 && (
+                        <span className="h-2.5 w-2.5 rounded-full ring-2 ring-white shadow-md bg-green-400" aria-hidden="true" />
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -63,7 +76,12 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
                         : 'text-white/80 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {tab.label}
+                    <span className="inline-flex items-center gap-2">
+                      {tab.label}
+                      {tab.key === 'contact' && newMessages > 0 && (
+                        <span className="h-2.5 w-2.5 rounded-full ring-2 ring-white shadow-md bg-green-400" aria-hidden="true" />
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -73,6 +91,7 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
                 {tabs.map(tab => (
                   <button
                     key={tab.key}
+                    data-tab-key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`px-4 lg:px-6 py-3 rounded-xl font-medium transition-all duration-200 text-base ${
                       activeTab === tab.key 
@@ -80,7 +99,12 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
                         : 'text-white/80 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {tab.label}
+                    <span className="inline-flex items-center gap-2">
+                      {tab.label}
+                      {tab.key === 'contact' && newMessages > 0 && (
+                        <span className="contact-unread-dot h-2.5 w-2.5 rounded-full ring-2 ring-white shadow-md bg-green-400" aria-hidden="true" />
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>

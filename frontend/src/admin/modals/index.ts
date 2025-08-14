@@ -6,3 +6,4 @@ export { default as SessionDetailsModal } from './sessions/SessionDetailsModal';
 export { default as SessionEditModal } from './sessions/SessionEditModal';
 export { default as RegistrationEditModal } from './registrations/RegistrationEditModal';
 export { default as CalendarDetailsModal } from './calender/CalendarDetailsModal';
+export { default as ContactDetailsModal } from './contact/ContactDetailsModal';

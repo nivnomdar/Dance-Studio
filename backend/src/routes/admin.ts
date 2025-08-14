@@ -345,4 +345,56 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
   }
 });
 
+// Get contact messages (admin)
+router.get('/contact/messages', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching contact messages:', error);
+      throw new Error('Failed to fetch contact messages');
+    }
+
+    res.json(data || []);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update contact message status (admin)
+router.put('/contact/messages/:id/status', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body || {};
+    if (!['new', 'read', 'replied'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const updatePayload: any = { status };
+    if (status === 'replied') {
+      updatePayload.replied_by = req.user?.id || null;
+      updatePayload.replied_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .update(updatePayload)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      logger.error('Error updating contact message status:', error);
+      throw new Error('Failed to update contact message');
+    }
+
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

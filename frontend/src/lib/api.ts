@@ -383,6 +383,43 @@ export const apiService = {
     }
   },
 
+  // Contact API
+  contact: {
+    async submitMessage(payload: { name: string; email: string; phone?: string; subject?: string; message: string }): Promise<{ message: string; id: string }>{
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      return fetchWithRetryAndQueue<{ message: string; id: string }>(() =>
+        fetch(`${API_BASE_URL}/contact`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        })
+      );
+    },
+
+    async getMessages(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any[]>(() =>
+        fetch(`${API_BASE_URL}/admin/contact/messages`, { headers })
+      ).catch(error => {
+        console.error('Contact API getMessages error:', error);
+        return [];
+      });
+    },
+
+    async updateStatus(id: string, status: 'new' | 'read' | 'replied'): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() =>
+        fetch(`${API_BASE_URL}/admin/contact/messages/${id}/status`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ status })
+        })
+      );
+    }
+  },
+
   // Sessions API
   sessions: {
     async getBatchCapacity(classId: string, date: string): Promise<any[]> {

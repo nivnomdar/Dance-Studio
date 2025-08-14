@@ -23,7 +23,7 @@ interface AdminDataContextType {
   fetchOverview: () => Promise<void>;
   fetchClasses: (forceRefresh?: boolean) => Promise<void>;
   fetchShop: () => Promise<void>;
-  fetchContact: () => Promise<void>;
+  fetchContact: (forceRefresh?: boolean) => Promise<void>;
   fetchCalendar: () => Promise<void>;
   fetchProfiles: (search?: string) => Promise<any[]>;
   clearCache: () => void;
@@ -72,7 +72,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   const dataRef = useRef(data);
   const lastUserIdRef = useRef<string | null>(null);
   const globalHasInitializedRef = useRef<boolean>(false); // Global flag to prevent multiple initializations
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce timeout
+  // removed unused debounceTimeoutRef to avoid linter warnings
   const fetchFunctionsRef = useRef<{
     fetchOverview: () => Promise<void>;
     fetchClasses: () => Promise<void>;
@@ -129,27 +129,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     return isFresh;
   };
 
-  // Retry logic with exponential backoff
-  const retryWithBackoff = useCallback(async (fetchFunction: () => Promise<any>, maxRetries: number = 3) => {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const result = await fetchFunction();
-        if (attempt > 0) {
-          setError(`הנתונים נטענו בהצלחה לאחר ${attempt + 1} ניסיונות!`);
-          setTimeout(() => setError(null), 3000); // Clear success message after 3 seconds
-        }
-        return result;
-      } catch (error: any) {
-        if (error.message.includes('429') && attempt < maxRetries - 1) {
-          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 1s, 2s, 4s
-          setError(`השרת עמוס, מנסה שוב בעוד ${delay/1000} שניות... (ניסיון ${attempt + 1}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        throw error;
-      }
-    }
-  }, []);
+  // (unused) retryWithBackoff removed to avoid linter warnings
 
   // טעינת נתוני שיעורים
   const fetchClasses = useCallback(async (forceRefresh = false) => {
@@ -213,16 +193,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     }
   }, [session]);
 
-  // Debounced version of fetchClasses
-  const debouncedFetchClasses = useCallback(async () => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-    
-    debounceTimeoutRef.current = setTimeout(async () => {
-      await fetchClasses();
-    }, 300); // 300ms debounce
-  }, [fetchClasses]);
+  // (unused) debouncedFetchClasses removed to avoid linter warnings
 
   // טעינת נתוני חנות
   const fetchShop = useCallback(async () => {
@@ -262,7 +233,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   }, [session]);
 
   // טעינת נתוני צור קשר
-  const fetchContact = useCallback(async () => {
+  const fetchContact = useCallback(async (forceRefresh: boolean = false) => {
     if (!session || isFetchingRef.current) {
       return;
     }
@@ -270,7 +241,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.messages.length > 0 && isDataFresh()) {
+    if (!forceRefresh && dataRef.current.messages.length > 0 && isDataFresh()) {
       return;
     }
 
@@ -280,10 +251,10 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     setError(null);
     
     try {
-      // אין כרגע apiService.contact, נחזיר מערך ריק
+      const messages = await apiService.contact.getMessages();
       setData(prev => ({
         ...prev,
-        messages: [],
+        messages: messages || [],
         lastFetchTime: Date.now()
       }));
       setError(null);

@@ -45,3 +45,4 @@ CREATE INDEX idx_classes_class_type ON classes(class_type);
 
 -- Create composite index for class_type and category
 CREATE INDEX idx_classes_class_type_category ON classes(class_type, category);
+

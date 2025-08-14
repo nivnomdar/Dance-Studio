@@ -4,3 +4,4 @@ export { default as ErrorPage } from './ErrorPage';
 export { default as Modal } from './Modal';
 export { StatusModal } from './StatusModal';
 export { default as StatusChangeModal } from './StatusChangeModal'; 
+export { default as ContactSuccessModal } from './ContactSuccessModal';
