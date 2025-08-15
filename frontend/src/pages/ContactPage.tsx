@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { FaWaze } from "react-icons/fa";
 import { useState } from "react";
 import { apiService } from "../lib/api";
 import { ContactSuccessModal } from "../components/common";
@@ -43,10 +42,10 @@ function ContactPage() {
     <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#EC4899] mb-4 sm:mb-6 font-agrandir-grand">
-            צור קשר
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
+           יצירת קשר
           </h1>
-          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto"></div>
+          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto"></div>
           <p className="mt-4 sm:mt-6 text-sm sm:text-base lg:text-lg text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular px-2">
             אשמח לשמוע ממך! השאירי פרטים ואחזור אליך בהקדם
           </p>

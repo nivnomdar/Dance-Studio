@@ -101,7 +101,7 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-[#EC4899] shadow-lg z-50">
+    <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] shadow-lg z-50">
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
         <div className="flex justify-between items-center h-12 overflow-visible">

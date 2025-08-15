@@ -86,10 +86,10 @@ const ShopPage = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#EC4899] mb-4 sm:mb-6 font-agrandir-grand">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
             חנות
           </h1>
-          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto mb-6 sm:mb-8"></div>
+          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto mb-6 sm:mb-8"></div>
           <p className="text-base sm:text-lg lg:text-xl text-gray-600 px-4">
             מוצרים מקצועיים לריקוד - נעליים, בגדים ואביזרים מותאמים אישית
           </p>

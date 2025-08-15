@@ -48,7 +48,7 @@ const CartPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#EC4899] mb-2 font-agrandir-grand">סל קניות</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4B2E83] mb-2 font-agrandir-grand">סל קניות</h1>
           <p className="text-sm sm:text-base text-gray-600">בדקי את המוצרים שלך והמשיכי לרכישה</p>
         </div>
 

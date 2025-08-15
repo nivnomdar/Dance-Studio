@@ -91,7 +91,7 @@ export default function ContactDetailsModal({ isOpen, onClose, message }: Contac
                   window.dispatchEvent(evt);
                   onClose();
                 }}
-                className={`text-xs px-2 py-1 rounded-full border transition-colors duration-200 ${
+                className={`cursor-pointer text-xs px-2 py-1 rounded-full border transition-colors duration-200 ${
                   (message as any).status === 'new'
                     ? 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
                     : 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
