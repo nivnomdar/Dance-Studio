@@ -312,11 +312,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
         console.log('Response status:', response.status);
         console.log('Response headers:', Object.fromEntries(response.headers.entries()));
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Response error text:', errorText);
-          console.error('Response error status:', response.status);
-        } else {
+        if (response.ok) {
           const responseData = await response.json();
           console.log('Response success data:', responseData);
         }
@@ -352,7 +348,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           // If not JSON, use the raw text
           errorMessage = errorText || errorMessage;
         }
-        
+        // Throw for modal to catch and display inline
         throw new Error(errorMessage);
       }
 
@@ -365,7 +361,8 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
       console.error('Error saving registration:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'שגיאה לא ידועה';
-      alert(`שגיאה: ${errorMessage}`);
+      // Re-throw so the modal can render the error inline near the summary
+      throw new Error(errorMessage);
     } finally {
       setIsSavingRegistration(false);
     }

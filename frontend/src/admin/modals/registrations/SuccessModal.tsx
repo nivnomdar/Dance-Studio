@@ -92,16 +92,32 @@ export default function SuccessModal({
                   {formData.selected_time ? formData.selected_time.split(' עד ')[0] : 'לא נבחרה'}
                 </span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
-                <span className="font-medium text-right sm:text-left">מחיר:</span>
-                <span className="font-bold text-[#EC4899] text-right sm:text-left">{formData.purchase_price} ש"ח</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
-                <span className="font-medium text-right sm:text-left">תשלום:</span>
-                <span className="font-bold text-[#4B2E83] text-right sm:text-left">
-                  {formData.used_credit ? `קרדיט ${formData.credit_type === 'group' ? 'קבוצתי' : 'פרטי'}` : `${formData.purchase_price} ש"ח`}
-                </span>
-              </div>
+              {(() => {
+                const selectedClass = classes.find(c => c.id === formData.class_id);
+                const isSubscription = selectedClass?.category === 'subscription';
+                const isPrivate = selectedClass?.category === 'private';
+                const isPurchase = !formData.used_credit && Number(formData.purchase_price) > 0;
+                return (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                      <span className="font-medium text-right sm:text-left">תשלום:</span>
+                      <span className="font-bold text-[#4B2E83] text-right sm:text-left">
+                        {formData.used_credit 
+                          ? `קרדיט ${formData.credit_type === 'group' ? 'קבוצתי' : 'פרטי'}`
+                          : isPurchase ? `${formData.purchase_price} ש"ח` : '—'}
+                      </span>
+                    </div>
+                    {isPurchase && (
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-0.5 sm:gap-0">
+                        <span className="font-medium text-right sm:text-left">אופן הרכישה:</span>
+                        <span className="font-bold text-[#4B2E83] text-right sm:text-left">
+                          {isSubscription ? 'מנוי חודשי' : isPrivate ? 'שיעור פרטי' : 'תשלום רגיל'}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
               {(() => {
                 const selectedClass = classes.find(c => c.id === formData.class_id);
                 const isSubscription = selectedClass?.category === 'subscription';

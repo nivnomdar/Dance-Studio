@@ -824,54 +824,27 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     
     if (used_credit && credit_type) {
       logger.info(`Registration uses credits - user_id: ${user_id}, credit_type: ${credit_type}`);
-      
-      // Check if this is a subscription class and user has no credits
-      const isSubscriptionClass = classData.category === 'subscription';
+
+      // Ensure user actually has credits before deduction
       const userCredits = await getUserCredits(user_id);
-      const userHasCredits = userCredits.some((credit: any) => 
+      const userHasCredits = userCredits.some((credit: any) =>
         credit.credit_group === credit_type && credit.remaining_credits > 0
       );
-      
-      // If it's a subscription class and user has no credits, add credits based on class configuration
-      if (isSubscriptionClass && !userHasCredits) {
-        // Get the number of credits from the class configuration
-        const creditsToAdd = credit_type === 'group' ? classData.group_credits : classData.private_credits;
-        
-        logger.info(`Subscription class registration for user without credits - adding ${creditsToAdd} credits (${credit_type})`);
-        
-        const creditsAdded = await addCreditsToUser(user_id, credit_type, creditsToAdd);
-        
-        if (creditsAdded) {
-          logger.info(`Successfully added ${creditsToAdd} credits for user ${user_id}, credit_type: ${credit_type}`);
-          
-          // Verify credits were added
-          const creditsAfterAddition = await getUserCredits(user_id);
-          logger.info(`Credits after addition for user ${user_id}:`, creditsAfterAddition);
-        } else {
-          logger.warn(`Failed to add credits for user ${user_id}, credit_type: ${credit_type}`);
-        }
+      if (!userHasCredits) {
+        logger.warn(`User ${user_id} has no available ${credit_type} credits. Cancelling registration.`);
+        // Cancel the just-created registration to keep data consistent
+        await supabase.from('registrations').update({ status: 'cancelled' }).eq('id', data.id);
+        throw new AppError('אין מספיק קרדיטים זמינים לשימוש', 400);
       }
-      
-      // Always deduct one credit for the current registration (after adding credits if needed)
-      logger.info(`Deducting one credit for registration - user_id: ${user_id}, credit_type: ${credit_type}`);
-      
-      // Check credits before deduction
-      const creditsBeforeDeduction = await getUserCredits(user_id);
-      logger.info(`Credits before deduction for user ${user_id}:`, creditsBeforeDeduction);
-      
+
+      // Deduct one credit
       const creditDeducted = await deductCredit(user_id, credit_type);
-      
-      // Check credits after deduction
-      const creditsAfterDeduction = await getUserCredits(user_id);
-      logger.info(`Credits after deduction for user ${user_id}:`, creditsAfterDeduction);
-      
-      if (creditDeducted) {
-        logger.info(`Credit deducted successfully for user ${user_id}, credit_type: ${credit_type}`);
-      } else {
-        logger.warn(`Failed to deduct credit for user ${user_id}, credit_type: ${credit_type}. Registration will proceed without credit deduction.`);
-        // Don't fail the registration, just log the warning
-        // This allows registration to proceed even if credit handling fails
+      if (!creditDeducted) {
+        logger.warn(`Failed to deduct credit for user ${user_id}, credit_type: ${credit_type}. Cancelling registration.`);
+        await supabase.from('registrations').update({ status: 'cancelled' }).eq('id', data.id);
+        throw new AppError('נכשלה הורדת הקרדיט. ההרשמה בוטלה אוטומטית.', 400);
       }
+      logger.info(`Credit deducted successfully for user ${user_id}, credit_type: ${credit_type}`);
     } else {
       logger.info(`No credits used - used_credit: ${used_credit}, credit_type: ${credit_type}`);
       // Purchase flow: add credits for subscription/private class and deduct one for this registration
@@ -897,11 +870,21 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 
           if (purchaseCreditGroup && creditsToAdd > 0) {
             logger.info(`Purchase flow detected. Adding ${creditsToAdd} ${purchaseCreditGroup} credits to user ${user_id}`);
-            await addCreditsToUser(user_id, purchaseCreditGroup, creditsToAdd);
+            const creditRecord = await addCreditsToUser(user_id, purchaseCreditGroup, creditsToAdd);
             // Deduct one credit to account for the current registration
             const deducted = await deductCredit(user_id, purchaseCreditGroup);
             if (!deducted) {
-              logger.warn(`Failed to deduct 1 ${purchaseCreditGroup} credit after purchase for user ${user_id}`);
+              logger.warn(`Failed to deduct 1 ${purchaseCreditGroup} credit after purchase for user ${user_id}. Rolling back addition and cancelling registration.`);
+              // Attempt rollback of the +1 by updating the same record
+              if (creditRecord && creditRecord.id != null && typeof creditRecord.remaining_credits === 'number') {
+                try {
+                  await updateUserCredits(user_id, creditRecord.id, Math.max(0, creditRecord.remaining_credits - 1), creditRecord.expires_at);
+                } catch (rbErr) {
+                  logger.error('Rollback of credit addition failed:', rbErr);
+                }
+              }
+              await supabase.from('registrations').update({ status: 'cancelled' }).eq('id', data.id);
+              throw new AppError('שגיאה בעדכון קרדיטים לאחר רכישה. ההרשמה בוטלה, נסי שוב.', 500);
             } else {
               logger.info(`Deducted 1 ${purchaseCreditGroup} credit after purchase for user ${user_id}`);
             }

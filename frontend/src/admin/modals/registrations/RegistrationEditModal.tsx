@@ -105,7 +105,7 @@ interface RegistrationEditModalProps {
   registrationData: RegistrationData;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedRegistration: RegistrationData, returnCredit?: boolean) => void;
+  onSave: (updatedRegistration: RegistrationData, returnCredit?: boolean) => Promise<void> | void;
   isLoading: boolean;
   isNewRegistration?: boolean;
   classes?: Class[];
@@ -192,6 +192,30 @@ export default function RegistrationEditModal({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [returnCredit, setReturnCredit] = useState<boolean>(true); // Default to return credit
   const [successFormData, setSuccessFormData] = useState<any>(null);
+  const [submitError, setSubmitError] = useState<string>('');
+  // Derived credit availability
+  const selectedClass = classes.find(c => c.id === formData.class_id);
+  const allowedCreditTypes = getAllowedCreditTypesForClass(selectedClass);
+  const availableGroupCredits = userCredits?.available_group_credits || 0;
+  const availablePrivateCredits = userCredits?.available_private_credits || 0;
+  const hasGroup = allowedCreditTypes.includes('group') && availableGroupCredits > 0;
+  const hasPrivate = allowedCreditTypes.includes('private') && availablePrivateCredits > 0;
+  const hasRelevantCredit = hasGroup || hasPrivate;
+
+  // Auto toggle credit usage based on availability
+  useEffect(() => {
+    if (!isNewReg || !formData.class_id) return;
+    if (hasRelevantCredit) {
+      const type = hasGroup ? 'group' : 'private';
+      if (!formData.used_credit || formData.credit_type !== type) {
+        setFormData(prev => ({ ...prev, used_credit: true, credit_type: type }));
+      }
+    } else {
+      if (formData.used_credit || formData.credit_type) {
+        setFormData(prev => ({ ...prev, used_credit: false, credit_type: '' }));
+      }
+    }
+  }, [isNewReg, formData.class_id, hasRelevantCredit, hasGroup]);
 
   // Auto-select class if only one class is available for the chosen session
   useEffect(() => {
@@ -434,26 +458,32 @@ export default function RegistrationEditModal({
   };
 
   // Handle profile search
+  // Debounce wrapper for profile search (300ms)
+  const debounceRef = useRef<number | null>(null);
   const handleProfileSearch = useCallback(async (searchTerm: string) => {
-    try {
-      setIsSearchingProfiles(true);
-      const results = await fetchProfiles(searchTerm);
-      
-      // Only update if results are different
-      setSearchResults(prev => {
-        const currentIds = prev.map(p => p.id).sort();
-        const newIds = results.map(p => p.id).sort();
-        
-        if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
-          return results || [];
-        }
-        return prev;
-      });
-    } catch (error) {
-      setSearchResults([]);
-    } finally {
-      setIsSearchingProfiles(false);
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
     }
+    debounceRef.current = window.setTimeout(async () => {
+      if (!searchTerm || searchTerm.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      try {
+        setIsSearchingProfiles(true);
+        const results = await fetchProfiles(searchTerm.trim());
+        setSearchResults(prev => {
+          const currentIds = prev.map(p => p.id).sort();
+          const newIds = results.map(p => p.id).sort();
+          return JSON.stringify(currentIds) !== JSON.stringify(newIds) ? (results || []) : prev;
+        });
+      } catch (error) {
+        setSearchResults([]);
+      } finally {
+        setIsSearchingProfiles(false);
+      }
+    }, 300);
+    // Require minimal input length to avoid 429
   }, [fetchProfiles]);
 
   const validateForm = () => {
@@ -677,17 +707,29 @@ export default function RegistrationEditModal({
     }
 
     // Send returnCredit parameter if it's an existing registration with credits
-    if (!isNewReg && registrationData.used_credit && registrationData.credit_type) {
-      onSave(cleanedSubmissionData, returnCredit);
-    } else {
-      onSave(cleanedSubmissionData);
+    try {
+      setSubmitError('');
+      if (!isNewReg && registrationData.used_credit && registrationData.credit_type) {
+        await Promise.resolve(onSave(cleanedSubmissionData, returnCredit));
+      } else {
+        await Promise.resolve(onSave(cleanedSubmissionData));
+      }
+
+      // שמור את הנתונים למודל ההצלחה
+      setSuccessFormData(cleanedSubmissionData);
+      // הצג מודל הצלחה רק אחרי שהשמירה הצליחה
+      setShowSuccessModal(true);
+    } catch (err: any) {
+      let msg = err instanceof Error ? err.message : 'אירעה שגיאה בשמירת ההרשמה';
+      // Localize common backend errors
+      if (typeof msg === 'string') {
+        if (msg.includes('Already registered for this class on this date and time')) {
+          msg = 'כבר קיימת הרשמה לשיעור זה בתאריך ובשעה שנבחרו. אנא בחרי תאריך/שעה אחרת.';
+        }
+      }
+      setSubmitError(msg);
+      return;
     }
-    
-    // שמור את הנתונים למודל ההצלחה
-    setSuccessFormData(cleanedSubmissionData);
-    
-    // הצג מודל הצלחה
-    setShowSuccessModal(true);
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -1318,25 +1360,19 @@ export default function RegistrationEditModal({
                                     checked={formData.used_credit}
                                     onChange={(e) => handleInputChange('used_credit', e.target.checked)}
                                     disabled={(() => {
-                                     const selectedClass = classes.find(c => c.id === formData.class_id);
-                                     const supportsCredits = getAllowedCreditTypesForClass(selectedClass).length > 0;
-                                      return !supportsCredits;
+                                      const supportsCredits = allowedCreditTypes.length > 0;
+                                      return !supportsCredits || !hasRelevantCredit;
                                     })()}
                                     className="w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                   />
-                                  <span className={`text-sm ${(() => {
-                                    const selectedClass = classes.find(c => c.id === formData.class_id);
-                                    const isSubscriptionClass = selectedClass?.category === 'subscription';
-                                    const supportsCredits = isSubscriptionClass && (selectedClass?.group_credits || selectedClass?.private_credits);
-                                    return supportsCredits ? 'text-[#4B2E83]' : 'text-gray-500';
-                                  })()}`}>
-                                    השתמשי בקרדיט
+                                  <span className={`text-sm ${hasRelevantCredit ? 'text-[#4B2E83]' : 'text-gray-500'}`}>
+                                    {hasRelevantCredit ? 'השתמשי בקרדיט' : 'אין קרדיט זמין לשימוש'}
                                   </span>
                                 </div>
                               </div>
                             </div>
 
-                            {formData.used_credit && (() => {
+                            {formData.used_credit && hasRelevantCredit && (() => {
                                const selectedClass = classes.find(c => c.id === formData.class_id);
                                const allowedTypes = getAllowedCreditTypesForClass(selectedClass);
                                const supportsGroupCredits = allowedTypes.includes('group');
@@ -1482,6 +1518,12 @@ export default function RegistrationEditModal({
                   <h3 className="text-lg font-semibold text-[#4B2E83]">סיכום ההרשמה</h3>
                 </div>
                 
+                {submitError && (
+                  <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                    {submitError}
+                  </div>
+                )}
+
                 <div className="text-center mb-4">
                   <p className="text-sm text-gray-700 leading-relaxed">
                     קביעת{' '}

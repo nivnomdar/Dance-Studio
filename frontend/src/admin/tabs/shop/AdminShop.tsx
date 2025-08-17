@@ -96,7 +96,7 @@ export default function AdminShop({ profile }: AdminShopProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h2 className="text-2xl font-bold text-[#4B2E83]">חנות</h2>
+          <h2 className="text-2xl font-bold text-[#4B2E83]">מוצרים</h2>
           <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול החנות: מוצרים והזמנות</p>
         </div>
         <RefreshButton
@@ -116,7 +116,7 @@ export default function AdminShop({ profile }: AdminShopProps) {
                 : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
             }`}
           >
-            חנות
+            מוצרים
           </button>
           <button
             onClick={() => setActiveTab('orders')}
