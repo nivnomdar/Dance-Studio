@@ -194,6 +194,92 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 }
 
 export const apiService = {
+  // Shop API
+  shop: {
+    async getCategories(): Promise<any[]> {
+      return fetchWithRetryAndQueue<any[]>(() =>
+        fetch(`${API_BASE_URL}/shop/categories`)
+      ).catch(error => {
+        console.error('Shop API getCategories error:', error);
+        return [];
+      });
+    },
+
+    async getProducts(params?: { category_id?: string }): Promise<any[]> {
+      const query = params?.category_id ? `?category_id=${encodeURIComponent(params.category_id)}` : '';
+      return fetchWithRetryAndQueue<any[]>(() =>
+        fetch(`${API_BASE_URL}/shop/products${query}`)
+      ).catch(error => {
+        console.error('Shop API getProducts error:', error);
+        return [];
+      });
+    },
+
+    // Admin endpoints
+    async createCategory(payload: { name: string; parent_id?: string | null; description?: string | null }): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() =>
+        fetch(`${API_BASE_URL}/shop/categories`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        })
+      );
+    },
+
+    async updateCategory(id: string, payload: Partial<{ name: string; parent_id: string | null; description: string | null }>): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() =>
+        fetch(`${API_BASE_URL}/shop/categories/${id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payload)
+        })
+      );
+    },
+
+    async deleteCategory(id: string): Promise<{ message: string }> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<{ message: string }>(() =>
+        fetch(`${API_BASE_URL}/shop/categories/${id}`, {
+          method: 'DELETE',
+          headers
+        })
+      );
+    },
+
+    async createProduct(payload: any): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() =>
+        fetch(`${API_BASE_URL}/shop/products`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        })
+      );
+    },
+
+    async updateProduct(id: string, payload: any): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() =>
+        fetch(`${API_BASE_URL}/shop/products/${id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payload)
+        })
+      );
+    },
+
+    async deleteProduct(id: string): Promise<{ message: string }> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<{ message: string }>(() =>
+        fetch(`${API_BASE_URL}/shop/products/${id}`, {
+          method: 'DELETE',
+          headers
+        })
+      );
+    }
+  },
   // Classes API
   classes: {
     async getAll(): Promise<Class[]> {
@@ -378,6 +464,16 @@ export const apiService = {
         fetch(`${API_BASE_URL}/profiles/admin${searchParam}`, { headers })
       ).catch(error => {
         console.error('Admin API getProfiles error:', error);
+        return [];
+      });
+    }
+    ,
+    async getOrders(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/admin/orders`, { headers })
+      ).catch(error => {
+        console.error('Admin API getOrders error:', error);
         return [];
       });
     }

@@ -6,7 +6,7 @@ import AdminContact from '../tabs/contact/AdminContact';
 export const ADMIN_TABS = [
   { key: 'overview', label: 'סקירה', component: AdminOverview },
   { key: 'classes', label: 'שיעורים', component: AdminClasses },
-  { key: 'shop', label: 'מוצרים/חנות', component: AdminShop },
+  { key: 'shop', label: 'חנות', component: AdminShop },
   { key: 'contact', label: 'יצירת קשר', component: AdminContact },
 ] as const;
 

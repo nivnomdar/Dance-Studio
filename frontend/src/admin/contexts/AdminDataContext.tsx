@@ -9,6 +9,7 @@ interface AdminData {
   sessions: any[];
   session_classes: any[];
   products: any[];
+  categories: any[];
   orders: any[];
   messages: any[];
   calendar: any;
@@ -54,6 +55,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     sessions: [],
     session_classes: [],
     products: [],
+    categories: [],
     orders: [],
     messages: [],
     calendar: null,
@@ -214,11 +216,15 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     setError(null);
     
     try {
-      // אין כרגע apiService.shop, נחזיר מערכים ריקים
+      const [categories, products] = await Promise.all([
+        apiService.shop.getCategories(),
+        apiService.shop.getProducts()
+      ]);
       setData(prev => ({
         ...prev,
-        products: [],
-        orders: [],
+        categories: categories || [],
+        products: products || [],
+        orders: prev.orders || [],
         lastFetchTime: Date.now()
       }));
       setError(null);
@@ -392,6 +398,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       sessions: [],
       session_classes: [],
       products: [],
+      categories: [],
       orders: [],
       messages: [],
       calendar: null,

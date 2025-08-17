@@ -345,6 +345,24 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
   }
 });
 
+// Get all orders (admin)
+router.get('/orders', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Admin orders endpoint called by user:', req.user?.id);
+    const { data: orders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      logger.error('Error fetching orders:', error);
+      throw new Error('Failed to fetch orders');
+    }
+    res.json(orders || []);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get contact messages (admin)
 router.get('/contact/messages', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {

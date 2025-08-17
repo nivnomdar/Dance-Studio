@@ -1,29 +1,77 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { products } from '../data/products';
 import { Product } from '../types/product';
 import { useCart } from '../contexts/CartContext';
 import { usePopup } from '../contexts/PopupContext';
+import { apiService } from '../lib/api';
 
 const ShopPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [activeParentId, setActiveParentId] = useState<string>('all');
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const { addToCart } = useCart();
   const { showPopup } = usePopup();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const categories = [
-    { id: 'all', name: 'הכל' },
-    { id: 'shoes', name: 'נעליים' },
-    { id: 'clothing', name: 'בגדים' },
-    { id: 'accessories', name: 'אביזרים' }
-  ];
+  const topLevelCategories = useMemo(() => {
+    const top = categories.filter(c => !c.parent_id);
+    return [{ id: 'all', name: 'הכל' }, ...top.map((c: any) => ({ id: c.id, name: c.name }))];
+  }, [categories]);
 
-  const filteredProducts = selectedCategory === 'all' 
-    ? products 
-    : products.filter(product => product.category === selectedCategory);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        const [cats, prods] = await Promise.all([
+          apiService.shop.getCategories(),
+          apiService.shop.getProducts()
+        ]);
+        if (!mounted) return;
+        setCategories(cats || []);
+        // Map backend products to UI-friendly shape
+        const mapped = (prods || []).map((p: any) => ({
+          ...p,
+          image: p.main_image || p.image || '',
+          features: Array.isArray(p.features) ? p.features : [],
+          sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
+          colors: Array.isArray(p.colors) ? p.colors : undefined,
+          isNew: !!p.isNew,
+          isBestSeller: !!p.isBestSeller
+        }));
+        setProducts(mapped);
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message || 'שגיאה בטעינת החנות');
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    if (selectedCategory === 'all') return products;
+    const selected = categories.find((c: any) => c.id === selectedCategory);
+    if (!selected) return products;
+    const isParent = !selected.parent_id;
+    if (isParent) {
+      const childIds = new Set(categories.filter((c: any) => c.parent_id === selectedCategory).map((c: any) => c.id));
+      return products.filter((p: any) => p.category_id === selectedCategory || childIds.has(p.category_id) || p.categories?.parent_id === selectedCategory);
+    }
+    // Subcategory: match by direct category_id or by joined alias id if present
+    return products.filter((p: any) => p.category_id === selectedCategory || p.categories?.id === selectedCategory);
+  }, [products, selectedCategory, categories]);
+
+  const selectedCategoryObj = useMemo(() => {
+    return categories.find((c: any) => c.id === selectedCategory) || null;
+  }, [categories, selectedCategory]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
@@ -97,10 +145,13 @@ const ShopPage = () => {
 
         {/* Categories */}
         <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 sm:mb-8 px-2">
-          {categories.map(category => (
+          {topLevelCategories.map(category => (
             <button
               key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
+              onClick={() => {
+                setActiveParentId(category.id);
+                setSelectedCategory(category.id);
+              }}
               className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
                 selectedCategory === category.id
                   ? 'bg-[#EC4899] text-white shadow-lg'
@@ -112,9 +163,43 @@ const ShopPage = () => {
           ))}
         </div>
 
+        {/* Subcategories (always show for the selected parent) */}
+        {activeParentId !== 'all' && (
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2">
+            {categories.filter((c: any) => c.parent_id === activeParentId).map((sub: any) => (
+              <button
+                key={sub.id}
+                onClick={() => setSelectedCategory(sub.id)}
+                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
+                  selectedCategory === sub.id
+                    ? 'bg-[#EC4899] text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-[#EC4899]/10'
+                }`}
+              >
+                {sub.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {filteredProducts.map(product => (
+          {filteredProducts.length === 0 && !isLoading && (
+            <div className="col-span-full">
+              <div className="bg-white rounded-2xl p-8 text-center border border-[#EC4899]/10">
+                <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6a2 2 0 012-2h4m0 0l-2-2m2 2l-2 2" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-[#4B2E83] mb-2">אין מוצרים להצגה</h3>
+                <p className="text-[#4B2E83]/70 text-sm">
+                  {selectedCategoryObj ? `לא נמצאו מוצרים תחת "${selectedCategoryObj.name}"` : 'לא נמצאו מוצרים'}
+                </p>
+              </div>
+            </div>
+          )}
+          {filteredProducts.map((product: any) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 20 }}
@@ -282,7 +367,7 @@ const ShopPage = () => {
 
                         {/* Features */}
                         <div className="space-y-2">
-                          {selectedProduct.features.map((feature: string, index: number) => (
+                          {selectedProduct.features?.map((feature: string, index: number) => (
                             <div key={index} className="flex items-start text-sm sm:text-base text-gray-600">
                               <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

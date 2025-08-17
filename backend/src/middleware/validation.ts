@@ -86,11 +86,18 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
 };
 
 export const validateProduct = (req: Request, res: Response, next: NextFunction) => {
-  const { name, description, price } = req.body;
-  
-  if (!name || !description || !price) {
-    throw new AppError('Missing required fields', 400);
+  const { name, description, price, category_id } = req.body;
+  if (!name || typeof name !== 'string') {
+    throw new AppError('Missing or invalid field: name', 400);
   }
-  
+  if (!description || typeof description !== 'string') {
+    throw new AppError('Missing or invalid field: description', 400);
+  }
+  if (typeof price !== 'number' || isNaN(price) || price < 0) {
+    throw new AppError('Missing or invalid field: price must be a non-negative number', 400);
+  }
+  if (!category_id || typeof category_id !== 'string') {
+    throw new AppError('Missing or invalid field: category_id', 400);
+  }
   next();
-}; 
+};
