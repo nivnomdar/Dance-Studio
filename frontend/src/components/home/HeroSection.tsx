@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -26,6 +27,11 @@ function HeroSection() {
 
     const handleCanPlay = () => {
       startVideo();
+      setIsVideoReady(true);
+    };
+
+    const handleLoadedData = () => {
+      setIsVideoReady(true);
     };
 
     // Handle visibility change only
@@ -41,11 +47,13 @@ function HeroSection() {
 
     // Add only essential event listeners
     video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('loadeddata', handleLoadedData);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup
     return () => {
       video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('loadeddata', handleLoadedData);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
@@ -61,7 +69,7 @@ function HeroSection() {
           muted
           playsInline
           preload="auto"
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
+          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover transition-opacity duration-500 ${isVideoReady ? 'opacity-100' : 'opacity-0'}`}
           style={{
             objectFit: 'cover',
             objectPosition: 'center'
@@ -71,8 +79,8 @@ function HeroSection() {
         </video>
       </div>
 
-      {/* GIF Background - Visible on small screens, hidden on medium and up */}
-      <div className="absolute inset-0 w-full h-full md:hidden">
+      {/* GIF Background - Always visible on small; on md+ visible until video is ready */}
+      <div className={`absolute inset-0 w-full h-full block ${isVideoReady ? 'md:hidden' : ''}`}>
         <img
           src="/videos/Heronew.gif"
           alt="Studio Dance Background"
