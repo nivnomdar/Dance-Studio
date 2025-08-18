@@ -153,13 +153,13 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
           </button>
         </div>
         {data.categories && data.categories.length > 0 ? (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
             {data.categories.filter((c: any) => !c.parent_id).map((cat: any) => (
-              <div key={cat.id} className="p-3 rounded-xl bg-[#EC4899]/5">
-                <div className="font-medium text-[#4B2E83]">{cat.name}</div>
-                <div className="pl-4 mt-2 space-y-1">
+              <div key={cat.id} className="p-3 rounded-xl bg-[#EC4899]/5 border border-[#EC4899]/10">
+                <div className="font-medium text-[#4B2E83] truncate" title={cat.name}>{cat.name}</div>
+                <div className="mt-2 space-y-1 max-h-28 overflow-y-auto pr-1">
                   {data.categories.filter((s: any) => s.parent_id === cat.id).map((sub: any) => (
-                    <div key={sub.id} className="text-sm text-[#4B2E83]/80">• {sub.name}</div>
+                    <div key={sub.id} className="text-sm text-[#4B2E83]/80 truncate" title={sub.name}>• {sub.name}</div>
                   ))}
                 </div>
               </div>

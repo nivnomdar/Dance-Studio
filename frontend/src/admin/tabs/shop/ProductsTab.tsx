@@ -191,11 +191,11 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
               <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
                 <tr>
                   <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[40%]">מוצר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[22%]">קטגוריה</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מחיר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מלאי</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">סטטוס</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[14%]">פעולות</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[22%]">קטגוריה</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מחיר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מלאי</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">סטטוס</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[14%]">פעולות</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EC4899]/10">
@@ -219,14 +219,14 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                         </div>
                       </div>
                     </td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
-                      <div className="truncate" title={categoryById[p.category_id]?.name || '-' }>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      <div className="truncate inline-block max-w-full align-middle" title={categoryById[p.category_id]?.name || '-' }>
                         {categoryById[p.category_id]?.name || '-'}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">₪{p.price}</td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{p.stock_quantity ?? 0}</td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">₪{p.price}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">{p.stock_quantity ?? 0}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       <button
                         type="button"
                         onClick={() => { setStatusProduct(p); setStatusOpen(true); }}
@@ -237,7 +237,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       </button>
                     </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-center">
                         <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs">עריכה</button>
                         <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="px-1 sm:px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs">מחיקה</button>
                       </div>
