@@ -67,44 +67,51 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-8 gap-3 sm:gap-4 items-end">
+          <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש מוצר</label>
-            <input
-              placeholder="חפש לפי שם או תיאור..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            />
+            <div className="relative">
+              <input
+                placeholder="חפש לפי שם או תיאור..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+              <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
           </div>
           <ResponsiveSelect
             label="קטגוריה"
             value={filterCategoryId}
             onChange={(v) => { setFilterCategoryId(v); setPage(1); }}
             options={[{ value: 'all', label: 'כל הקטגוריות' }, ...(data.categories || []).map((c: any) => ({ value: c.id, label: c.name }))]}
+            className="lg:col-span-1"
           />
-          <ResponsiveSelect
-            label="מלאי"
-            value={stockFilter}
-            onChange={(v) => { setStockFilter(v as any); setPage(1); }}
-            options={[
-              { value: 'all', label: 'כל המלאי' },
-              { value: 'in', label: 'במלאי' },
-              { value: 'low', label: 'מלאי נמוך (≤5)' },
-              { value: 'out', label: 'אזל מהמלאי' }
-            ]}
-          />
-          <ResponsiveSelect
-            label="סטטוס"
-            value={statusFilter}
-            onChange={(v) => { setStatusFilter(v as any); setPage(1); }}
-            options={[
-              { value: 'all', label: 'הכל' },
-              { value: 'active', label: 'פעיל' },
-              { value: 'inactive', label: 'לא פעיל' }
-            ]}
-          />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
+            <ResponsiveSelect
+              label="מלאי"
+              value={stockFilter}
+              onChange={(v) => { setStockFilter(v as any); setPage(1); }}
+              options={[
+                { value: 'all', label: 'כל המלאי' },
+                { value: 'in', label: 'במלאי' },
+                { value: 'low', label: 'מלאי נמוך (≤5)' },
+                { value: 'out', label: 'אזל מהמלאי' }
+              ]}
+            />
+            <ResponsiveSelect
+              label="סטטוס"
+              value={statusFilter}
+              onChange={(v) => { setStatusFilter(v as any); setPage(1); }}
+              options={[
+                { value: 'all', label: 'הכל' },
+                { value: 'active', label: 'פעיל' },
+                { value: 'inactive', label: 'לא פעיל' }
+              ]}
+            />
             <ResponsiveSelect
               label="מיון"
               value={sortKey}
@@ -116,17 +123,18 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 { value: 'stock', label: 'מלאי' }
               ]}
             />
-            <ResponsiveSelect
-              label="כיוון"
-              value={sortDir}
-              onChange={(v) => setSortDir(v as any)}
-              options={[
-                { value: 'desc', label: 'יורד' },
-                { value: 'asc', label: 'עולה' }
-              ]}
-            />
           </div>
-          <div>
+          <ResponsiveSelect
+            label="כיוון"
+            value={sortDir}
+            onChange={(v) => setSortDir(v as any)}
+            options={[
+              { value: 'desc', label: 'יורד' },
+              { value: 'asc', label: 'עולה' }
+            ]}
+            className="lg:col-span-1"
+          />
+          <div className="lg:col-span-1">
             <span className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</span>
             <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
               <button

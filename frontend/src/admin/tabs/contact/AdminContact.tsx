@@ -300,14 +300,14 @@ export default function AdminContact({ profile: _profile }: AdminContactProps) {
               })}
               </div>
             {filteredMessages.length > visibleCount && (
-              <div className="mt-4 flex justify-center">
+              <div className="mt-4 flex justify-center border-t border-[#EC4899]/10 pt-4">
                 <button
                   onClick={() => setVisibleCount(c => c + 4)}
-                  className="px-4 py-2 text-sm font-medium rounded-full border border-[#EC4899]/30 text-[#4B2E83] bg-white hover:bg-[#EC4899]/10 transition-colors"
+                  className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
                 >
                   עוד פניות
                 </button>
-          </div>
+              </div>
             )}
           </>
         ) : (

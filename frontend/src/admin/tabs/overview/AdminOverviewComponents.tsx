@@ -1,7 +1,6 @@
 import React from 'react';
 import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
-import { SessionData } from '../../types/admin';
-import { getDayOfWeekName, getOccupancyColor, groupRegistrationsByTime } from '../../utils/adminOverviewUtils';
+import { getDayOfWeekName } from '../../utils/adminOverviewUtils';
 
 // Loading State Component
 export const AdminOverviewLoadingState: React.FC = () => (
@@ -76,16 +75,22 @@ export const AdminOverviewFilters: React.FC<FiltersProps> = ({
   setFilterStatus 
 }) => (
   <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 items-end">
       <div>
-        <label className="block text-sm font-medium text-[#4B2E83] mb-2">חיפוש קבוצה קרובה</label>
-        <input
-          type="text"
-          placeholder="חפש לפי שם או תיאור..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-        />
+        <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש קבוצה קרובה</label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="חפש לפי שם או תיאור..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+          />
+          <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
       </div>
       <div>
         <ResponsiveSelect

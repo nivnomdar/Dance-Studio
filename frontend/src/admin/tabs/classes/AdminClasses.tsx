@@ -151,7 +151,7 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
 
       {/* Tabs Navigation */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
 
           <button
             onClick={() => setActiveTab('classes')}

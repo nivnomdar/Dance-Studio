@@ -41,9 +41,9 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-[#EC4899]/10">
           {/* Tabs Navigation */}
           <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-2 rtl:gap-x-reverse">
+            <div className="flex flex-wrap sm:flex-nowrap justify-center gap-2 sm:gap-2 rtl:gap-x-reverse">
               {/* First row - 2 tabs */}
-              <div className="flex justify-center gap-2 sm:hidden">
+              <div className="hidden">
                 {tabs.slice(0, 2).map(tab => (
                   <button
                     key={tab.key}
@@ -65,7 +65,7 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
               </div>
               
               {/* Second row - 3 tabs */}
-              <div className="flex justify-center gap-2 sm:hidden">
+              <div className="hidden">
                 {tabs.slice(2, 5).map(tab => (
                   <button
                     key={tab.key}
@@ -87,13 +87,13 @@ export default function AdminLayout({ tabs, profile }: AdminLayoutProps) {
               </div>
               
               {/* Desktop layout - all tabs in one row */}
-              <div className="hidden sm:flex justify-center gap-2 rtl:gap-x-reverse">
+              <div className="flex justify-center gap-2 rtl:gap-x-reverse">
                 {tabs.map(tab => (
                   <button
                     key={tab.key}
                     data-tab-key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`px-4 lg:px-6 py-3 rounded-xl font-medium transition-all duration-200 text-base ${
+                    className={`px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 rounded-xl font-medium transition-all duration-200 text-sm sm:text-base ${
                       activeTab === tab.key 
                         ? 'bg-white text-[#4B2E83] shadow-lg' 
                         : 'text-white/80 hover:text-white hover:bg-white/10'

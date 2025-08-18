@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { ClassEditModal, ClassSessionsModal } from '../../modals';
 import { Class } from '../../../types';
@@ -87,20 +87,12 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
       .sort((a, b) => b.active_registrations - a.active_registrations);
   };
 
-  const calculateStatistics = (classes: ProcessedClass[]) => {
-    return {
-      totalClasses: classes.length,
-      activeClasses: classes.filter(cls => cls.is_active).length,
-      totalRegistrations: classes.reduce((sum, cls) => sum + cls.total_registrations, 0),
-      activeRegistrations: classes.reduce((sum, cls) => sum + cls.active_registrations, 0),
-      totalRevenue: classes.reduce((sum, cls) => sum + (cls.active_registrations * cls.price), 0)
-    };
-  };
+  
 
   // Process data
   const processedClasses = processClassesData();
   const filteredClasses = filterClasses(processedClasses);
-  const stats = calculateStatistics(processedClasses);
+  
 
   // Event handlers
   const handleEditClass = (classData: any) => {
@@ -172,18 +164,24 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
 
       {/* Filters */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 items-end">
+          <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש שיעור</label>
-            <input
-              type="text"
-              placeholder="חפש לפי שם, תיאור או קטגוריה..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="חפש לפי שם, תיאור או קטגוריה..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+              />
+              <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
           </div>
-          <div>
+          <div className="lg:col-span-1">
             <ResponsiveSelect
               label="סטטוס שיעור"
               value={filterStatus}
@@ -195,7 +193,7 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
               ]}
             />
           </div>
-          <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+          <div className="flex flex-col sm:flex-row items-end gap-2 col-span-2 sm:col-span-2 lg:col-span-3">
             <button
               onClick={handleClearFilters}
               className="w-full sm:flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-xs sm:text-sm"
@@ -226,7 +224,6 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">קטגוריה</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סוג קרדיט</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">מחיר</th>
-                <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">הכנסות</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/12">סטטוס</th>
                 <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">פעולות</th>
               </tr>
@@ -278,9 +275,6 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                     </div>
                   </td>
                   <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-xs sm:text-sm">₪{cls.price}</td>
-                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center text-[#EC4899] font-semibold text-xs sm:text-sm">
-                    ₪{(cls.active_registrations * cls.price).toLocaleString()}
-                  </td>
                   <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                     <span className={`inline-flex items-center gap-1 px-1 sm:px-2 py-1 rounded-full text-xs font-medium ${
                       cls.is_active 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAdminData } from '../../contexts';
 import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../components';
@@ -132,13 +132,14 @@ const getCalendarOccupancyTextColor = (occupancyRate?: number) => {
   return OCCUPANCY_TEXT_COLORS.LOW;
 };
 
-export default function AdminCalendar({ profile }: AdminCalendarProps) {
+export default function AdminCalendar({}: AdminCalendarProps) {
   const { data, isLoading, error, fetchClasses, isFetching } = useAdminData();
   const [selectedSession, setSelectedSession] = useState<SessionDetails | null>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isMobile, setIsMobile] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
 
   // Responsive detection
   useEffect(() => {
@@ -151,6 +152,19 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Close legend with ESC
+  useEffect(() => {
+    if (!legendOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setLegendOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [legendOpen]);
 
   // Get current date in Israel timezone for display
   const getCurrentIsraelDate = () => {
@@ -256,6 +270,15 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     });
   }, [currentDate, selectedDate, data.sessions, data.session_classes, data.registrations, getCurrentIsraelDate]);
 
+  // Chunk days into weeks of 7 for row-level controls
+  const calendarWeeks = useMemo(() => {
+    const weeks: DayData[][] = [];
+    for (let i = 0; i < calendarData.length; i += 7) {
+      weeks.push(calendarData.slice(i, i + 7));
+    }
+    return weeks;
+  }, [calendarData]);
+
   // Calendar navigation handlers
   const goToPreviousMonth = () => {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -317,33 +340,45 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
     const isPastDate = day.isPastDate;
     
     const baseClasses = `
-      relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer
-      ${isMobile ? 'w-6 h-6 text-[9px]' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-xs sm:text-sm md:text-base'}
-      ${isToday 
-        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' 
-        : isSelected 
-          ? 'bg-[#EC4899] text-white shadow-lg shadow-[#EC4899]/30'
-          : isPastDate
-            ? 'bg-gray-300 text-gray-600 opacity-75 hover:bg-gray-400'
-            : isCurrentMonth 
-              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-              : 'bg-gray-50 text-gray-400'
-      }
-      ${hasEvents && !isPastDate ? 'ring-2 ring-[#EC4899]/30' : ''}
-      ${isPastDate ? 'ring-2 ring-gray-400' : ''}
+      relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40
+      ${isMobile ? 'w-9 h-9 text-[11px]' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-xs sm:text-sm md:text-base'}
+      ${isSelected
+        ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border border-transparent shadow-lg shadow-[#EC4899]/30'
+        : isToday
+          ? 'bg-white text-[#4B2E83] border border-white ring-2 ring-[#4B2E83] shadow'
+          : !isCurrentMonth
+            ? 'bg-white text-gray-400 border border-gray-100'
+            : isPastDate
+              ? 'bg-white text-gray-400 border border-gray-200'
+              : 'bg-white text-[#4B2E83] border border-[#EC4899]/20 hover:bg-[#EC4899]/5'}
     `;
 
     return (
       <div
         className={baseClasses}
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(day.date)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(day.date);
+          }
+        }}
       >
         <span className="relative z-10">{day.dayNumber}</span>
+
+        {/* Count badge for events (mobile only) */}
+        {hasEvents && isMobile && (
+          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#4B2E83] text-white text-[9px] flex items-center justify-center">
+            {Math.min(9, day.events.length)}
+          </div>
+        )}
         
 
         
-        {/* Event indicators */}
-        {hasEvents && (
+        {/* Event indicators (hide on mobile for clarity) */}
+        {hasEvents && !isMobile && (
           <div className="absolute -bottom-0.5 sm:-bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
             {day.events.slice(0, 3).map((event) => (
               <div
@@ -391,12 +426,12 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
           <span className="text-xs text-gray-500">{events.length} פעילויות</span>
         </div>
         
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           {events.map((event) => (
             <div
               key={event.id}
               className={`
-                bg-white rounded-lg border-2 border-[#EC4899]/20 shadow-sm hover:shadow-md hover:border-[#EC4899]/40 transition-all duration-200 cursor-pointer touch-manipulation
+                bg-white rounded-xl border border-[#EC4899]/15 hover:border-[#EC4899]/40 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer touch-manipulation
                 ${isMobile ? 'p-2.5' : 'p-3 sm:p-4'}
               `}
               onClick={() => onEventClick?.(event)}
@@ -407,7 +442,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
                     {event.title}
                   </h4>
                   
-                  {event.description && (
+                  {!isMobile && event.description && (
                     <p className="text-xs text-gray-600 mb-2 line-clamp-2">
                       {event.description}
                     </p>
@@ -444,7 +479,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
                 </div>
                 
                 <div className="flex-shrink-0 ml-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${getCalendarOccupancyColor(event.occupancyRate)}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full ${getCalendarOccupancyColor(event.occupancyRate)} ring-2 ring-white`} />
                 </div>
               </div>
             </div>
@@ -487,7 +522,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden w-full">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-3 sm:p-4 md:p-6 text-white">
-          <div className="flex items-center justify-between">
+          <div className="relative flex items-center justify-between">
             <button
               onClick={goToPreviousMonth}
               className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
@@ -503,46 +538,163 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
               </h2>
             </div>
             
-            <button
-              onClick={goToNextMonth}
-              className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToNextMonth}
+                className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLegendOpen((v) => !v)}
+                aria-haspopup="dialog"
+                aria-expanded={legendOpen}
+                aria-label="הסבר סמלים"
+                title="הסבר סמלים"
+                className="p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 015.82 1c0 2-3 2-3 4" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Overlay for click-outside close */}
+            {legendOpen && (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setLegendOpen(false)}
+                aria-hidden="true"
+              />
+            )}
+
+            {/* Legend: bottom sheet on mobile, popover on desktop */}
+            {legendOpen && (
+              isMobile ? (
+                <div className="fixed inset-x-0 bottom-0 z-50">
+                  <div className="mx-auto w-full bg-white text-[#4B2E83] rounded-t-2xl shadow-2xl border border-[#EC4899]/20">
+                    <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold">הסבר סמלים</h4>
+                      <button onClick={() => setLegendOpen(false)} className="p-1.5 rounded hover:bg-gray-100" aria-label="סגירה">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                    <div className="p-3 sm:p-4 max-h-[50vh] overflow-y-auto text-xs">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-white ring-2 ring-[#4B2E83]"></div>
+                          <span>היום</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83]"></div>
+                          <span>נבחר</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                          <span>עבר</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-[#4B2E83] text-white text-[10px] flex items-center justify-center">3</div>
+                          <span>מס׳ פעילויות ביום</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-[11px] text-gray-600">
+                        <p><strong>הערה:</strong> תאריכים שעברו מוצגים באפור אך ניתן לצפות בפעילויות שהיו בהם</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="absolute right-2 top-full mt-2 z-50 w-64 sm:w-80">
+                  <div role="dialog" aria-modal="true" className="bg-white text-[#4B2E83] rounded-xl shadow-2xl border border-[#EC4899]/20 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                      <h4 className="text-sm font-semibold">הסבר סמלים</h4>
+                      <button onClick={() => setLegendOpen(false)} className="p-1.5 rounded hover:bg-gray-100" aria-label="סגירה">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                    <div className="p-3 sm:p-4 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-white ring-2 ring-[#4B2E83]"></div>
+                          <span>היום</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83]"></div>
+                          <span>נבחר</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                          <span>עבר</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span>פעילויות</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-[11px] text-gray-600">
+                        <p><strong>הערה:</strong> תאריכים שעברו מוצגים באפור אך ניתן לצפות בפעילויות שהיו בהם</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
           </div>
         </div>
         
         {/* Calendar Grid */}
         <div className="p-2 sm:p-4 md:p-6">
           {/* Day names header */}
-          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2 mb-2 sm:mb-3 md:mb-4">
-            {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((day, index) => (
-              <div key={day} className="text-center min-h-[1.5rem] sm:min-h-[1.75rem] md:min-h-[2rem] flex items-center justify-center">
-                <span className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-500">
-                  {getHebrewDayName(index)}
+          <div className="grid grid-cols-7 gap-1 sm:gap-1 md:gap-x-1 md:gap-y-2 mb-2 sm:mb-3 md:mb-4">
+            {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((dayLetter, index) => (
+              <div key={dayLetter} className="text-center min-h-[1.5rem] sm:min-h-[1.75rem] md:min-h-[2rem] flex items-center justify-center">
+                <span className="text-[11px] sm:text-xs md:text-sm font-medium text-gray-700">
+                  {isMobile ? dayLetter : getHebrewDayName(index)}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Calendar days */}
-          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 md:gap-2">
-            {calendarData.map((day) => (
-              <div
-                key={day.date}
-                className="flex justify-center items-center min-h-[2rem] sm:min-h-[2.5rem] md:min-h-[3rem]"
-              >
-                <DayCircle
-                  day={day}
-                  onSelect={handleDaySelect}
-                  isMobile={isMobile}
-                />
+          {/* Calendar days (by week) */}
+          <div className="space-y-2">
+            {calendarWeeks.map((week, widx) => (
+              <div key={`week-${widx}`} className="space-y-2">
+                <div className="grid grid-cols-7 gap-1 sm:gap-1 md:gap-x-1 md:gap-y-2">
+                  {week.map((day) => (
+                    <div
+                      key={day.date}
+                      className="flex justify-center items-center min-h-[2rem] sm:min-h-[2.5rem] md:min-h-[3rem]"
+                    >
+                      {day.isCurrentMonth ? (
+                        <DayCircle
+                          day={day}
+                          onSelect={handleDaySelect}
+                          isMobile={isMobile}
+                        />
+                      ) : (
+                        <div className={`${isMobile ? 'w-9 h-9' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12'}`}></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {widx < calendarWeeks.length - 1 && (
+                  <div role="separator" className="border-t border-gray-200" />
+                )}
               </div>
             ))}
           </div>
           
+          {/* Mobile hint */}
+          {isMobile && !selectedDate && (
+            <div className="mt-3 text-[11px] text-gray-600 text-center">הקישי על יום להצגת פעילויות</div>
+          )}
+
           {/* Events section */}
           {selectedDate && (
             <div className="mt-4 sm:mt-6 md:mt-8 pt-3 sm:pt-4 md:pt-6 border-t border-gray-200">
@@ -555,33 +707,7 @@ export default function AdminCalendar({ profile }: AdminCalendarProps) {
             </div>
           )}
           
-          {/* Calendar Legend */}
-          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-200">
-            <div className="text-xs text-gray-600 space-y-2">
-              <h4 className="font-medium text-gray-700 mb-2">הסבר סמלים:</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span>היום</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[#EC4899] rounded-full"></div>
-                  <span>נבחר</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full opacity-75"></div>
-                  <span>עבר</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span>פעילות</span>
-                </div>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                <p><strong>הערה:</strong> תאריכים שעברו מוצגים בצבע אפור אך ניתן לצפות בפעילויות שהיו בהם</p>
-              </div>
-            </div>
-          </div>
+          {/* Legend moved to help button popover/bottom sheet */}
         </div>
       </div>
 

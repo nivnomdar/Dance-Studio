@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { usePopup } from '../../../contexts/PopupContext';
 import { RegistrationEditModal } from '../../modals';
@@ -61,6 +61,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   // Pagination state for history tab
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [allVisibleCount, setAllVisibleCount] = useState(10);
 
   // Helper functions
   const processRegistrationsData = (): ProcessedRegistration[] => {
@@ -134,23 +135,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
       });
   };
 
-  const calculateStatistics = (registrations: ProcessedRegistration[]) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const futureRegistrations = registrations.filter(reg => reg.is_future);
-    const pastRegistrations = registrations.filter(reg => reg.is_past);
-    const activeRegistrations = registrations.filter(reg => reg.status === 'active');
-    const cancelledRegistrations = registrations.filter(reg => reg.status === 'cancelled');
-
-    return {
-      totalFuture: futureRegistrations.length,
-      totalPast: pastRegistrations.length,
-      totalActive: activeRegistrations.length,
-      totalCancelled: cancelledRegistrations.length,
-      futureActive: futureRegistrations.filter(reg => reg.status === 'active').length
-    };
-  };
+  
 
   // Group registrations by date and time (for grouped view)
   const groupRegistrationsByDateTime = (registrations: ProcessedRegistration[]) => {
@@ -191,6 +176,15 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRegistrations = filteredRegistrations.slice(startIndex, endIndex);
+  const visibleAllRegistrations = filteredRegistrations.slice(0, allVisibleCount);
+
+  // Reset counts when switching to 'all' tab or when filters/search change
+  useEffect(() => {
+    if (activeTab === 'all') {
+      setAllVisibleCount(10);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, searchTerm, filterStatus, filterClass, filterSession, filterDate]);
   
   // Group registrations for grouped view
   const groupedRegistrations = groupRegistrationsByDateTime(filteredRegistrations);
@@ -202,13 +196,13 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
     }
     return a.time.localeCompare(b.time);
   });
-  const stats = calculateStatistics(processedRegistrations);
+  
 
   // Event handlers
-  const handleEditRegistration = (registrationData: any) => {
-    setEditingRegistration(registrationData);
-    setRegistrationEditModalOpen(true);
-  };
+  // const handleEditRegistration = (registrationData: any) => {
+  //   setEditingRegistration(registrationData);
+  //   setRegistrationEditModalOpen(true);
+  // };
 
   const handleAddNewRegistration = () => {
     setEditingRegistration({});
@@ -547,7 +541,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <button
             onClick={() => handleTabChange('grouped')}
             className={`${ADMIN_STYLES.tabButton} ${activeTab === 'grouped' ? ADMIN_STYLES.tabButtonActive : ADMIN_STYLES.tabButtonInactive}`}
@@ -570,18 +564,33 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
 
         {/* Filters */}
         <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 items-end">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש הרשמה</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+                />
+                <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תאריך</label>
               <input
-                type="text"
-                placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
                 className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
               />
             </div>
-            <div>
+            <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
               <ResponsiveSelect
                 label="סטטוס הרשמה"
                 value={filterStatus}
@@ -592,16 +601,12 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                   { value: 'cancelled', label: 'בוטלו בלבד' }
                 ]}
               />
-            </div>
-            <div>
               <ResponsiveSelect
                 label="שיעור"
                 value={filterClass}
                 onChange={(v) => setFilterClass(v)}
                 options={[{ value: 'all', label: 'כל השיעורים' }, ...(data.classes || []).map((cls: any) => ({ value: String(cls.id), label: cls.name }))]}
               />
-            </div>
-            <div>
               <ResponsiveSelect
                 label="קבוצה"
                 value={filterSession}
@@ -609,16 +614,7 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
                 options={[{ value: 'all', label: 'כל הקבוצות' }, ...(data.sessions || []).map((s: any) => ({ value: String(s.id), label: s.name }))]}
               />
             </div>
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תאריך</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+            <div className="flex flex-col sm:flex-row items-end gap-2 col-span-2 sm:col-span-2 lg:col-span-2">
               <button
                 onClick={handleClearFilters}
                 className={`w-full sm:flex-1 ${ADMIN_STYLES.buttonSecondary} text-xs sm:text-sm`}
@@ -730,9 +726,19 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
             </p>
           </div>
           {renderRegistrationsTable(
-            activeTab === 'history' ? paginatedRegistrations : filteredRegistrations, 
+            activeTab === 'history' ? paginatedRegistrations : visibleAllRegistrations, 
             true, 
             true
+          )}
+          {activeTab === 'all' && filteredRegistrations.length > allVisibleCount && (
+            <div className="p-3 sm:p-4 border-t border-[#EC4899]/10 flex justify-center">
+              <button
+                onClick={() => setAllVisibleCount((c) => c + 10)}
+                className={`${ADMIN_STYLES.button} text-xs sm:text-sm`}
+              >
+                עוד הרשמות
+              </button>
+            </div>
           )}
           
           {/* Pagination for history tab */}
