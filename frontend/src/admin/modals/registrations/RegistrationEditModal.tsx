@@ -541,10 +541,7 @@ export default function RegistrationEditModal({
           }
         }
         
-        // Check if class is a trial class
-        if (selectedClass.slug === 'trial-class') {
-          // Additional validation for trial classes if needed
-        }
+        // Note: trial handling based on category only if needed for policies
       }
       
       // Validate session selection if using scheduled sessions

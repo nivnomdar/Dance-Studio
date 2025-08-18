@@ -1,4 +1,5 @@
-import { Session, SessionClass } from '../types/sessions';
+import { Session } from '../types/sessions';
+import { BOOKING_DAYS_AHEAD } from '../config/booking';
 import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
 import { apiService } from '../lib/api';
 import { isSessionActiveOnDay } from './weekdaysUtils';
@@ -365,8 +366,8 @@ export const getAvailableDatesForButtonsFromSessions = async (classId: string): 
     const datesSet = new Set<string>(); // Use Set to prevent duplicates
     const today = new Date();
     
-    // ניצור תאריכים לשבוע הבא
-    for (let i = 0; i < 7; i++) {
+    // ניצור תאריכים לטווח ימים מוגדר מראש
+    for (let i = 0; i < BOOKING_DAYS_AHEAD; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       
@@ -430,8 +431,8 @@ export const getAvailableDatesForSession = async (sessionId: string): Promise<st
     const datesSet = new Set<string>(); // Use Set to prevent duplicates
     const today = new Date();
     
-    // ניצור תאריכים לשבוע הבא
-    for (let i = 0; i < 7; i++) {
+    // ניצור תאריכים לטווח ימים מוגדר מראש
+    for (let i = 0; i < BOOKING_DAYS_AHEAD; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       
@@ -660,8 +661,8 @@ export const getAvailableSpotsFromSessions = async (
               session_id: matchingSession.id,
               class_id: classId,
               price: classData?.price || 0,
-              is_trial: classData?.slug === 'trial-class',
-              max_uses_per_user: classData?.slug === 'trial-class' ? 1 : null
+              is_trial: (classData?.category || '').toLowerCase() === 'trial',
+              max_uses_per_user: (classData?.category || '').toLowerCase() === 'trial' ? 1 : null
             })
           });
           
@@ -685,8 +686,8 @@ export const getAvailableSpotsFromSessions = async (
         if (classResponse.ok) {
           const classData = await classResponse.json();
           
-          // אם זה שיעור פרטי, אין צורך לבדוק מקומות
-          if (classData.slug === 'private-lesson' || classData.category === 'private') {
+          // Flow decision: if appointment_only, consider always available
+          if ((classData.registration_type || '').toLowerCase() === 'appointment_only') {
             return { available: 1, message: 'זמין', sessionId: matchingSession.id, sessionClassId: sessionClass.id };
           }
         }

@@ -2,7 +2,7 @@
 
 export type AvailableColorScheme = 'pink' | 'purple' | 'emerald' | 'blue' | 'orange' | 'teal' | 'indigo' | 'rose';
 
-export type RegistrationType = 'standard' | 'appointment_only';
+export type RegistrationType = 'standard' | 'appointment_only' | 'subscription';
 
 export type ClassType = 'group' | 'private' | 'both';
 

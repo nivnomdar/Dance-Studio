@@ -426,7 +426,7 @@ function ClassesPage() {
             {[...classes].reverse().map((classItem) => {
               const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
-              const isTrialClass = classItem.slug === 'trial-class';
+              const isTrialClass = (classItem.category || '').toLowerCase() === 'trial';
               const hasUsedTrial = isTrialClass && profile?.has_used_trial_class;
               
               return (

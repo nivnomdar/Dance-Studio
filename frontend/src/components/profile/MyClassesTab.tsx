@@ -319,9 +319,8 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       
       // הצג הודעת הצלחה
       let successMsg = `ההרשמה ל"${selectedRegistration.class.name}" בוטלה בהצלחה!`;
-      
-      // אם זה שיעור ניסיון, הוסף הודעה נוספת
-      if (selectedRegistration.class.slug === 'trial-class') {
+      // אם זה שיעור ניסיון לפי קטגוריה, הוסף הודעה נוספת (למדיניות בלבד)
+      if ((selectedRegistration.class.category || '').toLowerCase() === 'trial') {
         successMsg += '\n\nכעת תוכלי להזמין שוב שיעור ניסיון במועד חדש!';
       }
       

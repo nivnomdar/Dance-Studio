@@ -1,4 +1,5 @@
 // Date utilities - centralized management for date handling and week navigation
+import { WEEK_LENGTH_DAYS } from '../config/booking';
 
 /**
  * Format date to Hebrew locale
@@ -48,7 +49,7 @@ export const getCurrentWeekInfo = () => {
   weekStart.setHours(0, 0, 0, 0);
   
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setDate(weekStart.getDate() + (WEEK_LENGTH_DAYS - 1));
   
   return {
     start: weekStart.toISOString().split('T')[0],
@@ -68,11 +69,11 @@ export const getWeekInfo = (weekNumber: number) => {
   const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
   const daysToSubtract = currentDayOfWeek; // Days to go back to Sunday
   const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - daysToSubtract + ((weekNumber - 1) * 7));
+  weekStart.setDate(today.getDate() - daysToSubtract + ((weekNumber - 1) * WEEK_LENGTH_DAYS));
   weekStart.setHours(0, 0, 0, 0);
   
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setDate(weekStart.getDate() + (WEEK_LENGTH_DAYS - 1));
   
   return {
     start: weekStart.toISOString().split('T')[0],
@@ -103,7 +104,7 @@ export const isCurrentWeek = (weekNumber: number): boolean => {
 export const getWeekRange = (weekStartDate: string): string => {
   const startDate = new Date(weekStartDate);
   const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 6); // Add 6 days to get to Saturday
+  endDate.setDate(startDate.getDate() + (WEEK_LENGTH_DAYS - 1));
   
   // Ensure we're working with the correct dates by setting time to noon
   startDate.setHours(12, 0, 0, 0);
@@ -121,7 +122,7 @@ export const getWeekDates = (weekStartDate: string): string[] => {
   const startDate = new Date(weekStartDate);
   const dates: string[] = [];
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < WEEK_LENGTH_DAYS; i++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     dates.push(date.toISOString().split('T')[0]);
@@ -203,9 +204,9 @@ export const getRelativeDateDescription = (dateString: string): string => {
     return 'מחר';
   } else if (diffDays === -1) {
     return 'אתמול';
-  } else if (diffDays > 1 && diffDays <= 7) {
+  } else if (diffDays > 1 && diffDays <= WEEK_LENGTH_DAYS) {
     return `בעוד ${diffDays} ימים`;
-  } else if (diffDays < -1 && diffDays >= -7) {
+  } else if (diffDays < -1 && diffDays >= -WEEK_LENGTH_DAYS) {
     return `לפני ${Math.abs(diffDays)} ימים`;
   } else {
     return formatDate(dateString);

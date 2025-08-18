@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaCalendarAlt, FaUsers, FaSignInAlt } from 'react-icons/fa';
+import { useState, useEffect, useCallback, memo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { FaClock, FaUserGraduate, FaMapMarkerAlt, FaArrowLeft, FaSignInAlt } from 'react-icons/fa';
 import { FaWaze } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
@@ -155,7 +155,6 @@ interface ClassDetailPageProps {
 
 const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDetailPageProps) {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   
   // State
   const [classData, setClassData] = useState<Class | null>(initialClass || null);
@@ -394,9 +393,9 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
                 </div>
               </div>
             </div>
-          ) : classData.category === 'subscription' ? (
+          ) : (classData.registration_type || '').toLowerCase() === 'subscription' ? (
             <SubscriptionRegistration classData={classData} />
-          ) : classData.registration_type === 'appointment_only' ? (
+          ) : (classData.registration_type || '').toLowerCase() === 'appointment_only' ? (
             <RegistrationByAppointment classData={classData} />
           ) : (
             <StandardRegistration classData={classData} />
