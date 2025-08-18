@@ -86,7 +86,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
         <div>
-          <h2 className="text-2xl font-bold text-[#4B2E83]">מוצרים</h2>
+          <h2 className="text-2xl font-bold text-[#4B2E83]">חנות</h2>
           <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול החנות: מוצרים והזמנות</p>
         </div>
         <RefreshButton
@@ -131,7 +131,8 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
         )}
       </div>
 
-      {/* Categories Management */}
+      {/* Categories Management - only for Products tab */}
+      {activeTab === 'products' && (
       <div className="bg-white p-6 rounded-2xl border border-[#EC4899]/10">
         <div className="flex items-center justify-between mb-4">
           {(() => {
@@ -170,6 +171,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Add Category Modal */}
       <Modal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)}>

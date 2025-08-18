@@ -5,6 +5,7 @@ export default function OrdersTab() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(10);
 
   useEffect(() => {
     let mounted = true;
@@ -51,19 +52,23 @@ export default function OrdersTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EC4899]/10">
-              {orders.map((o: any) => (
-                <tr key={o.id} className="hover:bg-[#4B2E83]/5 transition-colors">
-                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">#{String(o.id).slice(-6)}</td>
-                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{new Date(o.created_at).toLocaleString('he-IL')}</td>
-                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{o.user_name || o.user_id}</td>
-                  <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">₪{o.total_amount}</td>
-                  <td className="px-2 sm:px-3 py-2 sm:py-3">
-                    <span className={`inline-flex items-center gap-1 px-1 sm:px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${o.status === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' : o.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                      {o.status === 'completed' ? 'הושלמה' : o.status === 'pending' ? 'ממתינה' : 'בוטלה'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {orders.slice(0, visibleCount).map((o: any) => {
+                const s = String(o.status || '').toLowerCase();
+                const uiStatus = s === 'cancelled' ? 'cancelled' : (['paid','shipped','delivered','completed','confirmed'].includes(s) ? 'completed' : 'pending');
+                return (
+                  <tr key={o.id} className="hover:bg-[#4B2E83]/5 transition-colors">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">#{o.order_number || String(o.id).slice(-6)}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{new Date(o.created_at).toLocaleString('he-IL')}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{o.user_name || o.user_id}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">₪{o.total_amount}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3">
+                      <span className={`inline-flex items-center gap-1 px-1 sm:px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium ${uiStatus === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' : uiStatus === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                        {uiStatus === 'completed' ? 'הושלמה' : uiStatus === 'pending' ? 'ממתינה' : 'בוטלה'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
               {orders.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-6 text-center text-[#4B2E83]/70">אין הזמנות במערכת</td>
@@ -72,6 +77,16 @@ export default function OrdersTab() {
             </tbody>
           </table>
         </div>
+        {orders.length > visibleCount && (
+          <div className="p-4 border-t border-[#EC4899]/10 text-center">
+            <button
+              onClick={() => setVisibleCount(c => c + 10)}
+              className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+            >
+              עוד הזמנות
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

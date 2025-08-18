@@ -349,15 +349,46 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
 router.get('/orders', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     logger.info('Admin orders endpoint called by user:', req.user?.id);
-    const { data: orders, error } = await supabase
+    // Fetch orders first (without attempting an embedded join to profiles)
+    const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
-    if (error) {
-      logger.error('Error fetching orders:', error);
+    if (ordersError) {
+      logger.error('Error fetching orders:', ordersError);
       throw new Error('Failed to fetch orders');
     }
-    res.json(orders || []);
+
+    const orderList = orders || [];
+    const userIds = Array.from(new Set(orderList.map((o: any) => o.user_id).filter(Boolean)));
+
+    // Fetch profiles for those users
+    let profilesById: Record<string, any> = {};
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', userIds);
+      if (profilesError) {
+        logger.error('Error fetching profiles for orders:', profilesError);
+      } else {
+        profilesById = (profiles || []).reduce((acc: Record<string, any>, p: any) => {
+          acc[p.id] = p;
+          return acc;
+        }, {});
+      }
+    }
+
+    const enriched = orderList.map((o: any) => {
+      const p = profilesById[o.user_id];
+      const user_name = p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : null;
+      return {
+        ...o,
+        user_name
+      };
+    });
+
+    res.json(enriched);
   } catch (error) {
     next(error);
   }

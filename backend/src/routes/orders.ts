@@ -7,12 +7,18 @@ import { ORDER_STATUS } from '../constants';
 
 const router = Router();
 
-// Get user's orders
+// Get user's orders (with items enriched from order_items/products)
 router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        order_items:order_items(
+          id, product_id, quantity, unit_price,
+          product:products(name, main_image)
+        )
+      `)
       .eq('user_id', req.user!.id)
       .order('created_at', { ascending: false });
 
@@ -20,7 +26,18 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
       throw new AppError('Failed to fetch orders', 500);
     }
 
-    res.json(data);
+    const normalized = (data || []).map((order: any) => ({
+      ...order,
+      items: (order.order_items || []).map((item: any) => ({
+        product_id: item.product_id,
+        name: item.product?.name || null,
+        price: item.unit_price,
+        quantity: item.quantity,
+        image_url: item.product?.main_image || null
+      }))
+    }));
+
+    res.json(normalized);
   } catch (error) {
     next(error);
   }
@@ -32,7 +49,13 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
     const { id } = req.params;
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        order_items:order_items(
+          id, product_id, quantity, unit_price,
+          product:products(name, main_image)
+        )
+      `)
       .eq('id', id)
       .eq('user_id', req.user!.id)
       .single();
@@ -45,7 +68,18 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
       throw new AppError('Order not found', 404);
     }
 
-    res.json(data);
+    const normalized = {
+      ...data,
+      items: (data.order_items || []).map((item: any) => ({
+        product_id: item.product_id,
+        name: item.product?.name || null,
+        price: item.unit_price,
+        quantity: item.quantity,
+        image_url: item.product?.main_image || null
+      }))
+    };
+
+    res.json(normalized);
   } catch (error) {
     next(error);
   }

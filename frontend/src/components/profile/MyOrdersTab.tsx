@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaShoppingBag, FaCalendarAlt, FaCreditCard, FaTruck, FaCheckCircle, FaTimesCircle, FaSpinner, FaBox, FaClock } from 'react-icons/fa';
 import type { Order } from '../../types/order';
 import { LoadingSpinner } from '../common';
+import { apiService } from '../../lib/api';
 
 interface MyOrdersTabProps {
   userId: string;
@@ -19,12 +20,32 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
       try {
         setLoading(true);
         setError(null);
-        
-        // TODO: Implement orders service
-        // const userOrders = await ordersService.getUserOrders(userId, session?.access_token);
-        
-        // For now, no orders - empty array
-        setOrders([]);
+        const userOrders = await apiService.orders.getMy();
+        // Normalize status keys to match component expectations if needed
+        const normalized: Order[] = (userOrders || []).map((o: any) => ({
+          id: o.id,
+          user_id: o.user_id,
+          items: Array.isArray(o.items) ? o.items : [],
+          total_amount: o.total_amount,
+          status: ((): 'pending' | 'completed' | 'cancelled' => {
+            // Map DB status -> UI status buckets
+            const s = String(o.status || '').toLowerCase();
+            if (s === 'cancelled') return 'cancelled';
+            if (s === 'paid' || s === 'delivered' || s === 'shipped' || s === 'completed' || s === 'confirmed') return 'completed';
+            return 'pending';
+          })(),
+          created_at: o.created_at,
+          updated_at: o.updated_at,
+          shipping_address: o.shipping_address || { street: '', city: '', postal_code: '', country: '' },
+          payment_method: o.payment_method || '',
+          payment_status: ((): 'pending' | 'completed' | 'failed' => {
+            const ps = String(o.payment_status || '').toLowerCase();
+            if (ps === 'paid' || ps === 'completed') return 'completed';
+            if (ps === 'failed' || ps === 'refunded') return 'failed';
+            return 'pending';
+          })()
+        }));
+        setOrders(normalized);
       } catch (err) {
         console.error('Error fetching orders:', err);
         setError('שגיאה בטעינת ההזמנות שלך');

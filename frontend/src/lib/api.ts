@@ -479,6 +479,22 @@ export const apiService = {
     }
   },
 
+  // Orders API (user)
+  orders: {
+    async getMy(): Promise<any[]> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any[]>(() => 
+        fetch(`${API_BASE_URL}/orders`, { headers })
+      );
+    },
+    async getById(id: string): Promise<any> {
+      const headers = await getAuthHeaders();
+      return fetchWithRetryAndQueue<any>(() => 
+        fetch(`${API_BASE_URL}/orders/${id}`, { headers })
+      );
+    }
+  },
+
   // Contact API
   contact: {
     async submitMessage(payload: { name: string; email: string; phone?: string; subject?: string; message: string }): Promise<{ message: string; id: string }>{

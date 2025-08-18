@@ -187,39 +187,43 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         </div>
         {viewMode === 'table' ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[900px] table-fixed">
               <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
                 <tr>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/4">מוצר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">קטגוריה</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">מחיר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">מלאי</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/8">סטטוס</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-1/6">פעולות</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[40%]">מוצר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[22%]">קטגוריה</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מחיר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מלאי</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">סטטוס</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[14%]">פעולות</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EC4899]/10">
                 {pagedProducts.map((p: any) => (
                   <tr key={p.id} className="hover:bg-[#EC4899]/5 transition-colors">
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         {p.main_image && (
                           <img
                             src={p.main_image}
                             alt=""
-                            className="w-10 h-10 rounded object-cover"
+                            className="w-10 h-10 rounded object-cover flex-shrink-0"
                             loading="lazy"
                             decoding="async"
                             sizes="40px"
                           />
                         )}
-                        <div>
-                          <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{p.name}</div>
-                          <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 line-clamp-1 max-w-[300px]">{p.description}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate" title={p.name}>{p.name}</div>
+                          <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 truncate" title={p.description}>{p.description}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{categoryById[p.category_id]?.name || '-'}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
+                      <div className="truncate" title={categoryById[p.category_id]?.name || '-' }>
+                        {categoryById[p.category_id]?.name || '-'}
+                      </div>
+                    </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">₪{p.price}</td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">{p.stock_quantity ?? 0}</td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
@@ -280,13 +284,13 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                   <div className="p-3 sm:p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold text-[#4B2E83] text-sm sm:text-base truncate">{p.name}</div>
-                        <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 truncate">{categoryById[p.category_id]?.name || '-'}</div>
+                        <div className="font-semibold text-[#4B2E83] text-sm sm:text-base truncate" title={p.name}>{p.name}</div>
+                        <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 truncate" title={categoryById[p.category_id]?.name || '-' }>{categoryById[p.category_id]?.name || '-'}</div>
                       </div>
                       <div className="text-[#EC4899] font-bold text-sm sm:text-base whitespace-nowrap">₪{p.price}</div>
                     </div>
                     {p.description && (
-                      <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 mt-2 line-clamp-2">{p.description}</div>
+                      <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 mt-2 line-clamp-2" title={p.description}>{p.description}</div>
                     )}
                     <div className="flex items-center justify-between mt-3">
                       <div className={`text-[11px] sm:text-xs px-2 py-1 rounded-full border ${
@@ -340,5 +344,6 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
     </div>
   );
 }
+
 
 
