@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { WEEKDAYS_OPTIONS } from '../../../utils';
 
 interface SessionEditModalProps {
@@ -259,17 +260,16 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    סטטוס
-                  </label>
-                  <select
+                  <ResponsiveSelect
+                    label="סטטוס"
                     value={formData.is_active ? 'true' : 'false'}
-                    onChange={(e) => handleInputChange('is_active', e.target.value === 'true')}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                  >
-                    <option value="true">פעיל</option>
-                    <option value="false">לא פעיל</option>
-                  </select>
+                    onChange={(v) => handleInputChange('is_active', v === 'true')}
+                    options={[
+                      { value: 'true', label: 'פעיל' },
+                      { value: 'false', label: 'לא פעיל' }
+                    ]}
+                    menuZIndex={70}
+                  />
                 </div>
               </div>
 
@@ -424,19 +424,13 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 <h4 className="text-xs sm:text-sm font-semibold text-[#4B2E83] mb-2 sm:mb-3">הוסיפי שיעור לקבוצה</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#4B2E83] mb-1">בחר שיעור</label>
-                    <select
+                    <ResponsiveSelect
+                      label="בחר שיעור"
                       value={selectedClassId}
-                      onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none text-sm"
-                    >
-                      <option value="">בחר שיעור...</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>
-                          {cls.name} - ₪{cls.price || 0}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => setSelectedClassId(v)}
+                      options={[{ value: '', label: 'בחר שיעור...' }, ...classes.map((cls) => ({ value: String(cls.id), label: `${cls.name} - ₪${cls.price || 0}` }))]}
+                      menuZIndex={70}
+                    />
                   </div>
                   <div className="flex items-start gap-2">
                     <input

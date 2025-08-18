@@ -5,6 +5,7 @@ import {
   getAvailableDatesMessageForSession
 } from '../../../utils/sessionsUtils';
 import UserDetailsSection from '../../../components/common/UserDetailsSection';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 
 import SuccessModal from './SuccessModal';
 import { useAdminData } from '../../contexts/AdminDataContext';
@@ -179,16 +180,16 @@ export default function RegistrationEditModal({
   const [datesMessage, setDatesMessage] = useState('');
   const [useCustomDateTime, setUseCustomDateTime] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  // const [showTimePicker, setShowTimePicker] = useState(false); // Removed unused state
   const [showCustomTimePicker, setShowCustomTimePicker] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  // const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isSearchingProfiles, setIsSearchingProfiles] = useState(false);
   const [searchResults, setSearchResults] = useState<Profile[]>(profiles || []);
   const previousProfilesRef = useRef<Profile[]>([]);
   
   // Add state for user credits
   const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
-  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [, setLoadingCredits] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [returnCredit, setReturnCredit] = useState<boolean>(true); // Default to return credit
   const [successFormData, setSuccessFormData] = useState<any>(null);
@@ -829,33 +830,33 @@ export default function RegistrationEditModal({
 
   };
 
-  const formatDateForInput = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // const formatDateForInput = (date: Date) => {
+  //   const year = date.getFullYear();
+  //   const month = String(date.getMonth() + 1).padStart(2, '0');
+  //   const day = String(date.getDate()).padStart(2, '0');
+  //   return `${year}-${month}-${day}`;
+  // };
 
-  const handleDateSelect = (date: Date) => {
-      handleInputChange('selected_date', formatDateForInput(date));
-      setShowDatePicker(false);
-  };
+  // const handleDateSelect = (date: Date) => {
+  //     handleInputChange('selected_date', formatDateForInput(date));
+  //     setShowDatePicker(false);
+  // };
 
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
+  // const nextMonth = () => {
+  //   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  // };
 
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  };
+  // const prevMonth = () => {
+  //   setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  // };
 
-  const handleMonthChange = (direction: 'next' | 'prev') => {
-    if (direction === 'next') {
-      nextMonth();
-    } else {
-      prevMonth();
-    }
-  };
+  // const handleMonthChange = (direction: 'next' | 'prev') => {
+  //   if (direction === 'next') {
+  //     nextMonth();
+  //   } else {
+  //     prevMonth();
+  //   }
+  // };
 
   if (!isOpen) return null;
 
@@ -927,27 +928,21 @@ export default function RegistrationEditModal({
                               <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
                                 קבוצה *
                               </label>
-                              <select
-                                required
+                              <ResponsiveSelect
+                                label="קבוצה *"
                                 value={formData.session_id}
-                                onChange={(e) => handleInputChange('session_id', e.target.value)}
-                                className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
-                              >
-                                <option value="">בחרי קבוצה...</option>
-                                {sessions.map((session) => {
+                                onChange={(v) => handleInputChange('session_id', v)}
+                                options={[{ value: '', label: 'בחרי קבוצה...' }, ...sessions.map((session) => {
                                   let label = session.name || session.session_name || 'קבוצה ללא שם';
                                   if (session.weekdays && session.weekdays.length > 0) {
                                     const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
                                     label += ' (' + session.weekdays.map(d => dayNames[d]).join(', ') + ')';
                                   }
                                   if (session.start_time && session.end_time) label += ` ${session.start_time}-${session.end_time}`;
-                                  return (
-                                    <option key={session.id} value={session.id}>
-                                      {label}
-                                    </option>
-                                  );
-                                })}
-                              </select>
+                                  return ({ value: String(session.id), label });
+                                })]}
+                                menuZIndex={70}
+                              />
                               {errors.session_id && (
                                 <p className="text-red-500 text-xs mt-2">{errors.session_id}</p>
                               )}
@@ -976,19 +971,13 @@ export default function RegistrationEditModal({
                                     );
                                   }
                                   return (
-                                    <select
-                                      required
+                                    <ResponsiveSelect
+                                      label="שיעור *"
                                       value={formData.class_id}
-                                      onChange={(e) => handleInputChange('class_id', e.target.value)}
-                                      className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
-                                    >
-                                      <option value="">בחרי שיעור...</option>
-                                      {relatedClasses.map(cls => (
-                                        <option key={cls.id} value={cls.id}>
-                                          {cls.name} - {cls.price} ש"ח
-                                        </option>
-                                      ))}
-                                    </select>
+                                      onChange={(v) => handleInputChange('class_id', v)}
+                                      options={[{ value: '', label: 'בחרי שיעור...' }, ...relatedClasses.map(cls => ({ value: String(cls.id), label: `${cls.name} - ${cls.price} ש"ח` }))]}
+                                      menuZIndex={70}
+                                    />
                                   );
                                 })()}
                                 {errors.class_id && (
@@ -1436,20 +1425,17 @@ export default function RegistrationEditModal({
                                       );
                                     }
                                     return (
-                                      <select
-                                        required
+                                      <ResponsiveSelect
+                                        label="סוג קרדיט *"
                                         value={formData.credit_type}
-                                        onChange={(e) => handleInputChange('credit_type', e.target.value)}
-                                        className="w-full px-3 py-2.5 text-sm border border-[#EC4899]/20 rounded-xl focus:ring-2 focus:outline-none transition-all bg-white"
-                                      >
-                                        <option value="">בחרי סוג קרדיט</option>
-                                        {hasGroupCredits && (
-                                          <option value="group">קרדיט קבוצתי ({availableGroupCredits} זמינים)</option>
-                                        )}
-                                        {hasPrivateCredits && (
-                                          <option value="private">קרדיט פרטי ({availablePrivateCredits} זמינים)</option>
-                                        )}
-                                      </select>
+                                        onChange={(v) => handleInputChange('credit_type', v)}
+                                        options={[
+                                          { value: '', label: 'בחרי סוג קרדיט' },
+                                          ...(hasGroupCredits ? [{ value: 'group', label: `קרדיט קבוצתי (${availableGroupCredits} זמינים)` }] : []),
+                                          ...(hasPrivateCredits ? [{ value: 'private', label: `קרדיט פרטי (${availablePrivateCredits} זמינים)` }] : [])
+                                        ]}
+                                        menuZIndex={70}
+                                      />
                                     );
                                   })()}
                                   {errors.credit_type && (

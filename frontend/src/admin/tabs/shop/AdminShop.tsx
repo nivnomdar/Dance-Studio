@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAdminData } from '../../contexts';
 import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../components';
 import { apiService } from '../../../lib/api';
 import Modal from '../../../components/common/Modal';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { ProductsTab, OrdersTab } from './index';
 
 interface AdminShopProps {
@@ -12,23 +13,13 @@ interface AdminShopProps {
 
 type ShopTab = 'products' | 'orders';
 
-export default function AdminShop({ profile }: AdminShopProps) {
+export default function AdminShop({ profile: _profile }: AdminShopProps) {
   const { data, isLoading, error, fetchShop, isFetching } = useAdminData();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [parentCategoryId, setParentCategoryId] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [productForm, setProductForm] = useState({
-    name: '',
-    category_id: '',
-    description: '',
-    price: '',
-    stock_quantity: '',
-    main_image: '',
-    gallery_images: ''
-  });
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  // Removed unused product editing state (managed in child tab/modals)
   const [activeTab, setActiveTab] = useState<ShopTab>('products');
 
   // Load data only if missing or stale
@@ -38,7 +29,6 @@ export default function AdminShop({ profile }: AdminShopProps) {
     }
   }, [data.products.length, fetchShop]);
 
-  const activeProducts = data.products.filter((product: any) => product.is_active);
   const outOfStockProducts = data.products.filter((product: any) => product.stock_quantity === 0);
   const pendingOrders = data.orders.filter(order => order.status === 'pending');
   
@@ -51,7 +41,7 @@ export default function AdminShop({ profile }: AdminShopProps) {
   if (isLoading && data.products.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <div className="flex flex-col sm:flex-row justify_between items-start sm:items-center gap-3 sm:gap-0">
           <div>
             <h2 className="text-2xl font-bold text-[#4B2E83]">ניהול חנות</h2>
             <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול מוצרים והזמנות בחנות</p>
@@ -195,17 +185,13 @@ export default function AdminShop({ profile }: AdminShopProps) {
             />
           </div>
           <div>
-            <label className="block text-sm text-[#4B2E83]/70 mb-1">קטגוריית אם (לא חובה)</label>
-            <select
+            <ResponsiveSelect
+              label="קטגוריית אם (לא חובה)"
               value={parentCategoryId || ''}
-              onChange={(e) => setParentCategoryId(e.target.value || undefined)}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">ללא</option>
-              {data.categories?.filter((c: any) => !c.parent_id).map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={(v) => setParentCategoryId(v || undefined)}
+              options={[{ value: '', label: 'ללא' }, ...(data.categories?.filter((c: any) => !c.parent_id) || []).map((c: any) => ({ value: String(c.id), label: c.name }))]}
+              menuZIndex={70}
+            />
           </div>
           <div className="flex justify-end gap-2">
             <button className="px-4 py-2 rounded-lg border" onClick={() => setIsCategoryModalOpen(false)}>ביטול</button>

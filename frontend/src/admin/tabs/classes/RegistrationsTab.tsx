@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { usePopup } from '../../../contexts/PopupContext';
 import { RegistrationEditModal } from '../../modals';
 import { Pagination } from '../../components';
@@ -581,42 +582,32 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
               />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס הרשמה</label>
-              <select
+              <ResponsiveSelect
+                label="סטטוס הרשמה"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              >
-                <option value="all">כל ההרשמות</option>
-                <option value="active">פעילות בלבד</option>
-                <option value="cancelled">בוטלו בלבד</option>
-              </select>
+                onChange={(v) => setFilterStatus(v)}
+                options={[
+                  { value: 'all', label: 'כל ההרשמות' },
+                  { value: 'active', label: 'פעילות בלבד' },
+                  { value: 'cancelled', label: 'בוטלו בלבד' }
+                ]}
+              />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">שיעור</label>
-              <select
+              <ResponsiveSelect
+                label="שיעור"
                 value={filterClass}
-                onChange={(e) => setFilterClass(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              >
-                <option value="all">כל השיעורים</option>
-                {data.classes?.map((cls: any) => (
-                  <option key={cls.id} value={cls.id}>{cls.name}</option>
-                ))}
-              </select>
+                onChange={(v) => setFilterClass(v)}
+                options={[{ value: 'all', label: 'כל השיעורים' }, ...(data.classes || []).map((cls: any) => ({ value: String(cls.id), label: cls.name }))]}
+              />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קבוצה</label>
-              <select
+              <ResponsiveSelect
+                label="קבוצה"
                 value={filterSession}
-                onChange={(e) => setFilterSession(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              >
-                <option value="all">כל הקבוצות</option>
-                {data.sessions?.map((session: any) => (
-                  <option key={session.id} value={session.id}>{session.name}</option>
-                ))}
-              </select>
+                onChange={(v) => setFilterSession(v)}
+                options={[{ value: 'all', label: 'כל הקבוצות' }, ...(data.sessions || []).map((s: any) => ({ value: String(s.id), label: s.name }))]}
+              />
             </div>
             <div>
               <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תאריך</label>

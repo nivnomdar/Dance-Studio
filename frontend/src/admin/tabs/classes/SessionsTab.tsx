@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { SessionDetailsModal, RegistrationEditModal, SessionEditModal } from '../../modals';
 import { weekdaysToHebrew } from '../../../utils/weekdaysUtils';
 import { apiService } from '../../../lib/api';
@@ -97,16 +98,16 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
             />
           </div>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס קבוצה</label>
-            <select
+            <ResponsiveSelect
+              label="סטטוס קבוצה"
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            >
-              <option value="all">כל הקבוצות</option>
-              <option value="active">פעילות בלבד</option>
-              <option value="inactive">לא פעילות</option>
-            </select>
+              onChange={(v) => setFilterStatus(v)}
+              options={[
+                { value: 'all', label: 'כל הקבוצות' },
+                { value: 'active', label: 'פעילות בלבד' },
+                { value: 'inactive', label: 'לא פעילות' }
+              ]}
+            />
           </div>
           <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
             <button

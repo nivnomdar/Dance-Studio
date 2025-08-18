@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 
 interface ClassEditModalProps {
   classData: any;
@@ -183,19 +184,18 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
-                    רמה
-                  </label>
-                  <select
+                  <ResponsiveSelect
+                    label="רמה"
                     value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                    className="w-full px-4 py-3 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                  >
-                    <option value="מתחילות">מתחילות</option>
-                    <option value="בינוניות">בינוניות</option>
-                    <option value="מתקדמות">מתקדמות</option>
-                    <option value="כל הרמות">כל הרמות</option>
-                  </select>
+                    onChange={(v) => setFormData({ ...formData, level: v })}
+                    options={[
+                      { value: 'מתחילות', label: 'מתחילות' },
+                      { value: 'בינוניות', label: 'בינוניות' },
+                      { value: 'מתקדמות', label: 'מתקדמות' },
+                      { value: 'כל הרמות', label: 'כל הרמות' }
+                    ]}
+                    menuZIndex={70}
+                  />
                 </div>
               </div>
 
@@ -267,37 +267,36 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                      ערכת צבע
-                    </label>
-                    <select
+                    <ResponsiveSelect
+                      label="ערכת צבע"
                       value={formData.color_scheme}
-                      onChange={(e) => setFormData({ ...formData, color_scheme: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                    >
-                    <option value="pink">ורוד</option>
-                    <option value="purple">סגול</option>
-                    <option value="emerald">ירוק</option>
-                    <option value="blue">כחול</option>
-                    <option value="red">אדום</option>
-                    <option value="orange">כתום</option>
-                    <option value="yellow">צהוב</option>
-                    <option value="green">ירוק כהה</option>
-                    <option value="teal">טורקיז</option>
-                    <option value="cyan">תכלת</option>
-                    <option value="indigo">אינדיגו</option>
-                    <option value="violet">סגלגל</option>
-                    <option value="fuchsia">פוקסיה</option>
-                    <option value="rose">ורדרד</option>
-                    <option value="slate">אפור כהה</option>
-                    <option value="gray">אפור</option>
-                    <option value="zinc">זינק</option>
-                    <option value="neutral">נייטרלי</option>
-                    <option value="stone">אבן</option>
-                    <option value="amber">ענבר</option>
-                    <option value="lime">ליים</option>
-                  </select>
-                </div>
+                      onChange={(v) => setFormData({ ...formData, color_scheme: v })}
+                      options={[
+                        { value: 'pink', label: 'ורוד' },
+                        { value: 'purple', label: 'סגול' },
+                        { value: 'emerald', label: 'ירוק' },
+                        { value: 'blue', label: 'כחול' },
+                        { value: 'red', label: 'אדום' },
+                        { value: 'orange', label: 'כתום' },
+                        { value: 'yellow', label: 'צהוב' },
+                        { value: 'green', label: 'ירוק כהה' },
+                        { value: 'teal', label: 'טורקיז' },
+                        { value: 'cyan', label: 'תכלת' },
+                        { value: 'indigo', label: 'אינדיגו' },
+                        { value: 'violet', label: 'סגלגל' },
+                        { value: 'fuchsia', label: 'פוקסיה' },
+                        { value: 'rose', label: 'ורדרד' },
+                        { value: 'slate', label: 'אפור כהה' },
+                        { value: 'gray', label: 'אפור' },
+                        { value: 'zinc', label: 'זינק' },
+                        { value: 'neutral', label: 'נייטרלי' },
+                        { value: 'stone', label: 'אבן' },
+                        { value: 'amber', label: 'ענבר' },
+                        { value: 'lime', label: 'ליים' }
+                      ]}
+                      menuZIndex={70}
+                    />
+                  </div>
               </div>
 
               {/* שורה שנייה - מדיה */}
@@ -423,22 +422,19 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
               
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    סוג הרשמה
-                  </label>
-                  <div className="space-y-2">
-                    <select
-                      value={formData.registration_type}
-                      onChange={(e) => setFormData({ ...formData, registration_type: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                    >
-                      <option value="standard">הרשמה רגילה</option>
-                      <option value="appointment_only">רק בתיאום</option>
-                    </select>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <p><strong>הרשמה רגילה:</strong> תלמידות יכולות להירשם ישירות לשיעור</p>
-                      <p><strong>רק בתיאום:</strong> תלמידות צריכות לתאם עם המורה לפני ההרשמה</p>
-                    </div>
+                  <ResponsiveSelect
+                    label="סוג הרשמה"
+                    value={formData.registration_type}
+                    onChange={(v) => setFormData({ ...formData, registration_type: v })}
+                    options={[
+                      { value: 'standard', label: 'הרשמה רגילה' },
+                      { value: 'appointment_only', label: 'רק בתיאום' }
+                    ]}
+                    menuZIndex={70}
+                  />
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <p><strong>הרשמה רגילה:</strong> תלמידות יכולות להירשם ישירות לשיעור</p>
+                    <p><strong>רק בתיאום:</strong> תלמידות צריכות לתאם עם המורה לפני ההרשמה</p>
                   </div>
                 </div>
                 <div>
@@ -457,44 +453,38 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    סוג קרדיטים
-                  </label>
-                  <div className="space-y-2">
-                    <select
-                      value={formData.class_type}
-                      onChange={(e) => setFormData({ ...formData, class_type: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                    >
-                      <option value="group">קבוצתי</option>
-                      <option value="private">פרטי</option>
-                      <option value="both">שניהם</option>
-                    </select>
-                    <p className="text-xs text-gray-600">
-                      סוג הקרדיטים שהשיעור מציע: קבוצתי, פרטי, או שניהם
-                    </p>
-                  </div>
+                  <ResponsiveSelect
+                    label="סוג קרדיטים"
+                    value={formData.class_type}
+                    onChange={(v) => setFormData({ ...formData, class_type: v })}
+                    options={[
+                      { value: 'group', label: 'קבוצתי' },
+                      { value: 'private', label: 'פרטי' },
+                      { value: 'both', label: 'שניהם' }
+                    ]}
+                    menuZIndex={70}
+                  />
+                  <p className="text-xs text-gray-600">
+                    סוג הקרדיטים שהשיעור מציע: קבוצתי, פרטי, או שניהם
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    קטגוריה
-                  </label>
-                  <div className="space-y-2">
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                    >
-                      <option value="">בחרי קטגוריה</option>
-                      <option value="trial">שיעור ניסיון</option>
-                      <option value="single">שיעור בודד</option>
-                      <option value="private">שיעור פרטי</option>
-                      <option value="subscription">מנוי</option>
-                    </select>
-                    <p className="text-xs text-gray-600">
-                      קטגוריית השיעור (משפיע על סוג הקרדיטים בשיעורים מסוג 'both')
-                    </p>
-                  </div>
+                  <ResponsiveSelect
+                    label="קטגוריה"
+                    value={formData.category}
+                    onChange={(v) => setFormData({ ...formData, category: v })}
+                    options={[
+                      { value: '', label: 'בחרי קטגוריה' },
+                      { value: 'trial', label: 'שיעור ניסיון' },
+                      { value: 'single', label: 'שיעור בודד' },
+                      { value: 'private', label: 'שיעור פרטי' },
+                      { value: 'subscription', label: 'מנוי' }
+                    ]}
+                    menuZIndex={70}
+                  />
+                  <p className="text-xs text-gray-600">
+                    קטגוריית השיעור (משפיע על סוג הקרדיטים בשיעורים מסוג 'both')
+                  </p>
                 </div>
               </div>
               

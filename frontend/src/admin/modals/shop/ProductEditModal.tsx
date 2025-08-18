@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../../../lib/api';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 
 interface ProductEditModalProps {
   isOpen: boolean;
@@ -38,7 +39,6 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
   }, [product]);
 
   const handleSave = async () => {
-    if (!product) return;
     try {
       setSaving(true);
       const payload: any = {
@@ -52,7 +52,11 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
           ? form.gallery_images.split(',').map(s => s.trim()).filter(Boolean)
           : []
       };
-      await apiService.shop.updateProduct(product.id, payload);
+      if (product && product.id) {
+        await apiService.shop.updateProduct(product.id, payload);
+      } else {
+        await apiService.shop.createProduct(payload);
+      }
       await onSaved();
       onClose();
     } finally {
@@ -66,7 +70,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] overflow-visible shadow-2xl">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-6 text-white">
           <div className="flex justify-between items-center">
@@ -86,32 +90,34 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto max-h-[calc(95vh-140px)]">
+        <div className="overflow-y-auto max-h-[calc(95vh-140px)] overscroll-contain">
           <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
             {/* Base & Price */}
             <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-6">
               <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4">פרטי בסיס ומחיר</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-1">
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">שם המוצר *</label>
                   <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קטגוריה *</label>
-                  <select value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none">
-                    <option value="">בחרי קטגוריה</option>
-                    {categories.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <ResponsiveSelect
+                    id="product-category"
+                    name="product-category"
+                    label="קטגוריה *"
+                    value={form.category_id}
+                    onChange={(v) => setForm({ ...form, category_id: v })}
+                    placeholder="בחרי קטגוריה"
+                    options={(categories || []).map((c: any) => ({ value: String(c.id), label: c.name }))}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מחיר (₪) *</label>
-                  <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+                  <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none [field-sizing:content]" />
                 </div>
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מלאי *</label>
-                  <input type="number" value={form.stock_quantity} onChange={e => setForm({ ...form, stock_quantity: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+                  <input type="number" value={form.stock_quantity} onChange={e => setForm({ ...form, stock_quantity: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none [field-sizing:content]" />
                 </div>
               </div>
               <div className="mt-3 sm:mt-4">

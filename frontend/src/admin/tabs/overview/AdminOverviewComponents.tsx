@@ -1,4 +1,5 @@
 import React from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { SessionData } from '../../types/admin';
 import { getDayOfWeekName, getOccupancyColor, groupRegistrationsByTime } from '../../utils/adminOverviewUtils';
 
@@ -87,16 +88,16 @@ export const AdminOverviewFilters: React.FC<FiltersProps> = ({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#4B2E83] mb-2">סטטוס קבוצה</label>
-        <select
+        <ResponsiveSelect
+          label="סטטוס קבוצה"
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="w-full px-4 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-        >
-          <option value="all">כל הקבוצות הקרובות</option>
-          <option value="active">פעילות בלבד</option>
-          <option value="inactive">לא פעילות</option>
-        </select>
+          onChange={(v) => setFilterStatus(v)}
+          options={[
+            { value: 'all', label: 'כל הקבוצות הקרובות' },
+            { value: 'active', label: 'פעילות בלבד' },
+            { value: 'inactive', label: 'לא פעילות' }
+          ]}
+        />
       </div>
     </div>
   </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { ADMIN_STYLES } from '../../utils/adminStyles';
 
 interface PaginationProps {
@@ -120,17 +121,14 @@ export default function Pagination({
         {showItemsPerPage && onItemsPerPageChange && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">פריטים בעמוד:</span>
-            <select
-              value={itemsPerPage}
-              onChange={handleItemsPerPageChange}
-              className={ADMIN_STYLES.select}
-            >
-              {itemsPerPageOptions.map(option => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+            <div className="min-w-[100px]">
+              <ResponsiveSelect
+                label="פריטים בעמוד"
+                value={String(itemsPerPage)}
+                onChange={(v) => onItemsPerPageChange && onItemsPerPageChange(Number(v))}
+                options={itemsPerPageOptions.map(o => ({ value: String(o), label: String(o) }))}
+              />
+            </div>
           </div>
         )}
 

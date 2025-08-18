@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import ProductEditModal from '../../modals/shop/ProductEditModal';
 import ProductStatusModal from '../../modals/shop/ProductStatusModal';
 import ProductDeleteModal from '../../modals/shop/ProductDeleteModal';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 
 export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop: () => Promise<void> }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,70 +77,88 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
               className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
             />
           </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קטגוריה</label>
-            <select
-              value={filterCategoryId}
-              onChange={(e) => { setFilterCategoryId(e.target.value); setPage(1); }}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            >
-              <option value="all">כל הקטגוריות</option>
-              {data.categories?.map((c: any) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מלאי</label>
-            <select
-              value={stockFilter}
-              onChange={(e) => { setStockFilter(e.target.value as any); setPage(1); }}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            >
-              <option value="all">כל המלאי</option>
-              <option value="in">במלאי</option>
-              <option value="low">מלאי נמוך (≤5)</option>
-              <option value="out">אזל מהמלאי</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value as any); setPage(1); }}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            >
-              <option value="all">הכל</option>
-              <option value="active">פעיל</option>
-              <option value="inactive">לא פעיל</option>
-            </select>
-          </div>
+          <ResponsiveSelect
+            label="קטגוריה"
+            value={filterCategoryId}
+            onChange={(v) => { setFilterCategoryId(v); setPage(1); }}
+            options={[{ value: 'all', label: 'כל הקטגוריות' }, ...(data.categories || []).map((c: any) => ({ value: c.id, label: c.name }))]}
+          />
+          <ResponsiveSelect
+            label="מלאי"
+            value={stockFilter}
+            onChange={(v) => { setStockFilter(v as any); setPage(1); }}
+            options={[
+              { value: 'all', label: 'כל המלאי' },
+              { value: 'in', label: 'במלאי' },
+              { value: 'low', label: 'מלאי נמוך (≤5)' },
+              { value: 'out', label: 'אזל מהמלאי' }
+            ]}
+          />
+          <ResponsiveSelect
+            label="סטטוס"
+            value={statusFilter}
+            onChange={(v) => { setStatusFilter(v as any); setPage(1); }}
+            options={[
+              { value: 'all', label: 'הכל' },
+              { value: 'active', label: 'פעיל' },
+              { value: 'inactive', label: 'לא פעיל' }
+            ]}
+          />
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מיון</label>
-              <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none">
-                <option value="created">תאריך</option>
-                <option value="name">שם</option>
-                <option value="price">מחיר</option>
-                <option value="stock">מלאי</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">כיוון</label>
-              <select value={sortDir} onChange={(e) => setSortDir(e.target.value as any)} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none">
-                <option value="desc">יורד</option>
-                <option value="asc">עולה</option>
-              </select>
-            </div>
+            <ResponsiveSelect
+              label="מיון"
+              value={sortKey}
+              onChange={(v) => setSortKey(v as any)}
+              options={[
+                { value: 'created', label: 'תאריך' },
+                { value: 'name', label: 'שם' },
+                { value: 'price', label: 'מחיר' },
+                { value: 'stock', label: 'מלאי' }
+              ]}
+            />
+            <ResponsiveSelect
+              label="כיוון"
+              value={sortDir}
+              onChange={(v) => setSortDir(v as any)}
+              options={[
+                { value: 'desc', label: 'יורד' },
+                { value: 'asc', label: 'עולה' }
+              ]}
+            />
           </div>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</label>
-            <select
-              value={viewMode}
-              onChange={(e) => setViewMode(e.target.value as 'table' | 'cards')}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-            >
-              <option value="table">טבלה</option>
-              <option value="cards">כרטיסים</option>
-            </select>
+            <span className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</span>
+            <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                aria-pressed={viewMode === 'table'}
+                aria-label="תצוגת טבלה"
+                title="תצוגת טבלה"
+                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 ${viewMode === 'table' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="4" rx="1"/>
+                  <rect x="3" y="10" width="18" height="4" rx="1"/>
+                  <rect x="3" y="16" width="18" height="4" rx="1"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                aria-pressed={viewMode === 'cards'}
+                aria-label="תצוגת כרטיסים"
+                title="תצוגת כרטיסים"
+                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 ${viewMode === 'cards' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -148,7 +167,15 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
         <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
           <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">ניהול מוצרים</h2>
-          <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
+            <button
+              onClick={() => { setEditProduct(null); setEditOpen(true); }}
+              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+            >
+              הוסיפי מוצר חדש
+            </button>
+          </div>
         </div>
         {viewMode === 'table' ? (
           <div className="overflow-x-auto">
@@ -168,7 +195,16 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                   <tr key={p.id} className="hover:bg-[#EC4899]/5 transition-colors">
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
                       <div className="flex items-center gap-3">
-                        {p.main_image && <img src={p.main_image} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" />}
+                        {p.main_image && (
+                          <img
+                            src={p.main_image}
+                            alt=""
+                            className="w-10 h-10 rounded object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            sizes="40px"
+                          />
+                        )}
                         <div>
                           <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate">{p.name}</div>
                           <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 line-clamp-1 max-w-[300px]">{p.description}</div>
@@ -206,12 +242,19 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           </div>
         ) : (
           <div className="p-3 sm:p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {pagedProducts.map((p: any) => (
                 <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="relative bg-gray-50">
                     {p.main_image ? (
-                      <img src={p.main_image} alt={p.name || ''} className="w-full h-40 sm:h-44 lg:h-48 object-cover" loading="lazy" />
+                      <img
+                        src={p.main_image}
+                        alt={p.name || ''}
+                        className="w-full h-40 sm:h-44 lg:h-48 object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
                     ) : (
                       <div className="w-full h-40 sm:h-44 lg:h-48 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 flex items-center justify-center text-[#4B2E83]/60 text-sm">אין תמונה</div>
                     )}
