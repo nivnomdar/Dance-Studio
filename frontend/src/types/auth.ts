@@ -59,7 +59,7 @@ export interface UserProfile {
   language: string;
   created_at: string;
   updated_at: string;
-  has_used_trial_class: boolean;
+  has_used_trial_class?: boolean; // deprecated; kept optional for backward compatibility
 }
 
 // Auth state enum for better type safety

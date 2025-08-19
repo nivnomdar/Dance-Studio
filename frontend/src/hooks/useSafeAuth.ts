@@ -7,7 +7,7 @@ import {
   validateUserForOperation,
   validateSessionForOperation
 } from '../utils/authUtils';
-import { SafeUser, SafeSession } from '../types/auth';
+// Note: keep imports minimal; types are inferred where possible
 
 /**
  * Safe auth hook that provides null-safe access to auth data
@@ -45,7 +45,7 @@ export const useSafeAuth = () => {
   // Safe profile access
   const profile = auth.profile;
   const isAdmin = profile?.role === 'admin';
-  const hasUsedTrialClass = profile?.has_used_trial_class || false;
+  const hasUsedTrialClass = false; // deprecated global flag; per-class logic now
   
   // Safe user info
   const userInfo = {

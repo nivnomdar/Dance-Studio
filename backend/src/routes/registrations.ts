@@ -587,31 +587,28 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       logger.info('No user_id provided, skipping existing registration check');
     }
 
-    // Check if this is a trial class and user has already used it
-    if (classData.slug === 'trial-class' && user_id) {
-      logger.info(`Trial class registration attempt - user_id: ${user_id}`);
-      
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('has_used_trial_class')
-        .eq('id', user_id)
-        .single();
+    // Check if this is a trial class and user has already used THIS trial (per class)
+    if (user_id && (classData.category || '').toLowerCase() === 'trial') {
+      logger.info(`Trial class (per-class) registration attempt - user_id: ${user_id}, class_id: ${class_id}`);
 
-      if (profileError) {
-        logger.error('Error checking trial class status:', profileError);
-        throw new AppError('Failed to check trial class status', 500);
+      const { data: usedRecord, error: usedError } = await supabase
+        .from('user_trial_classes')
+        .select('id')
+        .eq('user_id', user_id)
+        .eq('class_id', class_id)
+        .maybeSingle();
+
+      if (usedError) {
+        logger.error('Error checking per-class trial usage:', usedError);
+        throw new AppError('Failed to check trial usage status', 500);
       }
 
-      logger.info(`User profile trial class status: has_used_trial_class = ${userProfile?.has_used_trial_class}`);
-
-      if (userProfile?.has_used_trial_class) {
-        logger.info(`User ${user_id} already used trial class, registration blocked`);
-        throw new AppError('Already used trial class. Cannot register for another trial class.', 400);
+      if (usedRecord) {
+        logger.info(`User ${user_id} already used trial for class ${class_id}, registration blocked`);
+        throw new AppError('כבר השתמשת בשיעור הניסיון הזה. לא ניתן להירשם אליו שוב.', 400);
       } else {
-        logger.info(`User ${user_id} can register for trial class`);
+        logger.info(`User ${user_id} can register for this trial class`);
       }
-    } else if (classData.slug === 'trial-class' && !user_id) {
-      logger.info('Trial class registration attempt without user_id, skipping trial class check');
     }
 
     // Validate credit usage with new logic
@@ -804,15 +801,16 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     console.log('Registration created successfully:', data);
     logger.info('Registration created successfully:', data);
 
-    // If this is a trial class, update the user's profile
-    if (classData.slug === 'trial-class') {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ has_used_trial_class: true })
-        .eq('id', user_id);
+    // If this is a trial class, record per-class usage (idempotent by unique constraint)
+    if ((classData.category || '').toLowerCase() === 'trial') {
+      const { error: insertUsageError } = await supabase
+        .from('user_trial_classes')
+        .insert({ user_id, class_id })
+        .select('id')
+        .single();
 
-      if (updateError) {
-        logger.error('Failed to update trial class status:', updateError);
+      if (insertUsageError && insertUsageError.code !== '23505') { // ignore unique violation
+        logger.error('Failed to record trial usage:', insertUsageError);
         // Don't fail the registration, just log the error
       }
     }
@@ -986,18 +984,19 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
       throw new AppError('Registration not found', 404);
     }
 
-    // If this is a trial class being cancelled, update the user's profile
-    if (registrationData.class.slug === 'trial-class' && status === 'cancelled') {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ has_used_trial_class: false })
-        .eq('id', registrationData.user_id);
+    // If this is a trial class being cancelled, remove per-class usage record to allow re-register
+    if ((registrationData.class.category || '').toLowerCase() === 'trial' && status === 'cancelled') {
+      const { error: deleteUsageError } = await supabase
+        .from('user_trial_classes')
+        .delete()
+        .eq('user_id', registrationData.user_id)
+        .eq('class_id', registrationData.class_id);
 
-      if (updateError) {
-        logger.error('Failed to update trial class status in profile:', updateError);
+      if (deleteUsageError) {
+        logger.error('Failed to delete trial usage record on cancel:', deleteUsageError);
         // Don't fail the status update, just log the error
       } else {
-        logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
+        logger.info(`Trial usage record removed for user ${registrationData.user_id} and class ${registrationData.class_id}`);
       }
     }
 
@@ -1135,45 +1134,18 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
       throw new AppError('Failed to cancel registration', 500);
     }
 
-    // If this is a trial class being cancelled, update the user's profile
-    if (registrationData.class.slug === 'trial-class') {
+    // If this is a trial class being cancelled, remove per-class usage record to allow re-register (user endpoint)
+    if ((registrationData.class.category || '').toLowerCase() === 'trial') {
       logger.info(`Trial class cancellation detected for user ${registrationData.user_id}`);
-      
-      const { data: profileBefore, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('has_used_trial_class')
-        .eq('id', registrationData.user_id)
-        .single();
-      
-      if (profileCheckError) {
-        logger.error('Failed to check profile before update:', profileCheckError);
+      const { error: deleteUsageError } = await supabase
+        .from('user_trial_classes')
+        .delete()
+        .eq('user_id', registrationData.user_id)
+        .eq('class_id', registrationData.class_id);
+      if (deleteUsageError) {
+        logger.error('Failed to delete trial usage record on cancel (user endpoint):', deleteUsageError);
       } else {
-        logger.info(`Profile before update - has_used_trial_class: ${profileBefore?.has_used_trial_class}`);
-      }
-      
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ has_used_trial_class: false })
-        .eq('id', registrationData.user_id);
-
-      if (updateError) {
-        logger.error('Failed to update trial class status in profile:', updateError);
-        // Don't fail the cancellation, just log the error
-      } else {
-        logger.info(`Trial class cancelled for user ${registrationData.user_id}, has_used_trial_class set to false`);
-        
-        // Verify the update
-        const { data: profileAfter, error: profileAfterError } = await supabase
-          .from('profiles')
-          .select('has_used_trial_class')
-          .eq('id', registrationData.user_id)
-          .single();
-        
-        if (profileAfterError) {
-          logger.error('Failed to verify profile update:', profileAfterError);
-        } else {
-          logger.info(`Profile after update - has_used_trial_class: ${profileAfter?.has_used_trial_class}`);
-        }
+        logger.info(`Trial usage record removed (user endpoint) for user ${registrationData.user_id} and class ${registrationData.class_id}`);
       }
     }
 

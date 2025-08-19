@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaClock, FaCalendarAlt, FaSignInAlt } from 'react-icons/fa';
 import { registrationsService } from '../lib/registrations';
@@ -24,10 +24,10 @@ interface StandardRegistrationProps {
 
 const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }) => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
+  const { user, loading: authLoading, session, profile: contextProfile } = useAuth();
   
   // State
-  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
+  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({ first_name: '', last_name: '', phone: '' });
@@ -59,9 +59,10 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [loadingSpots, setLoadingSpots] = useState<{ [key: string]: boolean }>({});
   const [registrations, setRegistrations] = useState<any[]>([]);
+  const [hasUsedThisTrial, setHasUsedThisTrial] = useState(false);
 
   // Derived - memoized for performance
-  const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
+  // const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
 
   // Function to load all data at once for better performance
   const loadAllData = useCallback(async (classId: string) => {
@@ -107,6 +108,36 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       loadAllData(classData.id);
     }
   }, [classData.id, loadAllData]);
+
+  // Load per-class trial usage for this class
+  useEffect(() => {
+    const loadTrialUsage = async () => {
+      try {
+        if (!user?.id || !session?.access_token) {
+          setHasUsedThisTrial(false);
+          return;
+        }
+        if ((classData?.category || '').toLowerCase() !== 'trial') {
+          setHasUsedThisTrial(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('user_trial_classes')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('class_id', classData.id)
+          .maybeSingle();
+        if (error && error.code !== 'PGRST116') {
+          setHasUsedThisTrial(false);
+        } else {
+          setHasUsedThisTrial(Boolean(data));
+        }
+      } catch {
+        setHasUsedThisTrial(false);
+      }
+    };
+    loadTrialUsage();
+  }, [user?.id, session?.access_token, classData?.id, classData?.category]);
 
   // Fetch available times (with cache) - only when date is selected and not already cached
   useEffect(() => {
@@ -371,9 +402,9 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       return;
     }
     
-    // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו
-    if (classData.slug === 'trial-class' && profile?.has_used_trial_class) {
-      setRegistrationError('כבר השתמשת בשיעור ניסיון. לא ניתן להזמין שיעור ניסיון נוסף.');
+    // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו (פר-שיעור)
+    if ((classData.category || '').toLowerCase() === 'trial' && hasUsedThisTrial) {
+      setRegistrationError('כבר השתמשת בשיעור הניסיון הזה. לא ניתן להזמין אותו שוב.');
       return;
     }
     
@@ -409,6 +440,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       
       const registrationData = {
         class_id: classData.id,
+        user_id: user.id,
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
         ...(spotsInfo?.sessionClassId && { session_class_id: spotsInfo.sessionClassId }),
         // Always include session_class_id - the backend will handle finding/creating it
@@ -425,12 +457,6 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       };
       
       await registrationsService.createRegistration(registrationData, session?.access_token);
-      
-      if (classData.slug === 'trial-class') {
-        updateProfileTrialClass().catch(error => {
-          console.error('Error updating trial class status:', error);
-        });
-      }
       
       // שמירת הנתונים לפני האיפוס
       setSavedRegistrationData({
@@ -478,35 +504,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
     }
   };
 
-  const updateProfileTrialClass = async () => {
-    if (!user || !session) return;
-    
-    try {
-      console.log(`Updating trial class status for user ${user.id}`);
-      
-      const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
-        method: 'PATCH',
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify({
-          has_used_trial_class: true
-        })
-      });
-      
-      if (updateResponse.ok) {
-        console.log(`Successfully updated trial class status for user ${user.id}`);
-        await loadProfile();
-      } else {
-        console.error(`Failed to update trial class status for user ${user.id}:`, updateResponse.status, updateResponse.statusText);
-      }
-    } catch (error) {
-      console.error('Error updating trial class status:', error);
-    }
-  };
+  // removed profile trial flag updater; handled per-class on backend
 
   const handleLogin = async () => {
     try {
@@ -526,8 +524,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
     }
   };
 
-  // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו - חסימת גישה
-  if (classData?.slug === 'trial-class' && user && !authLoading && profile?.has_used_trial_class) {
+  // בדיקה אם זה שיעור ניסיון והמשתמש כבר השתמש בו - חסימת גישה (פר-שיעור)
+  if ((classData?.category || '').toLowerCase() === 'trial' && user && !authLoading && hasUsedThisTrial) {
     return (
       <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
         <div className="text-center">
@@ -537,7 +535,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               גישה נחסמה
             </h1>
             <p className="text-red-700 mb-6 font-agrandir-regular">
-              כבר השתמשת בשיעור ניסיון. לא ניתן לגשת לשיעור ניסיון נוסף.
+              כבר השתמשת בשיעור הניסיון הזה. לא ניתן לגשת לשיעור ניסיון זה שוב.
             </p>
             <Link 
               to="/classes" 

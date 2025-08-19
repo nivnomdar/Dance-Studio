@@ -146,7 +146,7 @@ export interface UserProfile {
   language: string;
   created_at: string;
   updated_at: string;
-  has_used_trial_class: boolean;
+  has_used_trial_class: boolean; // deprecated; not used for enforcement anymore
 }
 
 export interface Class {

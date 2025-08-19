@@ -5,6 +5,7 @@ import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
 import { TIMEOUTS } from '../utils/constants';
@@ -76,6 +77,7 @@ function ClassesPage() {
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [usedTrialClassIds, setUsedTrialClassIds] = useState<Set<string>>(new Set());
   
   // Refs to prevent duplicate calls
   const hasFetchedRef = useRef(false);
@@ -248,8 +250,7 @@ function ClassesPage() {
               terms_accepted: true,
               marketing_consent: true,
               last_login_at: new Date().toISOString(),
-              language: 'he',
-              has_used_trial_class: false
+              language: 'he'
             })
           });
           
@@ -270,8 +271,7 @@ function ClassesPage() {
             terms_accepted: true,
             marketing_consent: true,
             last_login_at: new Date().toISOString(),
-            language: 'he',
-            has_used_trial_class: false
+            language: 'he'
           };
           
           setLocalProfile(newProfile);
@@ -290,40 +290,37 @@ function ClassesPage() {
     loadProfileWithFetch();
   }, [user?.id, authLoading, contextProfile, session, isLoadingProfile]);
 
+  // Load per-class trial usage for current user
+  useEffect(() => {
+    const loadUsedTrials = async () => {
+      try {
+        if (!user?.id || !session?.access_token) {
+          setUsedTrialClassIds(new Set());
+          return;
+        }
+        const { data, error } = await supabase
+          .from('user_trial_classes')
+          .select('class_id')
+          .eq('user_id', user.id);
+        if (error) {
+          setUsedTrialClassIds(new Set());
+          return;
+        }
+        const ids = new Set<string>((data || []).map((r: any) => r.class_id));
+        setUsedTrialClassIds(ids);
+      } catch {
+        setUsedTrialClassIds(new Set());
+      }
+    };
+    loadUsedTrials();
+  }, [user?.id, session?.access_token]);
+
   // Helper functions
   const getClassRoute = (slug: string) => `/class/${slug}`;
 
   const getTrialClassStatusBadge = (classItem: Class) => {
-    if (classItem.slug !== 'trial-class') return null;
-
-    if (profile) {
-      const hasUsedTrial = profile.has_used_trial_class;
-      
-      return (
-        <div className={`${
-          hasUsedTrial 
-            ? 'bg-gradient-to-r from-red-500 to-red-600' 
-            : 'bg-gradient-to-r from-green-500 to-green-600'
-        } text-white px-5 py-1.5 text-sm font-bold shadow-2xl border-3 border-white rounded-xl transform hover:scale-110 transition-all duration-200`}>
-          <div className="flex items-center gap-1">
-            {!hasUsedTrial && (
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            )}
-            {hasUsedTrial ? 'נוצל' : 'זמין!'}
-          </div>
-        </div>
-      );
-    }
-
-    // Error state for non-logged in users
-    return (
-      <div className="bg-gradient-to-r from-gray-400 to-gray-500 text-white px-5 py-2.5 text-sm font-bold shadow-2xl border-3 border-white rounded-xl transform hover:scale-110 transition-all duration-200">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-white rounded-full"></div>
-          שגיאה
-        </div>
-      </div>
-    );
+    // badge only for the legacy single-trial card; now deprecated, return null
+    return null;
   };
 
   const handleRetry = () => {
@@ -427,7 +424,7 @@ function ClassesPage() {
               const colorScheme = getSimpleColorScheme(classItem);
               const route = getClassRoute(classItem.slug);
               const isTrialClass = (classItem.category || '').toLowerCase() === 'trial';
-              const hasUsedTrial = isTrialClass && profile?.has_used_trial_class;
+              const hasUsedTrial = isTrialClass && usedTrialClassIds.has(classItem.id);
               
               return (
                 <div 

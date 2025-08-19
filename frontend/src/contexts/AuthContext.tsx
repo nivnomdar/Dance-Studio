@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { 
   AuthContextType, 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
-  const [authState, setAuthState] = useState<AuthState>(AuthState.LOADING);
+  const [, setAuthState] = useState<AuthState>(AuthState.LOADING);
   
   // Refs for rate limiting and timeouts
   const lastProfileUpdateRef = useRef<number>(0);
@@ -71,8 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         terms_accepted: true,
         marketing_consent: true,
         last_login_at: new Date().toISOString(),
-        language: 'he',
-        has_used_trial_class: false
+        language: 'he'
       };
 
       const { data: newProfile, error: createError } = await supabase
@@ -197,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   updateProfileLoginTimeRef.current = updateProfileLoginTime;
 
   // Handle profile operations with rate limiting
-  const handleProfileOperations = useCallback(async (safeUser: SafeUser, event: AuthEvent) => {
+  const handleProfileOperations = useCallback(async (safeUser: SafeUser, _event: AuthEvent) => {
     if (!safeUser?.id) {
       console.error('Cannot handle profile operations: user ID is missing');
       return;

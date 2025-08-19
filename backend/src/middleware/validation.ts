@@ -25,7 +25,7 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
   console.log('=== VALIDATION MIDDLEWARE STARTED ===');
   console.log('Validation middleware received:', req.body);
   
-  const { class_id, first_name, last_name, phone, email, selected_date, selected_time, user_id } = req.body;
+  const { class_id, first_name, last_name, phone, email, selected_date, selected_time } = req.body;
 
   // Check required fields - phone is required again since admin can update it
   if (!class_id || !first_name || !last_name || !phone || !email || !selected_date || !selected_time) {
@@ -45,13 +45,7 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
     });
   }
 
-  // For admin registrations, user_id is also required
-  if (!user_id || user_id.trim() === '') {
-    console.log('=== VALIDATION FAILED - NO USER_ID ===');
-    return res.status(400).json({
-      error: 'user_id הוא שדה חובה להרשמה'
-    });
-  }
+  // user_id אינו חובה מצד הלקוח. השרת מזהה את המשתמש המחובר ומאכף הרשאות במסלול עצמו
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

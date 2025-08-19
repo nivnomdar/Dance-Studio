@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaWaze } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContext';
+// import { useAuth } from '../../contexts/AuthContext';
 
 const Footer: React.FC = () => {
   // console.log('Footer render at:', new Date().toISOString()); // Debug log
-  const { profile } = useAuth();
+  // const { profile } = useAuth();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');
   const [newsletterMessage, setNewsletterMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
@@ -134,10 +134,10 @@ const Footer: React.FC = () => {
                   שיעורים
                 </Link>
               </li>
-              {/* הצג לינק לשיעור ניסיון רק אם לא השתמש בו */}
-              {!profile?.has_used_trial_class && (
+              {/* הצג לינק לשיעור ניסיון - הלוגיקה הגלובלית הוסרה, קישור תמיד זמין */}
+              {(
                 <li>
-                  <Link to="/class/trial-class" className="text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center font-medium">
+                  <Link to="/classes" className="text-amber-400 hover:text-amber-300 transition-colors duration-200 flex items-center font-medium">
                     <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>

@@ -757,10 +757,10 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                     <strong>שים לב:</strong> ביטול הרשמה אפשרי רק עד 48 שעות לפני מועד השיעור.
                   </p>
                 </div>
-                {selectedRegistration.class.slug === 'trial-class' && (
+                {(selectedRegistration.class.category || '').toLowerCase() === 'trial' && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <p className="text-green-800 text-sm">
-                      <strong>בנוסף:</strong> לאחר הביטול תוכלי להזמין שוב שיעור ניסיון במועד חדש.
+                      <strong>בנוסף:</strong> לאחר הביטול תוכלי להזמין שוב את שיעור הניסיון הזה במועד חדש.
                     </p>
                   </div>
                 )}

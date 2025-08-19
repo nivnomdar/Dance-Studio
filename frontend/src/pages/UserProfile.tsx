@@ -29,6 +29,7 @@ function UserProfile() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [classesCount, setClassesCount] = useState(0);
+  const [hasAnyTrialUsed, setHasAnyTrialUsed] = useState(false);
   const [subscriptionCredits, setSubscriptionCredits] = useState(0);
   const [isFetchingCount, setIsFetchingCount] = useState(false);
   const navigate = useNavigate();
@@ -95,8 +96,7 @@ function UserProfile() {
               terms_accepted: true,
               marketing_consent: true,
               last_login_at: new Date().toISOString(),
-              language: 'he',
-              has_used_trial_class: false
+              language: 'he'
             })
           });
 
@@ -113,8 +113,7 @@ function UserProfile() {
               terms_accepted: true,
               marketing_consent: true,
               last_login_at: new Date().toISOString(),
-              language: 'he',
-              has_used_trial_class: false
+              language: 'he'
             };
             
             setTimeout(() => {
@@ -234,7 +233,6 @@ function UserProfile() {
       marketing_consent: true,
       last_login_at: new Date().toISOString(),
       language: 'he',
-      has_used_trial_class: false,
       phone_number: '',
       address: '',
       city: '',
@@ -371,6 +369,45 @@ function UserProfile() {
       }, 0);
     }
   }, [user?.id, session, authLoading, fetchClassesCount, fetchSubscriptionCredits]);
+
+  // Load if user has any trial usage records for status badge (UI only)
+  useEffect(() => {
+    const loadAnyTrialUsage = async () => {
+      try {
+        if (!user?.id || !session?.access_token) {
+          setHasAnyTrialUsed(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('user_trial_classes')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (error) {
+          setHasAnyTrialUsed(false);
+          return;
+        }
+        // when head:true, data is null; rely on count in response (not returned by supabase-js v2 select?). Fallback: simple select
+      } catch {
+        // Fallback simple select since count with head may not populate count directly
+      }
+      try {
+        if (!user?.id) return;
+        const { data: rows, error: selErr } = await supabase
+          .from('user_trial_classes')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+        if (selErr) {
+          setHasAnyTrialUsed(false);
+          return;
+        }
+        setHasAnyTrialUsed(Boolean(rows && rows.length > 0));
+      } catch {
+        setHasAnyTrialUsed(false);
+      }
+    };
+    loadAnyTrialUsage();
+  }, [user?.id, session?.access_token]);
 
   // Remove the redundant focus event listener that was causing additional API calls
   // useEffect לעדכון הספירה כאשר הדף נטען מחדש
@@ -593,19 +630,19 @@ function UserProfile() {
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${localProfile?.has_used_trial_class ? 'bg-red-400' : 'bg-green-400'}`}></div>
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasAnyTrialUsed ? 'bg-red-400' : 'bg-green-400'}`}></div>
                         <span className="text-xs sm:text-sm text-[#4B2E83]/80">סטטוס שיעור ניסיון</span>
                       </div>
                       <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className={`text-xs font-semibold ${localProfile?.has_used_trial_class ? 'text-red-500' : 'text-green-500'}`}>
-                          {localProfile?.has_used_trial_class ? 'נוצל' : 'זמין לך'}
+                        <span className={`text-xs font-semibold ${hasAnyTrialUsed ? 'text-red-500' : 'text-green-500'}`}>
+                          {hasAnyTrialUsed ? 'נוצל' : 'זמין לך'}
                         </span>
-                        {!localProfile?.has_used_trial_class && user && (
+                        {!hasAnyTrialUsed && user && (
                           <Link
-                            to="/class/trial-class"
+                            to="/classes"
                             className="bg-green-500 text-white px-1.5 sm:px-2 py-0.5 rounded-md hover:bg-green-600 transition-colors text-xs font-medium"
                           >
-                            הרשמה
+                            בחירת שיעור ניסיון
                           </Link>
                         )}
                       </div>
