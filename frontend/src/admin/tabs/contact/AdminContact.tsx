@@ -113,11 +113,28 @@ export default function AdminContact({ profile: _profile }: AdminContactProps) {
           <h2 className="text-2xl font-bold text-[#4B2E83]">פניות יצירת קשר</h2>
           <p className="text-sm text-[#4B2E83]/70 mt-1">ניהול פניות ותמיכה</p>
         </div>
-        <div className="flex items-center gap-2">
-        <RefreshButton
+        <div className="flex items-center gap-3">
+          {/* Weekly metric with unread count */}
+          <button
+            onClick={() => setFilter('all')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-[#EC4899]/20 bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 text-[#4B2E83] text-sm font-medium hover:from-[#EC4899]/10 hover:to-[#4B2E83]/10 hover:border-[#EC4899]/30 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+            title='לחצי לראות את כל הפניות השבוע'
+            aria-label={`התקבלו השבוע: ${messagesThisWeek} (${newMessages} לא נקראו)`}
+          >
+            <span className="h-5 w-5 rounded-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white flex items-center justify-center">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </span>
+            <span className="font-semibold">השבוע</span>
+            <span className="text-[#EC4899] font-bold">{messagesThisWeek}</span>
+            <span className="text-xs opacity-70">({newMessages} לא נקראו)</span>
+          </button>
+          
+          <RefreshButton
             onClick={() => { void fetchContact(true); }}
-          isFetching={isFetching}
-        />
+            isFetching={isFetching}
+          />
         </div>
       </div>
 
@@ -148,20 +165,7 @@ export default function AdminContact({ profile: _profile }: AdminContactProps) {
             </button>
           </div>
         </div>
-        {/* Weekly metric moved here, non-clickable and distinct from filters */}
-        <div className="flex justify-start sm:justify-end mb-4">
-          <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#4B2E83]/20 bg-white text-[#4B2E83] text-xs cursor-default"
-            title='סה"כ פניות שנשלחו בשבוע האחרון'
-            aria-label={`התקבלו השבוע: ${messagesThisWeek}`}
-          >
-            <span className="h-5 w-5 rounded-full bg-[#EC4899]/10 text-[#EC4899] flex items-center justify-center">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            </span>
-            <span className="opacity-80">השבוע</span>
-            <span className="font-semibold">{messagesThisWeek}</span>
-          </span>
-        </div>
+
 
         {filteredMessages.length > 0 ? (
           <>
