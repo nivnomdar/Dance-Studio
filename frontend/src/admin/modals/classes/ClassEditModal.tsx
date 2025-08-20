@@ -116,7 +116,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                   {isNewClass ? 'הוספת שיעור חדש' : 'עריכת שיעור'}
                 </h2>
                 <p className="text-white/80 text-sm mt-1">
-                  {isNewClass ? 'צור שיעור חדש במערכת' : 'ערוך את פרטי השיעור'}
+                  {isNewClass ? 'צרי שיעור חדש במערכת' : 'עריכת פרטי השיעור'}
                 </p>
               </div>
             </div>

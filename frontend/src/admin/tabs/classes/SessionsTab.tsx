@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
+import { useState } from 'react';
 import { SessionDetailsModal, RegistrationEditModal, SessionEditModal } from '../../modals';
 import { weekdaysToHebrew } from '../../../utils/weekdaysUtils';
 import { apiService } from '../../../lib/api';
@@ -45,10 +44,43 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
   // Handle save session
   const handleSaveSession = async (sessionData: any) => {
     try {
-      if (sessionData.id) {
-        await apiService.sessions.updateSession(sessionData.id, sessionData);
+      let sessionId = sessionData.id;
+      
+      // Save session first
+      if (sessionId) {
+        await apiService.sessions.updateSession(sessionId, sessionData);
       } else {
-        await apiService.sessions.createSession(sessionData);
+        const newSession = await apiService.sessions.createSession(sessionData);
+        sessionId = newSession.id; // Get the new session ID
+      }
+      
+      // Handle linked classes if they exist
+      if (sessionData.linkedClasses && sessionData.linkedClasses.length > 0) {
+        // Get existing session classes for comparison
+        const existingSessionClasses = data.sessionClasses?.filter((sc: any) => sc.session_id === sessionId) || [];
+        const existingClassIds = existingSessionClasses.map((sc: any) => sc.class_id);
+        
+        // Only add classes that don't already exist
+        const classesToAdd = sessionData.linkedClasses.filter((lc: any) => !existingClassIds.includes(lc.class_id));
+        
+        // Add new class links
+        for (const linkedClass of classesToAdd) {
+          try {
+            await apiService.sessions.addClassToSession(
+              sessionId,
+              linkedClass.class_id,
+              linkedClass.price,
+              linkedClass.is_trial,
+              linkedClass.max_uses_per_user
+            );
+          } catch (error) {
+            console.error('Error adding class to session:', error);
+            // Continue with other classes even if one fails
+          }
+        }
+        
+        // Note: We don't remove existing classes to avoid foreign key constraint issues
+        // Classes can only be removed if there are no registrations referencing them
       }
       
       await fetchClasses(true);
@@ -302,18 +334,67 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                       </span>
                     </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="space-y-2">
+                        {/* שורה ראשונה - כפתור עין קבוע בפינה השמאלית + כמות השיעורים */}
+                        <div className="flex items-center gap-3">
+                          {/* כפתור עין קבוע בפינה השמאלית */}
+                          {linkedClasses.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Toggle הצגת השיעורים
+                                const row = document.getElementById(`classes-row-${sessionData.id}`);
+                                if (row) {
+                                  const isHidden = row.classList.contains('hidden');
+                                  row.classList.toggle('hidden');
+                                  
+                                  // עדכון האייקון
+                                  const icon = document.getElementById(`eye-icon-${sessionData.id}`);
+                                  if (icon) {
+                                    if (isHidden) {
+                                      icon.innerHTML = `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />`;
+                                    } else {
+                                      icon.innerHTML = `<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7z" />`;
+                                    }
+                                  }
+                                }
+                              }}
+                              className="text-[#EC4899] hover:text-[#EC4899]/80 hover:bg-[#EC4899]/5 p-1.5 rounded transition-colors flex-shrink-0"
+                              title="לחצי להצגה/הסתרה של השיעורים"
+                            >
+                              <svg id={`eye-icon-${sessionData.id}`} className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7z" />
+                              </svg>
+                            </button>
+                          )}
+                          
+                          {/* כמות השיעורים */}
+                          <span className="text-sm font-semibold text-[#4B2E83]">
+                            {linkedClasses.length} שיעור{linkedClasses.length !== 1 ? 'ים' : ''}
+                          </span>
+                        </div>
+                        
+                        {/* שורה שנייה - רשימת השיעורים (מוסתרת כברירת מחדל) */}
                         {linkedClasses.length > 0 ? (
-                          linkedClasses.slice(0, 1).map((className: string, index: number) => (
-                            <span key={index} className="inline-flex items-center px-1 sm:px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] truncate">
-                              {className}
-                            </span>
-                          ))
+                          <div id={`classes-row-${sessionData.id}`} className="hidden">
+                            <div className="space-y-1">
+                              {linkedClasses.map((className: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2 text-xs">
+                                  <span className="w-4 h-4 bg-[#EC4899]/10 rounded-full flex items-center justify-center text-[#EC4899] font-medium">
+                                    {index + 1}
+                                  </span>
+                                  <span className="text-[#4B2E83] bg-[#EC4899]/5 px-2 py-1 rounded text-xs truncate">
+                                    {className}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         ) : (
-                          <span className="text-xs text-[#4B2E83]/50">אין שיעורים</span>
-                        )}
-                        {linkedClasses.length > 1 && (
-                          <span className="text-xs text-[#4B2E83]/70">+{linkedClasses.length - 1}</span>
+                          <div className="text-xs text-[#4B2E83]/50 bg-gray-50 px-2 py-1 rounded text-center">
+                            אין שיעורים מקושרים
+                          </div>
                         )}
                       </div>
                     </td>
@@ -323,7 +404,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                           onClick={() => handleViewSessionDetails(sessionData)}
                           className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs cursor-pointer"
                         >
-                          פרטים
+                          רשומים
                         </button>
                         <button
                           onClick={() => handleEditSession(sessionData)}

@@ -220,7 +220,7 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                   {isEditingSession(sessionData) ? 'עריכת קבוצה' : 'הוספת קבוצה חדשה'}
                 </h2>
                 <p className="text-white/80 text-sm mt-1">
-                  {isEditingSession(sessionData) ? 'ערוך את פרטי הקבוצה' : 'צור קבוצה חדשה במערכת'}
+                  {isEditingSession(sessionData) ? 'ערכי את פרטי הקבוצה' : 'צור קבוצה חדשה במערכת'}
                 </p>
               </div>
             </div>
@@ -446,14 +446,14 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 <h4 className="text-sm font-semibold text-[#4B2E83] mb-3">הוסיפי שיעור לקבוצה</h4>
                 
                 {/* בחירת שיעור - רספונסיבי */}
-                <div className="space-y-3">
-                  <div>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
                     <ResponsiveSelect
-                      label="בחר שיעור"
+                      label="בחרי שיעור"
                       value={selectedClassId}
                       onChange={(v) => setSelectedClassId(v)}
                       options={[
-                        { value: '', label: 'בחר שיעור...' }, 
+                        { value: '', label: 'בחרי שיעור...' }, 
                         ...classes.map((cls) => ({ 
                           value: String(cls.id), 
                           label: `${cls.name} - ₪${cls.price || 0}${isTrialClass(cls.category) ? ' (שיעור ניסיון)' : ''}` 
@@ -462,16 +462,14 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                       menuZIndex={70}
                     />
                   </div>
-                  <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={handleAddClass}
-                      disabled={!selectedClassId}
-                      className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                      הוסף שיעור לקבוצה
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddClass}
+                    disabled={!selectedClassId}
+                    className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
+                  >
+                    הוסיפי שיעור לקבוצה
+                  </button>
                 </div>
 
                 {/* הגדרת מגבלות לשיעור ניסיון - רספונסיבי */}
@@ -519,37 +517,52 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                   </div>
                 ) : (
                   linkedClasses.map((linkedClass) => (
-                    <div key={linkedClass.class_id} className="bg-white rounded-lg p-4 border border-[#EC4899]/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center">
-                          <svg className="w-5 h-5 text-[#4B2E83]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-[#4B2E83] text-base">{getClassName(linkedClass.class_id)}</h4>
-                          <div className="flex items-center gap-4 text-xs text-[#4B2E83]/70">
-                            <span>מחיר: ₪{linkedClass.price}</span>
-                            {linkedClass.is_trial && (
-                              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
-                                שיעור ניסיון
-                              </span>
-                            )}
-                            {linkedClass.max_uses_per_user && (
-                              <span>מקסימום: {linkedClass.max_uses_per_user} שימושים</span>
-                            )}
+                    <div key={linkedClass.class_id} className="bg-white rounded-lg p-4 border border-[#EC4899]/20">
+                      {/* Header with icon, name and delete button */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-[#4B2E83]" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium text-[#4B2E83] text-sm sm:text-base truncate">{getClassName(linkedClass.class_id)}</h4>
                           </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveClass(linkedClass.class_id)}
+                          className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors flex-shrink-0"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveClass(linkedClass.class_id)}
-                        className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+
+                      {/* Details section - responsive layout */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-[#4B2E83]/70">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-[#4B2E83]">מחיר:</span>
+                          <span className="font-semibold">₪{linkedClass.price}</span>
+                        </div>
+                        
+                        {linkedClass.is_trial && (
+                          <div className="flex items-center">
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                              שיעור ניסיון
+                            </span>
+                          </div>
+                        )}
+                        
+                        {linkedClass.max_uses_per_user && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[#4B2E83]">מקסימום:</span>
+                            <span className="font-semibold">{linkedClass.max_uses_per_user} שימושים</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
@@ -583,7 +596,7 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    {isEditingSession(sessionData) ? 'עדכני קבוצה' : 'צרי קבוצה'}
+                    {isEditingSession(sessionData) ? 'עידכון קבוצה' : 'יצירת קבוצה'}
                   </>
                 )}
               </button>

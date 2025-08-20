@@ -874,7 +874,7 @@ export default function RegistrationEditModal({
                   {isNewReg ? 'הוספת הרשמה חדשה' : 'עריכת הרשמה'}
                 </h2>
                 <p className="text-white/80 text-sm mt-1">
-                  {isNewReg ? 'צור הרשמה חדשה במערכת' : 'ערוך את פרטי ההרשמה'}
+                  {isNewReg ? 'צרי הרשמה חדשה במערכת' : 'ערוך את פרטי ההרשמה'}
                 </p>
               </div>
             </div>
@@ -1614,7 +1614,7 @@ export default function RegistrationEditModal({
                     disabled={isLoading}
                     className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   >
-                    {isLoading ? 'שומר...' : (isNewReg ? 'צור הרשמה' : 'שמור שינויים')}
+                    {isLoading ? 'שומר...' : (isNewReg ? 'יצירת הרשמה' : 'עדכון ההרשמה')}
                   </button>
                 </div>
               </div>
@@ -1637,7 +1637,7 @@ export default function RegistrationEditModal({
                   disabled={isLoading}
                   className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  {isLoading ? 'שומר...' : (isNewReg ? 'צור הרשמה' : 'שמור שינויים')}
+                  {isLoading ? 'שומר...' : (isNewReg ? 'יצירת הרשמה' : 'שמירת שינויים')}
                 </button>
               </div>
             )}
