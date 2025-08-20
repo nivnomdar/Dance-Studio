@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import ProductEditModal from '../../modals/shop/ProductEditModal';
 import ProductStatusModal from '../../modals/shop/ProductStatusModal';
 import ProductDeleteModal from '../../modals/shop/ProductDeleteModal';
-import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
+
 
 export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop: () => Promise<void> }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,65 +75,90 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 placeholder="חפש לפי שם או תיאור..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
               />
-              <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg className="w-5 h-5 text-[#4B2E83]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </div>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4B2E83]/40 hover:text-[#4B2E83] transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
-          <ResponsiveSelect
-            label="קטגוריה"
-            value={filterCategoryId}
-            onChange={(v) => { setFilterCategoryId(v); setPage(1); }}
-            options={[{ value: 'all', label: 'כל הקטגוריות' }, ...(data.categories || []).map((c: any) => ({ value: c.id, label: c.name }))]}
-            className="lg:col-span-1"
-          />
-          <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
-            <ResponsiveSelect
-              label="מלאי"
-              value={stockFilter}
-              onChange={(v) => { setStockFilter(v as any); setPage(1); }}
-              options={[
-                { value: 'all', label: 'כל המלאי' },
-                { value: 'in', label: 'במלאי' },
-                { value: 'low', label: 'מלאי נמוך (≤5)' },
-                { value: 'out', label: 'אזל מהמלאי' }
-              ]}
-            />
-            <ResponsiveSelect
-              label="סטטוס"
-              value={statusFilter}
-              onChange={(v) => { setStatusFilter(v as any); setPage(1); }}
-              options={[
-                { value: 'all', label: 'הכל' },
-                { value: 'active', label: 'פעיל' },
-                { value: 'inactive', label: 'לא פעיל' }
-              ]}
-            />
-            <ResponsiveSelect
-              label="מיון"
-              value={sortKey}
-              onChange={(v) => setSortKey(v as any)}
-              options={[
-                { value: 'created', label: 'תאריך' },
-                { value: 'name', label: 'שם' },
-                { value: 'price', label: 'מחיר' },
-                { value: 'stock', label: 'מלאי' }
-              ]}
-            />
+          <div className="lg:col-span-1">
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קטגוריה</label>
+            <select
+              value={filterCategoryId}
+              onChange={(e) => { setFilterCategoryId(e.target.value); setPage(1); }}
+              className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+            >
+              <option value="all">כל הקטגוריות</option>
+              {(data.categories || []).map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
-          <ResponsiveSelect
-            label="כיוון"
-            value={sortDir}
-            onChange={(v) => setSortDir(v as any)}
-            options={[
-              { value: 'desc', label: 'יורד' },
-              { value: 'asc', label: 'עולה' }
-            ]}
-            className="lg:col-span-1"
-          />
+          <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מלאי</label>
+              <select
+                value={stockFilter}
+                onChange={(e) => { setStockFilter(e.target.value as any); setPage(1); }}
+                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+              >
+                <option value="all">כל המלאי</option>
+                <option value="in">במלאי</option>
+                <option value="low">מלאי נמוך (≤5)</option>
+                <option value="out">אזל מהמלאי</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value as any); setPage(1); }}
+                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+              >
+                <option value="all">הכל</option>
+                <option value="active">פעיל</option>
+                <option value="inactive">לא פעיל</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מיון</label>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as any)}
+                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+              >
+                <option value="created">תאריך</option>
+                <option value="name">שם</option>
+                <option value="price">מחיר</option>
+                <option value="stock">מלאי</option>
+              </select>
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">כיוון</label>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value as any)}
+              className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+            >
+              <option value="desc">יורד</option>
+              <option value="asc">עולה</option>
+            </select>
+          </div>
           <div className="lg:col-span-1">
             <span className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</span>
             <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
@@ -143,7 +168,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 aria-pressed={viewMode === 'table'}
                 aria-label="תצוגת טבלה"
                 title="תצוגת טבלה"
-                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 ${viewMode === 'table' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'table' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="4" rx="1"/>
@@ -157,7 +182,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 aria-pressed={viewMode === 'cards'}
                 aria-label="תצוגת כרטיסים"
                 title="תצוגת כרטיסים"
-                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 ${viewMode === 'cards' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'cards' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -179,7 +204,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
             <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
             <button
               onClick={() => { setEditProduct(null); setEditOpen(true); }}
-              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+              className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm cursor-pointer"
             >
               הוסיפי מוצר חדש
             </button>
@@ -230,7 +255,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       <button
                         type="button"
                         onClick={() => { setStatusProduct(p); setStatusOpen(true); }}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium transition-colors ${p.is_active ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium transition-colors cursor-pointer ${p.is_active ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}
                         title="שינוי סטטוס"
                       >
                         {p.is_active ? 'פעיל' : 'לא פעיל'}
@@ -238,8 +263,8 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                     </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       <div className="flex gap-1 justify-center">
-                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs">עריכה</button>
-                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="px-1 sm:px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs">מחיקה</button>
+                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">עריכה</button>
+                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="px-1 sm:px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">מחיקה</button>
                       </div>
                     </td>
                   </tr>
@@ -254,55 +279,57 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           </div>
         ) : (
           <div className="p-3 sm:p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {pagedProducts.map((p: any) => (
-                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative bg-gray-50">
+                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow h-80 flex flex-col">
+                  <div className="relative bg-gray-50 flex-shrink-0">
                     {p.main_image ? (
                       <img
                         src={p.main_image}
                         alt={p.name || ''}
-                        className="w-full h-40 sm:h-44 lg:h-48 object-cover"
+                        className="w-full h-32 object-cover"
                         loading="lazy"
                         decoding="async"
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       />
                     ) : (
-                      <div className="w-full h-40 sm:h-44 lg:h-48 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 flex items-center justify-center text-[#4B2E83]/60 text-sm">אין תמונה</div>
+                      <div className="w-full h-32 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 flex items-center justify-center text-[#4B2E83]/60 text-sm">אין תמונה</div>
                     )}
                     <div className="absolute top-2 left-2">
                       <button
                         type="button"
                         onClick={() => { setStatusProduct(p); setStatusOpen(true); }}
-                        className={`px-2 py-1 rounded-full text-[11px] sm:text-xs font-medium border ${p.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium border cursor-pointer ${p.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
                         title="שינוי סטטוס"
                       >
                         {p.is_active ? 'פעיל' : 'לא פעיל'}
                       </button>
                     </div>
                   </div>
-                  <div className="p-3 sm:p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[#4B2E83] text-sm sm:text-base truncate" title={p.name}>{p.name}</div>
-                        <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 truncate" title={categoryById[p.category_id]?.name || '-' }>{categoryById[p.category_id]?.name || '-'}</div>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-[#4B2E83] text-sm truncate" title={p.name}>{p.name}</div>
+                        <div className="text-xs text-[#4B2E83]/70 truncate mt-1" title={categoryById[p.category_id]?.name || '-' }>{categoryById[p.category_id]?.name || '-'}</div>
                       </div>
-                      <div className="text-[#EC4899] font-bold text-sm sm:text-base whitespace-nowrap">₪{p.price}</div>
+                      <div className="text-[#EC4899] font-bold text-lg whitespace-nowrap flex-shrink-0">₪{p.price}</div>
                     </div>
                     {p.description && (
-                      <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 mt-2 line-clamp-2" title={p.description}>{p.description}</div>
+                      <div className="text-xs text-[#4B2E83]/70 mb-4 line-clamp-2 flex-1" title={p.description}>{p.description}</div>
                     )}
-                    <div className="flex items-center justify-between mt-3">
-                      <div className={`text-[11px] sm:text-xs px-2 py-1 rounded-full border ${
-                        (p.stock_quantity ?? 0) > 0
-                          ? 'bg-[#4B2E83]/5 text-[#4B2E83] border-[#4B2E83]/20'
-                          : 'bg-red-50 text-red-700 border-red-200'
-                      }`}>
-                        {(p.stock_quantity ?? 0) > 0 ? `מלאי: ${p.stock_quantity}` : 'אזל מהמלאי'}
+                    <div className="mt-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className={`text-xs px-3 py-1.5 rounded-full border ${
+                          (p.stock_quantity ?? 0) > 0
+                            ? 'bg-[#4B2E83]/5 text-[#4B2E83] border-[#4B2E83]/20'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                        }`}>
+                          {(p.stock_quantity ?? 0) > 0 ? `מלאי: ${p.stock_quantity}` : 'אזל מהמלאי'}
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs">עריכה</button>
-                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs">מחיקה</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer">עריכה</button>
+                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="flex-1 px-3 py-2 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-xs cursor-pointer">מחיקה</button>
                       </div>
                     </div>
                   </div>
@@ -317,8 +344,8 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         <div className="flex items-center justify-between p-3 sm:p-4 text-xs sm:text-sm border-t border-[#EC4899]/10">
           <div className="text-[#4B2E83]/70">סה"כ: {filteredSortedProducts.length} • עמוד {page} מתוך {totalPages}</div>
           <div className="flex gap-2">
-            <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 rounded border border-[#EC4899]/20 disabled:opacity-50">הקודם</button>
-            <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-1 rounded border border-[#EC4899]/20 disabled:opacity-50">הבא</button>
+            <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 rounded border border-[#EC4899]/20 disabled:opacity-50 cursor-pointer">הקודם</button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-1 rounded border border-[#EC4899]/20 disabled:opacity-50 cursor-pointer">הבא</button>
           </div>
         </div>
       </div>

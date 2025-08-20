@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiService } from '../../../lib/api';
-import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
+
 
 export default function OrdersTab() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -65,26 +65,39 @@ export default function OrdersTab() {
                 placeholder="חפש לפי שם משתמש/מס׳ הזמנה..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(10); }}
-                className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
               />
-              <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg className="w-5 h-5 text-[#4B2E83]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </div>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4B2E83]/40 hover:text-[#4B2E83] transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
-          <ResponsiveSelect
-            label="סטטוס הזמנה"
-            value={statusFilter}
-            onChange={(v) => { setStatusFilter(v as any); setVisibleCount(10); }}
-            options={[
-              { value: 'all', label: 'כל ההזמנות' },
-              { value: 'pending', label: 'ממתינות' },
-              { value: 'completed', label: 'הושלמו' },
-              { value: 'cancelled', label: 'בוטלו' }
-            ]}
-            className="lg:col-span-1"
-          />
+          <div className="lg:col-span-1">
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס הזמנה</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value as any); setVisibleCount(10); }}
+              className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+            >
+              <option value="all">כל ההזמנות</option>
+              <option value="pending">ממתינות</option>
+              <option value="completed">הושלמו</option>
+              <option value="cancelled">בוטלו</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -130,7 +143,7 @@ export default function OrdersTab() {
           <div className="p-4 border-t border-[#EC4899]/10 text-center">
             <button
               onClick={() => setVisibleCount(c => c + 10)}
-              className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm"
+              className="px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm cursor-pointer"
             >
               עוד הזמנות
             </button>

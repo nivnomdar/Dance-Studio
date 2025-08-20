@@ -4,7 +4,7 @@ import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../components';
 import { apiService } from '../../../lib/api';
 import Modal from '../../../components/common/Modal';
-import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
+
 import { ProductsTab, OrdersTab } from './index';
 
 interface AdminShopProps {
@@ -73,7 +73,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
           <p className="text-red-600 mb-4">{error}</p>
           <button
             onClick={fetchShop}
-            className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+            className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 cursor-pointer"
           >
             נסה שוב
           </button>
@@ -100,7 +100,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setActiveTab('products')}
-            className={`px-4 py-3 rounded-lg font-medium transition-all text-sm ${
+            className={`px-4 py-3 rounded-lg font-medium transition-all text-sm cursor-pointer ${
               activeTab === 'products'
                 ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                 : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
@@ -110,7 +110,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-3 rounded-lg font-medium transition-all text-sm ${
+            className={`px-4 py-3 rounded-lg font-medium transition-all text-sm cursor-pointer ${
               activeTab === 'orders'
                 ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white'
                 : 'bg-gray-100 text-[#4B2E83] hover:bg-gray-200'
@@ -147,7 +147,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
           })()}
           <button
             onClick={() => setIsCategoryModalOpen(true)}
-            className="px-4 py-2 bg-[#EC4899] text-white rounded-lg hover:bg-[#EC4899]/80"
+            className="px-4 py-2 bg-[#EC4899] text-white rounded-lg hover:bg-[#EC4899]/80 cursor-pointer"
           >
             הוסף קטגוריה
           </button>
@@ -182,21 +182,25 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
             <input
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
               placeholder="הקלידי שם"
             />
           </div>
           <div>
-            <ResponsiveSelect
-              label="קטגוריית אם (לא חובה)"
+            <label className="block text-sm text-[#4B2E83]/70 mb-1">קטגוריית אם (לא חובה)</label>
+            <select
               value={parentCategoryId || ''}
-              onChange={(v) => setParentCategoryId(v || undefined)}
-              options={[{ value: '', label: 'ללא' }, ...(data.categories?.filter((c: any) => !c.parent_id) || []).map((c: any) => ({ value: String(c.id), label: c.name }))]}
-              menuZIndex={70}
-            />
+              onChange={(e) => setParentCategoryId(e.target.value || undefined)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
+            >
+              <option value="">ללא</option>
+              {(data.categories?.filter((c: any) => !c.parent_id) || []).map((c: any) => (
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
+              ))}
+            </select>
           </div>
           <div className="flex justify-end gap-2">
-            <button className="px-4 py-2 rounded-lg border" onClick={() => setIsCategoryModalOpen(false)}>ביטול</button>
+            <button className="px-4 py-2 rounded-lg border cursor-pointer" onClick={() => setIsCategoryModalOpen(false)}>ביטול</button>
             <button
               disabled={saving || !newCategoryName.trim()}
               onClick={async () => {
@@ -211,7 +215,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
                   setSaving(false);
                 }
               }}
-              className="px-4 py-2 rounded-lg bg-[#EC4899] text-white disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-[#EC4899] text-white disabled:opacity-50 cursor-pointer"
             >
               שמירה
             </button>
