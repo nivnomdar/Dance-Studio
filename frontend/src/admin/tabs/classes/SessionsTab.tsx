@@ -84,54 +84,128 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
 
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 items-end">
-          <div className="sm:col-span-2 lg:col-span-2">
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש קבוצה</label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="חפש לפי שם או תיאור..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              />
-              <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+
+
+      {/* פילטרים מתקדמים */}
+      <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
+        <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 px-6 py-4 border-b border-[#EC4899]/10">
+          <div className="flex items-center gap-3">
+            
+           
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            {/* חיפוש */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                חיפוש קבוצה
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="חפש לפי שם או תיאור..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 text-[#4B2E83]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </div>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4B2E83]/40 hover:text-[#4B2E83] transition-colors cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* סטטוס */}
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                סטטוס קבוצה
+              </label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+              >
+                <option value="all">כל הקבוצות</option>
+                <option value="active">פעילות בלבד</option>
+                <option value="inactive">לא פעילות</option>
+              </select>
+            </div>
+            
+            {/* פעולות */}
+            <div>
+              <label className="block text-sm font-medium text-[#4B2E83] mb-2 opacity-0 pointer-events-none">
+                פעולות
+              </label>
+              <div className="flex gap-2 h-12 w-full">
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilterStatus('all');
+                  }}
+                  className="flex-1 min-w-[120px] px-3 py-2.5 bg-gray-50 text-[#4B2E83] rounded-xl font-medium hover:bg-gray-200 transition-all duration-300 text-sm flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300 h-12 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                  <span className="whitespace-nowrap">איפוס</span>
+                </button>
+                <button 
+                  onClick={handleAddNewSession}
+                  className="flex-1 min-w-[120px] px-3 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl h-12 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="whitespace-nowrap">קבוצה חדשה</span>
+                </button>
+              </div>
             </div>
           </div>
-          <div className="lg:col-span-1">
-            <ResponsiveSelect
-              label="סטטוס קבוצה"
-              value={filterStatus}
-              onChange={(v) => setFilterStatus(v)}
-              options={[
-                { value: 'all', label: 'כל הקבוצות' },
-                { value: 'active', label: 'פעילות בלבד' },
-                { value: 'inactive', label: 'לא פעילות' }
-              ]}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row items-end gap-2 col-span-2 sm:col-span-2 lg:col-span-3">
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setFilterStatus('all');
-              }}
-              className="w-full sm:flex-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-[#4B2E83] rounded-lg font-medium hover:bg-gray-200 transition-all duration-300 text-xs sm:text-sm"
-            >
-              נקה פילטרים
-            </button>
-            <button 
-              onClick={handleAddNewSession}
-              className="w-full sm:w-auto px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs sm:text-sm"
-            >
-              הוסיפי קבוצה חדשה
-            </button>
-          </div>
+          
+          {/* מחוונים פעילים */}
+          {(searchTerm || filterStatus !== 'all') && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-[#4B2E83]/70">פילטרים פעילים:</span>
+                {searchTerm && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EC4899]/10 text-[#EC4899] rounded-full text-xs font-medium">
+                    חיפוש: "{searchTerm}"
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="ml-1 hover:text-[#EC4899]/80 cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {filterStatus !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#4B2E83]/10 text-[#4B2E83] rounded-full text-xs font-medium">
+                    סטטוס: {filterStatus === 'active' ? 'פעילות' : 'לא פעילות'}
+                    <button
+                      onClick={() => setFilterStatus('all')}
+                      className="ml-1 hover:text-[#4B2E83]/80 cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -247,13 +321,13 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                       <div className="flex gap-1 justify-center">
                         <button
                           onClick={() => handleViewSessionDetails(sessionData)}
-                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs"
+                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 text-xs cursor-pointer"
                         >
                           פרטים
                         </button>
                         <button
                           onClick={() => handleEditSession(sessionData)}
-                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs"
+                          className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer"
                         >
                           ערוך
                         </button>
@@ -279,6 +353,83 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
           <p className="text-[#4B2E83]/70">נסה לשנות את פרמטרי החיפוש או הסינון</p>
         </div>
       )}
+
+      {/* סטטיסטיקות מהירות */}
+      <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
+        <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 px-6 py-4 border-b border-[#EC4899]/10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#4B2E83]">סיכום סטטיסטיקות</h3>
+              <p className="text-sm text-[#4B2E83]/70">נתונים כלליים על הקבוצות וההרשמות במערכת</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-[#4B2E83] to-[#4B2E83]/80 rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">סה״כ קבוצות</p>
+                  <p className="text-2xl font-bold">{totalSessions}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-[#EC4899] to-[#EC4899]/80 rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">קבוצות פעילות</p>
+                  <p className="text-2xl font-bold">{activeSessions}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">סה״כ הרשמות</p>
+                  <p className="text-2xl font-bold">{totalRegistrations}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">הרשמות פעילות</p>
+                  <p className="text-2xl font-bold">{activeRegistrations}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Modals */}
       {sessionDetailsModalOpen && selectedSession && (

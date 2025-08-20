@@ -562,72 +562,206 @@ export default function RegistrationsTab({ data, session, fetchClasses }: Regist
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4 items-end">
-            <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש הרשמה</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="חפש לפי שם, אימייל, שיעור או קבוצה..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs sm:text-sm text-right bg-white border border-[#EC4899]/20 rounded-lg shadow-sm focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-                />
-                <svg className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4B2E83]/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+        {/* פילטרים מתקדמים */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 px-6 py-4 border-b border-[#EC4899]/10">
+            <div className="flex items-center gap-3">
+              
+             
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              {/* חיפוש */}
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  חיפוש הרשמה
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="חפש לפי שם, אימייל או טלפון..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                    <svg className="w-5 h-5 text-[#4B2E83]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                  </div>
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4B2E83]/40 hover:text-[#4B2E83] transition-colors cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* סטטוס */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  סטטוס הרשמה
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                >
+                  <option value="all">כל ההרשמות</option>
+                  <option value="active">פעילות בלבד</option>
+                  <option value="cancelled">בוטלו בלבד</option>
+                </select>
+              </div>
+              
+              {/* פעולות */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2 opacity-0 pointer-events-none">
+                  פעולות
+                </label>
+                <div className="flex gap-2 h-12 w-full">
+                  <button
+                    onClick={handleClearFilters}
+                    className="flex-1 min-w-[110px] px-3 py-2.5 bg-gray-50 text-[#4B2E83] rounded-xl font-medium hover:bg-gray-200 transition-all duration-300 text-sm flex items-center justify-center gap-1.5 border border-gray-200 hover:border-gray-300 h-12 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                    </svg>
+                    <span className="whitespace-nowrap">איפוס</span>
+                  </button>
+                  <button 
+                    onClick={handleAddNewRegistration}
+                    className="flex-1 min-w-[120px] px-3 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl h-12 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="whitespace-nowrap">הרשמה חדשה</span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="sm:col-span-2 lg:col-span-1">
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תאריך</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
-              />
+            
+            {/* שורה שנייה - פילטרים נוספים */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4 items-end mt-4">
+              {/* תאריך */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  תאריך
+                </label>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                />
+              </div>
+              
+              {/* שיעור */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  שיעור
+                </label>
+                <select
+                  value={filterClass}
+                  onChange={(e) => setFilterClass(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                >
+                  <option value="all">כל השיעורים</option>
+                  {(data.classes || []).map((cls: any) => (
+                    <option key={cls.id} value={String(cls.id)}>{cls.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* קבוצה */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                  קבוצה
+                </label>
+                <select
+                  value={filterSession}
+                  onChange={(e) => setFilterSession(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+                >
+                  <option value="all">כל הקבוצות</option>
+                  {(data.sessions || []).map((s: any) => (
+                    <option key={s.id} value={String(s.id)}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
-              <ResponsiveSelect
-                label="סטטוס הרשמה"
-                value={filterStatus}
-                onChange={(v) => setFilterStatus(v)}
-                options={[
-                  { value: 'all', label: 'כל ההרשמות' },
-                  { value: 'active', label: 'פעילות בלבד' },
-                  { value: 'cancelled', label: 'בוטלו בלבד' }
-                ]}
-              />
-              <ResponsiveSelect
-                label="שיעור"
-                value={filterClass}
-                onChange={(v) => setFilterClass(v)}
-                options={[{ value: 'all', label: 'כל השיעורים' }, ...(data.classes || []).map((cls: any) => ({ value: String(cls.id), label: cls.name }))]}
-              />
-              <ResponsiveSelect
-                label="קבוצה"
-                value={filterSession}
-                onChange={(v) => setFilterSession(v)}
-                options={[{ value: 'all', label: 'כל הקבוצות' }, ...(data.sessions || []).map((s: any) => ({ value: String(s.id), label: s.name }))]}
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row items-end gap-2 col-span-2 sm:col-span-2 lg:col-span-2">
-              <button
-                onClick={handleClearFilters}
-                className={`w-full sm:flex-1 ${ADMIN_STYLES.buttonSecondary} text-xs sm:text-sm`}
-              >
-                נקה פילטרים
-              </button>
-              <button 
-                onClick={handleAddNewRegistration}
-                className={`w-full sm:w-auto ${ADMIN_STYLES.button} text-xs sm:text-sm`}
-              >
-                הוסיפי הרשמה חדשה
-              </button>
-            </div>
+            
+            {/* מחוונים פעילים */}
+            {(searchTerm || filterStatus !== 'all' || filterClass !== 'all' || filterSession !== 'all' || filterDate) && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-[#4B2E83]/70">פילטרים פעילים:</span>
+                  {searchTerm && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EC4899]/10 text-[#EC4899] rounded-full text-xs font-medium">
+                      חיפוש: "{searchTerm}"
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="ml-1 hover:text-[#EC4899]/80 cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {filterStatus !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#4B2E83]/10 text-[#4B2E83] rounded-full text-xs font-medium">
+                      סטטוס: {filterStatus === 'active' ? 'פעילות' : 'בוטלו'}
+                      <button
+                        onClick={() => setFilterStatus('all')}
+                        className="ml-1 hover:text-[#4B2E83]/80 cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {filterClass !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                      שיעור: {(data.classes || []).find((c: any) => c.id === filterClass)?.name || filterClass}
+                      <button
+                        onClick={() => setFilterClass('all')}
+                        className="ml-1 hover:text-green-700 cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {filterSession !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      קבוצה: {(data.sessions || []).find((s: any) => s.id === filterSession)?.name || filterSession}
+                      <button
+                        onClick={() => setFilterSession('all')}
+                        className="ml-1 hover:text-blue-700 cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                  {filterDate && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                      תאריך: {new Date(filterDate).toLocaleDateString('he-IL')}
+                      <button
+                        onClick={() => setFilterDate('')}
+                        className="ml-1 hover:text-purple-700 cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

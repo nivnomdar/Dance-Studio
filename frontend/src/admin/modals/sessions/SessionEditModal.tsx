@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { WEEKDAYS_OPTIONS } from '../../../utils';
+import { isTrialClass } from '../../../utils/categoryUtils';
 
 interface SessionEditModalProps {
   sessionData: any;
@@ -40,7 +41,6 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [linkedClasses, setLinkedClasses] = useState<Array<{class_id: string, price: number, is_trial: boolean, max_uses_per_user?: number}>>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
-  const [isTrialClass, setIsTrialClass] = useState<boolean>(false);
   const [maxUsesPerUser, setMaxUsesPerUser] = useState<number>(1);
 
   // Initialize form data when sessionData changes
@@ -118,18 +118,20 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
       return;
     }
 
+    // זיהוי אוטומטי של שיעור ניסיון לפי הקטגוריה
+    const isClassTrial = isTrialClass(selectedClass.category);
+    
     const newLinkedClass = {
       class_id: selectedClassId,
       price: selectedClass.price || 0, // Use the class's default price
-      is_trial: isTrialClass,
-      max_uses_per_user: isTrialClass ? maxUsesPerUser : undefined
+      is_trial: isClassTrial, // זיהוי אוטומטי לפי קטגוריה
+      max_uses_per_user: isClassTrial ? maxUsesPerUser : undefined
     };
 
     setLinkedClasses(prev => [...prev, newLinkedClass]);
     
     // Reset form
     setSelectedClassId('');
-    setIsTrialClass(false);
     setMaxUsesPerUser(1);
   };
 
@@ -232,26 +234,27 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
         </div>
 
         <div className="overflow-y-auto max-h-[calc(95vh-140px)]">
-          <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {/* פרטי בסיס */}
-            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-4">
+              <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 פרטי הקבוצה
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+              {/* שורה ראשונה - שם וסטטוס */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     שם הקבוצה <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
                       errors.name ? 'border-red-500' : 'border-[#EC4899]/20'
                     }`}
                     placeholder="לדוגמה: קבוצת בוקר - ימי ראשון"
@@ -273,64 +276,67 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 </div>
               </div>
 
-              <div className="mt-3 sm:mt-4">
-                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+              {/* שורה שנייה - תיאור */}
+              <div>
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   תיאור הקבוצה
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={2}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
+                  className="w-full px-3 py-2 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
                   placeholder="תיאור קצר של הקבוצה..."
                 />
               </div>
+
+
             </div>
 
             {/* זמני פעילות */}
-            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-4">
+              <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
                 זמני פעילות
               </h3>
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* שעת התחלה ושעת סיום - יחד במסכים קטנים */}
-                <div className="col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+              {/* שורה ראשונה - זמנים */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     שעת התחלה <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="time"
                     value={formData.start_time}
                     onChange={(e) => handleInputChange('start_time', e.target.value)}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
                       errors.start_time ? 'border-red-500' : 'border-[#EC4899]/20'
                     }`}
                   />
                   {errors.start_time && <p className="text-red-500 text-xs mt-1">{errors.start_time}</p>}
                 </div>
 
-                <div className="col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                     שעת סיום <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="time"
                     value={formData.end_time}
                     onChange={(e) => handleInputChange('end_time', e.target.value)}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
                       errors.end_time ? 'border-red-500' : 'border-[#EC4899]/20'
                     }`}
                   />
                   {errors.end_time && <p className="text-red-500 text-xs mt-1">{errors.end_time}</p>}
                 </div>
 
-                <div className="col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    משך השיעור (דקות)
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    משך (דק')
                   </label>
                   <input
                     type="number"
@@ -338,29 +344,14 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                     max="180"
                     value={formData.duration_minutes}
                     onChange={(e) => handleInputChange('duration_minutes', parseInt(e.target.value) || 60)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
+                    className="w-full px-3 py-2 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
                     placeholder="60"
                   />
                 </div>
 
-                {/* תפוסה מינימלית ומקסימלית - יחד במסכים קטנים */}
-                <div className="col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    תפוסה מינימלית
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.min_capacity}
-                    onChange={(e) => handleInputChange('min_capacity', parseInt(e.target.value) || 1)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all"
-                    placeholder="1"
-                  />
-                </div>
-
-                <div className="col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
-                    תפוסה מקסימלית <span className="text-red-500">*</span>
+                <div>
+                  <label className="block text-sm font-medium text-[#4B2E83] mb-2">
+                    תפוסה מקס' <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -376,7 +367,7 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                         }
                       }
                     }}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all ${
                       errors.max_capacity ? 'border-red-500' : 'border-[#EC4899]/20'
                     }`}
                     placeholder="5"
@@ -386,17 +377,18 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
                 </div>
               </div>
 
-              <div className="mt-3 sm:mt-4">
-                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">
+              {/* שורה שנייה - ימי פעילות */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-[#4B2E83] mb-2">
                   ימי פעילות <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-2">
+                <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
                   {WEEKDAYS_OPTIONS.map((weekday) => (
                     <button
                       key={weekday.value}
                       type="button"
                       onClick={() => handleWeekdayToggle(weekday.value)}
-                      className={`p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${
+                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${
                         formData.weekdays.includes(weekday.value)
                           ? 'bg-[#EC4899] text-white border-[#EC4899]'
                           : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:border-[#EC4899]/40'
@@ -411,107 +403,135 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
             </div>
 
             {/* שיעורים מקושרים */}
-            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                </svg>
-                שיעורים מקושרים
-              </h3>
+            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-4">
+              {/* כותרת וכפתור עזרה */}
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-[#4B2E83] flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                    שיעורים מקושרים
+                  </h3>
+                  <p className="text-sm text-[#4B2E83]/70 mt-1">
+                    השיעורים שיתקיימו בקבוצה זו בזמנים הנבחרים
+                  </p>
+                </div>
+                
+                {/* תיבת הסבר - רספונסיבית */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 w-full sm:max-w-xs">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg className="w-2.5 h-2.5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-800">מה זה אומר?</span>
+                  </div>
+                  <div className="text-xs text-blue-700 leading-relaxed space-y-1">
+                    <div className="flex flex-col sm:flex-row sm:gap-1">
+                      <strong className="block sm:inline">קבוצה:</strong>
+                      <span className="block sm:inline">מתי ואיפה השיעורים מתקיימים</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:gap-1">
+                      <strong className="block sm:inline">שיעורים מקושרים:</strong>
+                      <span className="block sm:inline">איזה סוגי שיעורים יתקיימו בקבוצה זו</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* הוסף שיעור חדש */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 border border-[#EC4899]/20">
-                <h4 className="text-xs sm:text-sm font-semibold text-[#4B2E83] mb-2 sm:mb-3">הוסיפי שיעור לקבוצה</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <div className="bg-white rounded-lg p-4 mb-4 border border-[#EC4899]/20">
+                <h4 className="text-sm font-semibold text-[#4B2E83] mb-3">הוסיפי שיעור לקבוצה</h4>
+                
+                {/* בחירת שיעור - רספונסיבי */}
+                <div className="space-y-3">
                   <div>
                     <ResponsiveSelect
                       label="בחר שיעור"
                       value={selectedClassId}
                       onChange={(v) => setSelectedClassId(v)}
-                      options={[{ value: '', label: 'בחר שיעור...' }, ...classes.map((cls) => ({ value: String(cls.id), label: `${cls.name} - ₪${cls.price || 0}` }))]}
+                      options={[
+                        { value: '', label: 'בחר שיעור...' }, 
+                        ...classes.map((cls) => ({ 
+                          value: String(cls.id), 
+                          label: `${cls.name} - ₪${cls.price || 0}${isTrialClass(cls.category) ? ' (שיעור ניסיון)' : ''}` 
+                        }))
+                      ]}
                       menuZIndex={70}
                     />
                   </div>
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      id="is_trial"
-                      checked={isTrialClass}
-                      onChange={(e) => setIsTrialClass(e.target.checked)}
-                      className="h-4 w-4 text-[#4B2E83] focus:ring-[#4B2E83] border-gray-300 rounded mt-0.5"
-                    />
-                    <div>
-                      <label htmlFor="is_trial" className="text-xs font-medium text-[#4B2E83] cursor-pointer">
-                        שיעור ניסיון
-                      </label>
-                      <p className="text-xs text-[#4B2E83]/60 mt-1 leading-relaxed">
-                        שיעור מוזל או חינמי עם הגבלת שימושים למשתמשת חדשה. 
-                        מאפשר "טעימה" לפני רכישת מנוי מלא.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex justify-center">
                     <button
                       type="button"
                       onClick={handleAddClass}
                       disabled={!selectedClassId}
-                      className="px-3 sm:px-4 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                      className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
-                      הוסף
+                      הוסף שיעור לקבוצה
                     </button>
                   </div>
                 </div>
-                
-                {isTrialClass && (
-                  <div className="mt-2 sm:mt-3">
-                    <label className="block text-xs font-medium text-[#4B2E83] mb-1">מקסימום שימושים למשתמשת</label>
-                    <input
-                      type="number"
-                      value={maxUsesPerUser}
-                      onChange={(e) => setMaxUsesPerUser(Number(e.target.value) || 1)}
-                      placeholder="1"
-                      min="1"
-                      className="w-full px-3 py-2 border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none text-sm"
-                    />
-                    <p className="text-xs text-[#4B2E83]/60 mt-1">
-                      מספר הפעמים המקסימלי שמשתמשת יכולה להירשם לשיעור ניסיון זה. 
-                      לדוגמה: 1 = שימוש חד פעמי, 2 = שני שימושים לכל משתמשת.
-                    </p>
+
+                {/* הגדרת מגבלות לשיעור ניסיון - רספונסיבי */}
+                {selectedClassId && isTrialClass(classes.find(c => c.id === selectedClassId)?.category) && (
+                  <div className="mt-3 p-3 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className="w-5 h-5 bg-orange-100 rounded-full flex items-center justify-center">
+                          <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-orange-800">שיעור ניסיון נזהה אוטומטית</span>
+                      </div>
+                      <div className="flex items-center gap-2 justify-center sm:justify-start">
+                        <label className="text-sm text-orange-700 whitespace-nowrap">מקס' שימושים:</label>
+                        <input
+                          type="number"
+                          value={maxUsesPerUser}
+                          onChange={(e) => setMaxUsesPerUser(Number(e.target.value) || 1)}
+                          min="1"
+                          className="w-16 px-2 py-1 border border-orange-300 rounded text-sm focus:ring-1 focus:ring-orange-200 focus:border-orange-400 outline-none text-center"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* רשימת שיעורים מקושרים */}
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-3">
                 {errors.linkedClasses && (
                   <div className="text-red-500 text-xs bg-red-50 p-2 rounded-lg border border-red-200">
                     {errors.linkedClasses}
                   </div>
                 )}
                 {linkedClasses.length === 0 ? (
-                  <div className="text-center py-6 sm:py-8 bg-white rounded-lg border border-[#EC4899]/20">
-                    <div className="mx-auto mb-2 sm:mb-3 w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="text-center py-8 bg-white rounded-lg border border-[#EC4899]/20">
+                    <div className="mx-auto mb-3 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <p className="text-xs sm:text-sm text-[#4B2E83]/70">אין שיעורים מקושרים לקבוצה זו</p>
+                    <p className="text-sm text-[#4B2E83]/70">אין שיעורים מקושרים לקבוצה זו</p>
                   </div>
                 ) : (
-                  linkedClasses.map((linkedClass, index) => (
-                    <div key={linkedClass.class_id} className="bg-white rounded-lg p-3 sm:p-4 border border-[#EC4899]/20 flex items-center justify-between">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#4B2E83]" fill="currentColor" viewBox="0 0 20 20">
+                  linkedClasses.map((linkedClass) => (
+                    <div key={linkedClass.class_id} className="bg-white rounded-lg p-4 border border-[#EC4899]/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-[#4B2E83]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                           </svg>
                         </div>
                         <div>
-                          <h4 className="font-medium text-[#4B2E83] text-sm sm:text-base">{getClassName(linkedClass.class_id)}</h4>
-                          <div className="flex items-center gap-2 sm:gap-4 text-xs text-[#4B2E83]/70">
+                          <h4 className="font-medium text-[#4B2E83] text-base">{getClassName(linkedClass.class_id)}</h4>
+                          <div className="flex items-center gap-4 text-xs text-[#4B2E83]/70">
                             <span>מחיר: ₪{linkedClass.price}</span>
                             {linkedClass.is_trial && (
-                              <span className="bg-orange-100 text-orange-800 px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs">
+                              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
                                 שיעור ניסיון
                               </span>
                             )}
@@ -537,18 +557,18 @@ export default function SessionEditModal({ sessionData, isOpen, onClose, onSave,
             </div>
 
             {/* כפתורים */}
-            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300 text-sm sm:text-base"
+                className="px-6 py-2 border border-[#4B2E83] text-[#4B2E83] rounded-lg font-medium hover:bg-[#4B2E83] hover:text-white transition-all duration-300"
               >
                 ביטול
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base flex items-center justify-center gap-2"
+                className="px-6 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

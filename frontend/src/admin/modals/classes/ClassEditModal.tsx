@@ -17,7 +17,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     classData.group_credits > 0 || classData.private_credits > 0 || isNewClass
   );
   
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
     name: classData.name || '',
     description: classData.description || '',
     long_description: classData.long_description || '',
@@ -513,7 +513,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
             )}
           </div>
 
-          {/* מיקום ומדיה */}
+                    {/* מיקום ומדיה */}
           <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-4">
             <h3 className="text-lg font-bold text-[#4B2E83] mb-4 flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -526,7 +526,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 <div>
                 <label className="block text-sm font-medium text-[#4B2E83] mb-3">
                   ערכת צבע
-                  </label>
+                    </label>
                 <div className="space-y-3">
                   {/* שורה ראשונה - צבעים חמים */}
                   <div className="flex justify-center gap-3">
@@ -616,8 +616,8 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                         )}
                       </button>
                     ))}
-                  </div>
-                  
+              </div>
+
                   {/* שם הצבע הנבחר */}
                   <div className="text-center">
                     <span className="text-xs font-medium text-[#4B2E83] bg-[#4B2E83]/5 px-3 py-1 rounded-full">
