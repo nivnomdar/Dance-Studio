@@ -3,7 +3,7 @@ import { FaCalendarAlt, FaClock, FaMapMarkerAlt, FaUsers, FaCheckCircle, FaTimes
 import { registrationsService } from '../../lib/registrations';
 import { classesService } from '../../lib/classes';
 import { translateCategory } from '../../utils/categoryUtils';
-import type { Registration } from '../../types/registration';
+import type { RegistrationWithDetails } from '../../types/registration';
 import type { Class } from '../../types/class';
 import { LoadingSpinner, StatusModal } from '../common';
 
@@ -14,9 +14,8 @@ interface MyClassesTabProps {
   onCreditsUpdate?: () => void;
 }
 
-interface RegistrationWithClass extends Registration {
-  class: Class;
-}
+// Use the server-joined class details from the registrations API
+type RegistrationWithClass = RegistrationWithDetails;
 
 const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesCountUpdate, onCreditsUpdate }) => {
   const [registrations, setRegistrations] = useState<RegistrationWithClass[]>([]);
@@ -42,34 +41,13 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
         setLoading(true);
         setError(null);
         
-        // קבלת כל ההרשמות של המשתמש באמצעות השירות המשופר
+        // קבלת כל ההרשמות של המשתמש (כולל שדה class מצורף מהשרת)
         const userRegistrations = await registrationsService.getMyRegistrations(userId);
-        
-        // קבלת כל השיעורים בבת אחת במקום בנפרד
-        const classIds = [...new Set(userRegistrations.map((r: any) => r.class_id).filter(Boolean))];
-        
-        // קבלת כל השיעורים בבת אחת עם Promise.all
-        const classesPromises = classIds.map((id: any) => classesService.getClassById(id));
-        const classes = await Promise.all(classesPromises);
-        
-        // יצירת מפה של שיעורים לפי ID
-        const classesData = classes.reduce((acc: any, cls: any) => {
-          if (cls) acc[cls.id] = cls;
-          return acc;
-        }, {});
-        
-        // יצירת הרשמות עם פרטי השיעורים המלאים
-        const registrationsWithClasses = userRegistrations
-          .map((registration: any) => {
-            if (!registration.class_id || !classesData[registration.class_id]) {
-              return null;
-            }
-            return {
-              ...registration,
-              class: classesData[registration.class_id]
-            };
-          })
-          .filter(Boolean);
+
+        // השתמש ישירות בנתוני ה-class המוצמדים ע"י ה-API וסנן רשומות ללא class
+        const registrationsWithClasses: RegistrationWithClass[] = (userRegistrations || [])
+          .filter((r: any) => r && r.class)
+          .map((r: any) => r as RegistrationWithClass);
 
         setRegistrations(registrationsWithClasses);
       } catch (err) {
@@ -572,9 +550,11 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
                     </h4>
                     {getStatusBadge(selectedRegistration)}
                   </div>
-                  <p className="text-[#4B2E83]/70 text-base leading-relaxed">
-                    {selectedRegistration.class.description}
-                  </p>
+                  {(selectedRegistration as any).class?.description && (
+                    <p className="text-[#4B2E83]/70 text-base leading-relaxed">
+                      {(selectedRegistration as any).class.description}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white px-6 py-3 rounded-2xl font-bold text-xl shadow-lg">
                   {selectedRegistration.class.price} ש"ח

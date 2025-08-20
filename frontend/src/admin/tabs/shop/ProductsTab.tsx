@@ -160,7 +160,25 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
             </select>
           </div>
           <div className="lg:col-span-1">
-            <span className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</span>
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2 invisible">פעולה</label>
+            <button
+              onClick={() => { setEditProduct(null); setEditOpen(true); }}
+              className="w-full min-w-[120px] px-3 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl h-12 cursor-pointer"
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              <span>מוצר חדש</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Products - Table or Cards */}
+      <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
+        <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83]">ניהול מוצרים</h2>
             <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
               <button
                 type="button"
@@ -168,7 +186,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 aria-pressed={viewMode === 'table'}
                 aria-label="תצוגת טבלה"
                 title="תצוגת טבלה"
-                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'table' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'table' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="4" width="18" height="4" rx="1"/>
@@ -182,7 +200,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                 aria-pressed={viewMode === 'cards'}
                 aria-label="תצוגת כרטיסים"
                 title="תצוגת כרטיסים"
-                className={`inline-flex items-center justify-center w-full sm:w-auto px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'cards' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg border transition-all text-xs sm:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40 cursor-pointer ${viewMode === 'cards' ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -193,22 +211,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
               </button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Products - Table or Cards */}
-      <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-        <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
-          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">ניהול מוצרים</h2>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
-            <button
-              onClick={() => { setEditProduct(null); setEditOpen(true); }}
-              className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm cursor-pointer"
-            >
-              הוסיפי מוצר חדש
-            </button>
-          </div>
+          <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
         </div>
         {viewMode === 'table' ? (
           <div className="overflow-x-auto">
@@ -281,7 +284,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           <div className="p-3 sm:p-6">
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {pagedProducts.map((p: any) => (
-                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow h-80 flex flex-col">
+                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[22rem] flex flex-col">
                   <div className="relative bg-gray-50 flex-shrink-0">
                     {p.main_image ? (
                       <img
@@ -305,6 +308,15 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                         {p.is_active ? 'פעיל' : 'לא פעיל'}
                       </button>
                     </div>
+                    <div className="absolute top-2 right-2">
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium border cursor-default bg-white/80 backdrop-blur-sm shadow-sm ${
+                        (p.stock_quantity ?? 0) > 0
+                          ? 'text-[#4B2E83] border-[#4B2E83]/20'
+                          : 'text-red-700 border-red-200'
+                      }`}>
+                        {(p.stock_quantity ?? 0) > 0 ? `מלאי: ${p.stock_quantity}` : 'אזל מהמלאי'}
+                      </div>
+                    </div>
                   </div>
                   <div className="p-4 flex-1 flex flex-col">
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -314,19 +326,13 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       </div>
                       <div className="text-[#EC4899] font-bold text-lg whitespace-nowrap flex-shrink-0">₪{p.price}</div>
                     </div>
-                    {p.description && (
-                      <div className="text-xs text-[#4B2E83]/70 mb-4 line-clamp-2 flex-1" title={p.description}>{p.description}</div>
-                    )}
+                    <div
+                      className="text-xs text-[#4B2E83]/70 mb-2 line-clamp-2 min-h-[32px] sm:min-h-[36px]"
+                      title={p.description || ''}
+                    >
+                      {p.description || ''}
+                    </div>
                     <div className="mt-auto">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className={`text-xs px-3 py-1.5 rounded-full border ${
-                          (p.stock_quantity ?? 0) > 0
-                            ? 'bg-[#4B2E83]/5 text-[#4B2E83] border-[#4B2E83]/20'
-                            : 'bg-red-50 text-red-700 border-red-200'
-                        }`}>
-                          {(p.stock_quantity ?? 0) > 0 ? `מלאי: ${p.stock_quantity}` : 'אזל מהמלאי'}
-                        </div>
-                      </div>
                       <div className="flex gap-2">
                         <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer">עריכה</button>
                         <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="flex-1 px-3 py-2 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-xs cursor-pointer">מחיקה</button>

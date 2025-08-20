@@ -573,13 +573,15 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       .select('*')
       .eq('id', id)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error && (error as any).code && (error as any).code !== 'PGRST116') {
+      // Unexpected error (not "no rows")
       throw new AppError('Failed to fetch class', 500);
     }
 
     if (!data) {
+      // Not found
       throw new AppError('Class not found', 404);
     }
 

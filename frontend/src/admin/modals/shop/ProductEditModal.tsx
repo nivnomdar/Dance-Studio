@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../../../lib/api';
-import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 
 interface ProductEditModalProps {
   isOpen: boolean;
@@ -101,15 +100,19 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                   <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
                 </div>
                 <div>
-                  <ResponsiveSelect
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קטגוריה *</label>
+                  <select
                     id="product-category"
                     name="product-category"
-                    label="קטגוריה *"
                     value={form.category_id}
-                    onChange={(v) => setForm({ ...form, category_id: v })}
-                    placeholder="בחרי קטגוריה"
-                    options={(categories || []).map((c: any) => ({ value: String(c.id), label: c.name }))}
-                  />
+                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none"
+                  >
+                    <option value="">בחרי קטגוריה</option>
+                    {(categories || []).map((c: any) => (
+                      <option key={c.id} value={String(c.id)}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מחיר (₪) *</label>

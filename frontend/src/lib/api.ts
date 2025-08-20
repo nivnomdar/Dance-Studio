@@ -296,9 +296,26 @@ export const apiService = {
     },
 
     async getById(id: string): Promise<Class | null> {
-      return fetchWithRetryAndQueue<Class | null>(() => 
-        fetch(`${API_BASE_URL}/classes/${id}`)
-      );
+      try {
+        const response = await fetch(`${API_BASE_URL}/classes/${id}`);
+        if (response.status === 404) {
+          // Class not found — do not retry, return null gracefully
+          return null;
+        }
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if ((errorData as any)?.message) errorMessage = (errorData as any).message;
+            else if ((errorData as any)?.error) errorMessage = (errorData as any).error;
+          } catch {}
+          throw new Error(errorMessage);
+        }
+        return (await response.json()) as Class;
+      } catch (error) {
+        console.error('Classes API getById error:', error);
+        return null;
+      }
     },
 
     async getBySlug(slug: string): Promise<Class | null> {
