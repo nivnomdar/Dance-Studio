@@ -3,6 +3,7 @@ import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { ClassEditModal, ClassSessionsModal } from '../../modals';
 import { Class } from '../../../types';
 import { getCategoryColorScheme } from '../../../utils/colorUtils';
+import { translateCategory } from '../../../utils/categoryUtils';
 import { ADMIN_STYLES } from '../../utils';
 
 interface ClassesTabProps {
@@ -249,8 +250,8 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                         const colorScheme = getCategoryColorScheme(cls.color_scheme);
                         return (
                           <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-medium bg-white ${colorScheme.text} border ${colorScheme.border} shadow-sm hover:shadow-md transition-all duration-200 cursor-default min-w-[60px] sm:min-w-[80px] justify-center`}>
-                            <span className="truncate" title={cls.category}>
-                              {cls.category || 'כללי'}
+                            <span className="truncate" title={cls.category ? translateCategory(cls.category) : 'כללי'}>
+                              {cls.category ? translateCategory(cls.category) : 'כללי'}
                             </span>
                           </span>
                         );

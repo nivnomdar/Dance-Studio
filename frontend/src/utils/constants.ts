@@ -10,6 +10,22 @@ export const CACHE_DURATION = 300000; // 5 minutes - increased to reduce API cal
 export const DAY_NAMES_EN = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
 export const DAY_NAMES_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'] as const;
 
+// Registration types mapping
+export const REGISTRATION_TYPES = {
+  standard: { value: 'standard', label: 'רגילה' },
+  appointment_only: { value: 'appointment_only', label: 'בתיאום' },
+  subscription: { value: 'subscription', label: 'מנוי' }
+} as const;
+
+// Registration types options array for dropdowns
+export const REGISTRATION_TYPE_OPTIONS = Object.values(REGISTRATION_TYPES);
+
+// Helper function to translate registration type
+export const translateRegistrationType = (registrationType: string): string => {
+  const type = REGISTRATION_TYPES[registrationType as keyof typeof REGISTRATION_TYPES];
+  return type?.label || registrationType;
+};
+
 // Default times for classes
 export const DEFAULT_CLASS_TIMES = ['18:00', '19:00', '20:00'];
 
