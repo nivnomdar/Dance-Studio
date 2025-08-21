@@ -18,10 +18,13 @@ const ShopPage = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const pageSizeAll = 18;
 
   const topLevelCategories = useMemo(() => {
     const top = categories.filter(c => !c.parent_id);
-    return [{ id: 'all', name: 'הכל' }, ...top.map((c: any) => ({ id: c.id, name: c.name }))];
+    // do not include the synthetic "all" button in the UI
+    return top.map((c: any) => ({ id: c.id, name: c.name }));
   }, [categories]);
 
   useEffect(() => {
@@ -68,6 +71,14 @@ const ShopPage = () => {
     // Subcategory: match by direct category_id or by joined alias id if present
     return products.filter((p: any) => p.category_id === selectedCategory || p.categories?.id === selectedCategory);
   }, [products, selectedCategory, categories]);
+
+  const isAll = selectedCategory === 'all';
+  const totalPages = isAll ? Math.max(1, Math.ceil(products.length / pageSizeAll)) : 1;
+  const visibleProducts = useMemo(() => {
+    if (!isAll) return filteredProducts;
+    const start = (page - 1) * pageSizeAll;
+    return products.slice(start, start + pageSizeAll);
+  }, [isAll, filteredProducts, products, page]);
 
   const selectedCategoryObj = useMemo(() => {
     return categories.find((c: any) => c.id === selectedCategory) || null;
@@ -144,36 +155,53 @@ const ShopPage = () => {
         </div>
 
         {/* Categories */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 sm:mb-8 px-2">
-          {topLevelCategories.map(category => (
+        <div className="relative mb-6 sm:mb-8 px-2" role="navigation" aria-label="סינון לפי קטגוריה">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
+            {topLevelCategories.map(category => (
+              <button
+                key={category.id}
+                onClick={() => {
+                  setActiveParentId(category.id);
+                  setSelectedCategory(category.id);
+                  setPage(1);
+                }}
+                aria-pressed={activeParentId === category.id}
+                className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
+                  activeParentId === category.id
+                    ? 'bg-[#4B2E83] text-white shadow-lg'
+                    : 'bg-white text-gray-700 border border-[#EC4899]/20 hover:bg-[#4B2E83]/10 hover:border-[#EC4899]/40'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+          {(activeParentId !== 'all' || selectedCategory !== 'all') && (
             <button
-              key={category.id}
-              onClick={() => {
-                setActiveParentId(category.id);
-                setSelectedCategory(category.id);
-              }}
-              className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
-                activeParentId === category.id
-                  ? 'bg-[#4B2E83] text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-[#4B2E83]/10'
-              }`}
+              onClick={() => { setActiveParentId('all'); setSelectedCategory('all'); setPage(1); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-[#4B2E83]/30 text-[#4B2E83] bg-white hover:bg-[#4B2E83]/5 shadow-sm"
+              aria-label="נקה בחירת קטגוריה"
+              title="נקה בחירה"
             >
-              {category.name}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-          ))}
+          )}
         </div>
 
         {/* Subcategories (always show for the selected parent) */}
         {activeParentId !== 'all' && (
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2" role="navigation" aria-label="תת־קטגוריות">
             {categories.filter((c: any) => c.parent_id === activeParentId).map((sub: any) => (
               <button
                 key={sub.id}
-                onClick={() => setSelectedCategory(sub.id)}
+                onClick={() => { setSelectedCategory(sub.id); setPage(1); }}
+                aria-pressed={selectedCategory === sub.id}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                   selectedCategory === sub.id
                     ? 'bg-[#4B2E83] text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-[#4B2E83]/10'
+                    : 'bg-white text-gray-700 border border-[#EC4899]/20 hover:bg-[#4B2E83]/10 hover:border-[#EC4899]/40'
                 }`}
               >
                 {sub.name}
@@ -183,8 +211,8 @@ const ShopPage = () => {
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-          {filteredProducts.length === 0 && !isLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {visibleProducts.length === 0 && !isLoading && (
             <div className="col-span-full">
               <div className="bg-white rounded-2xl p-8 text-center border border-[#EC4899]/10">
                 <div className="mx-auto mb-4 w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
@@ -199,7 +227,7 @@ const ShopPage = () => {
               </div>
             </div>
           )}
-          {filteredProducts.map((product: any) => (
+          {visibleProducts.map((product: any) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 20 }}
@@ -216,13 +244,13 @@ const ShopPage = () => {
                   onError={handleImageError}
                 />
                 {product.isNew && (
-                  <span className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-purple-600 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                    חדש!
+                  <span className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-[#EC4899] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
+                    מוצר חם
                   </span>
                 )}
                 {product.isBestSeller && (
-                  <span className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-[#E6C17C] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                    מוביל מכירות
+                  <span className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-[#4B2E83] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
+                    מומלץ
                   </span>
                 )}
               </div>
@@ -246,6 +274,31 @@ const ShopPage = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination for 'all' only */}
+        {isAll && totalPages > 1 && (
+          <nav className="mt-6 flex items-center justify-center gap-2" aria-label="דיפדוף מוצרים">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-2 rounded-lg border border-[#4B2E83]/20 text-[#4B2E83] disabled:opacity-50 hover:bg-[#4B2E83]/5"
+              aria-label="עמוד קודם"
+            >
+              הקודם
+            </button>
+            <span className="px-3 py-2 text-sm text-[#4B2E83]" aria-live="polite">
+              עמוד {page} מתוך {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-2 rounded-lg border border-[#4B2E83]/20 text-[#4B2E83] disabled:opacity-50 hover:bg-[#4B2E83]/5"
+              aria-label="עמוד הבא"
+            >
+              הבא
+            </button>
+          </nav>
+        )}
 
         {/* Quick View Modal */}
         <AnimatePresence>
