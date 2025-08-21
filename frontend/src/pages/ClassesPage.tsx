@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { FaClock, FaUserGraduate, FaArrowLeft, FaRedo } from 'react-icons/fa';
+ 
+import { FaRedo, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
-import { getSimpleColorScheme } from '../utils/colorUtils';
+ 
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
-import { TIMEOUTS } from '../utils/constants';
 import { RefreshButton } from '../admin';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation } from 'swiper/modules';
+import 'swiper/swiper-bundle.css';
+import ClassCard from '../components/ClassCard';
 
 // Cache key for sessionStorage
 const CLASSES_CACHE_KEY = 'classes_cache';
@@ -74,17 +77,18 @@ function ClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
+  const [, setLocalProfile] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [usedTrialClassIds, setUsedTrialClassIds] = useState<Set<string>>(new Set());
+  // Swiper ref for external navigation controls
+  const carouselSwiperRef = useRef<any>(null);
   
   // Refs to prevent duplicate calls
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
 
-  // Get the correct profile (local or context)
-  const profile = localProfile || contextProfile;
+  
 
   // Helper function to get cached classes
   const getCachedClasses = (): Class[] | null => {
@@ -316,12 +320,9 @@ function ClassesPage() {
   }, [user?.id, session?.access_token]);
 
   // Helper functions
-  const getClassRoute = (slug: string) => `/class/${slug}`;
+  
 
-  const getTrialClassStatusBadge = (classItem: Class) => {
-    // badge only for the legacy single-trial card; now deprecated, return null
-    return null;
-  };
+  
 
   const handleRetry = () => {
     hasFetchedRef.current = false;
@@ -399,7 +400,7 @@ function ClassesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
+    <div className="min-h-screen bg-[#FDF9F6] overflow-x-hidden py-8 sm:py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
@@ -413,96 +414,89 @@ function ClassesPage() {
           </p>
         </div>
 
-        {/* Classes Grid */}
-        {classes.length === 0 ? (
-          <div className="text-center py-8 sm:py-12">
-            <p className="text-[#2B2B2B] font-agrandir-regular text-base sm:text-lg">אין שיעורים זמינים כרגע</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {[...classes].reverse().map((classItem) => {
-              const colorScheme = getSimpleColorScheme(classItem);
-              const route = getClassRoute(classItem.slug);
-              const isTrialClass = (classItem.category || '').toLowerCase() === 'trial';
-              const hasUsedTrial = isTrialClass && usedTrialClassIds.has(classItem.id);
-              
-              return (
-                <div 
-                  key={classItem.id} 
-                  className={`bg-white rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-300 h-full lg:flex lg:flex-col relative ${
-                    hasUsedTrial ? 'lg:opacity-50 opacity-40 grayscale' : ''
-                  }`}
-                >
-                  {/* Desktop Image */}
-                  <div className="relative h-32 sm:h-40 lg:h-48 hidden lg:block">
-                    <img
-                      src={classItem.image_url || '/carousel/image1.png'}
-                      alt={classItem.name}
-                      className="w-full h-full object-cover rounded-t-2xl"
-                      loading="lazy"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPuaJp+ihjOaTjeS9nDwvdGV4dD4KPC9zdmc+';
+        {/* Classes Carousel (inline) */}
+        <div className="mb-8 sm:mb-12 lg:mb-16">
+          {(() => {
+            const visibleClasses = classes.filter((classItem) => {
+              const isTrial = (classItem.category || '').toLowerCase() === 'trial';
+              const isUsedTrial = isTrial && usedTrialClassIds.has(classItem.id);
+              return !isUsedTrial;
+            });
+            if (visibleClasses.length === 0) return null;
+
+            return (
+              <section className="py-2">
+                <style>{`
+                  /* Prevent horizontal overflow on small screens */
+                  #classes-carousel .swiper,
+                  #classes-carousel .swiper-wrapper { overflow: hidden !important; }
+                  
+                  /* Re-enable overflow visibility for nice scaling on larger screens */
+                  @media (min-width: 768px) {
+                    #classes-carousel .swiper,
+                    #classes-carousel .swiper-wrapper { overflow: visible !important; }
+                  }
+                  
+                  /* Keep images stable across slides for consistent proportions */
+                  #classes-carousel .card-hero img { transition: transform 0.3s ease; transform: none; }
+                `}</style>
+
+                <div id="classes-carousel" className="w-full sm:flex items-center justify-between gap-4 relative">
+                  <button
+                    type="button"
+                    aria-label="Previous classes"
+                    onClick={() => carouselSwiperRef.current?.slidePrev()}
+                    className="hidden sm:grid w-10 h-10 place-items-center rounded-full bg-white/90 text-[#4B2E83] shadow border border-gray-200 hover:bg-white transition z-20 pointer-events-auto relative"
+                  >
+                    <FaChevronRight className="w-5 h-5" />
+                  </button>
+
+                  <div className="mx-auto w-full overflow-visible">
+                    <Swiper
+                      modules={[Navigation]}
+                      spaceBetween={24}
+                      slidesPerView={3}
+                      loop={visibleClasses.length > 3}
+                      loopAdditionalSlides={3}
+                      breakpoints={{
+                        0: { slidesPerView: 1, spaceBetween: 0 },
+                        640: { slidesPerView: 1, spaceBetween: 8 },
+                        768: { slidesPerView: 2, spaceBetween: 16 },
+                        1024: { slidesPerView: 3, spaceBetween: 24 },
+                        1280: { slidesPerView: 4, spaceBetween: 24 },
+                        1440: { slidesPerView: 4, spaceBetween: 24 },
                       }}
-                    />
-                    <div className="absolute bottom-3 right-3">
-                      <span className={`${colorScheme.bgColor} text-white px-3 py-1 rounded-full text-xs font-medium`}>
-                        {classItem.price} ש"ח
-                      </span>
-                    </div>
+                      onSwiper={(swiper) => { carouselSwiperRef.current = swiper; }}
+                      className="relative z-10 rounded-lg overflow-hidden sm:overflow-visible pointer-events-auto"
+                    >
+                    {visibleClasses.map((classItem) => (
+                      <SwiperSlide key={classItem.id}>
+                        <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                      </SwiperSlide>
+                    ))}
+                    </Swiper>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-3 sm:p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-3">
-                    <h3 className={`text-base sm:text-lg lg:text-xl font-bold ${colorScheme.textColor} mb-2 sm:mb-3 font-agrandir-grand`}>
-                      {classItem.name}
-                    </h3>
-                    
-                    <div className="h-12 sm:h-16 lg:h-20 mb-3 sm:mb-4">
-                      <p className="text-[#2B2B2B] font-agrandir-regular leading-relaxed text-xs sm:text-sm lg:text-sm line-clamp-3">
-                        {classItem.description}
-                      </p>
-                    </div>
-                    
-                    {/* Class Details */}
-                    <div className="space-y-2 mb-4 sm:mb-6 h-10 sm:h-12 lg:h-14">
-                      {classItem.duration && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-xs sm:text-sm`}>
-                          <FaClock className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                          <span className="font-agrandir-regular">{classItem.duration} דקות</span>
-                        </div>
-                      )}
-                      {classItem.level && (
-                        <div className={`flex items-center ${colorScheme.textColor} text-xs sm:text-sm`}>
-                          <FaUserGraduate className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                          <span className="font-agrandir-regular">רמה: {classItem.level}</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Action Button */}
-                    <div className="lg:mt-auto">
-                      {hasUsedTrial ? (
-                        <div className="inline-flex items-center justify-center w-full bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-xl font-medium text-xs sm:text-sm cursor-not-allowed opacity-90">
-                          נוצל
-                          <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
-                        </div>
-                      ) : (
-                        <Link
-                          to={route}
-                          className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-2 rounded-xl transition-colors duration-300 font-medium text-xs sm:text-sm`}
-                        >
-                          הרשמה
-                          <FaArrowLeft className="w-2.5 h-2.5 lg:w-3 lg:h-3 mr-2" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    aria-label="Next classes"
+                    onClick={() => carouselSwiperRef.current?.slideNext()}
+                    className="hidden sm:grid w-10 h-10 place-items-center rounded-full bg-white/90 text-[#4B2E83] shadow border border-gray-200 hover:bg-white transition z-20 pointer-events-auto relative"
+                  >
+                    <FaChevronLeft className="w-5 h-5" />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </section>
+            );
+          })()}
+        </div>
+
+        {/* Classes Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {classes.map((classItem) => (
+            <ClassCard key={classItem.id} classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+          ))}
+        </div>
 
 
       </div>
