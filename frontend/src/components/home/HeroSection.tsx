@@ -106,12 +106,17 @@ function HeroSection() {
             className="w-64 sm:w-72 md:w-80 lg:w-96 h-auto max-w-full"
             loading="eager"
           />
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 -mt-4 sm:-mt-6 w-full sm:w-auto">
+          <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 -mt-4 sm:-mt-6 w-full sm:w-auto">
             <Link
               to="/classes"
-              className="w-full sm:w-auto bg-[#EC4899] hover:bg-[#EC4899]/80 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-colors duration-200 flex items-center justify-center"
+              className="relative group w-auto bg-gradient-to-r from-[#EC4899] to-[#4B2E83] hover:from-[#EC4899]/90 hover:to-[#4B2E83]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
+              aria-label="לקביעת שיעור"
+              title="לקביעת שיעור"
             >
               לקביעת שיעור
+              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                לקביעת שיעור
+              </div>
             </Link>
             <a
               href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw=="
