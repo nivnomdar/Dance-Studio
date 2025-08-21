@@ -1,88 +1,12 @@
-import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function HeroSection() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isVideoReady, setIsVideoReady] = useState(false);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Basic video setup - let HTML handle the loop
-    video.preload = 'auto';
-    video.playsInline = true;
-    video.muted = true;
-    video.loop = true;
-
-    const startVideo = async () => {
-      try {
-        if (video.paused) {
-          await video.play();
-        }
-      } catch (error) {
-        // Video play failed silently
-      }
-    };
-
-    const handleCanPlay = () => {
-      startVideo();
-      setIsVideoReady(true);
-    };
-
-    const handleLoadedData = () => {
-      setIsVideoReady(true);
-    };
-
-    // Handle visibility change only
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        video.pause();
-      } else {
-        if (video.paused) {
-          startVideo();
-        }
-      }
-    };
-
-    // Add only essential event listeners
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('loadeddata', handleLoadedData);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Cleanup
-    return () => {
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
   return (
     <section className="relative w-full h-screen overflow-hidden">
-      {/* Video Background - Hidden on small screens, visible on medium and up */}
+      {/* Large screens background image */}
       <div className="absolute inset-0 w-full h-full hidden md:block">
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover transition-opacity duration-500 ${isVideoReady ? 'opacity-100' : 'opacity-0'}`}
-          style={{
-            objectFit: 'cover',
-            objectPosition: 'center'
-          }}
-        >
-          <source src="/videos/Heronew.mp4" type="video/mp4" />
-        </video>
-      </div>
-
-      {/* GIF Background - Always visible on small; on md+ visible until video is ready */}
-      <div className={`absolute inset-0 w-full h-full block ${isVideoReady ? 'md:hidden' : ''}`}>
         <img
-          src="/videos/Heronew.gif"
+          src="/images/HeroLargeScreens.png"
           alt="Studio Dance Background"
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover"
           style={{
@@ -93,23 +17,32 @@ function HeroSection() {
         />
       </div>
 
+      {/* Small screens background image */}
+      <div className="absolute inset-0 w-full h-auto block md:hidden">
+        <img
+          src="/images/HeroSmallScreens.png"
+          alt="Studio Dance Background"
+          className="absolute inset-0 w-full h-full object-contain"
+          style={{
+            objectFit: 'contain',
+            objectPosition: 'top'
+          }}
+          loading="eager"
+        />
+      </div>
+
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/20" />
+      <div className="absolute inset-0" />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full text-white px-4 sm:px-6 lg:px-8 pt-12 md:pt-0">
         {/* Hero Image + Buttons */}
-        <div className="flex flex-col items-center">
-          <img
-            src="/images/ontopHero.png"
-            alt="Studio Dance - סטודיו להעצמה נשית וחיבור לגוף"
-            className="w-64 sm:w-72 md:w-80 lg:w-96 h-auto max-w-full"
-            loading="eager"
-          />
-          <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 -mt-4 sm:-mt-6 w-full sm:w-auto">
+        <div className="flex flex-col items-center mt-1">
+      
+          <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 -mt-5 sm:-mt-6 lg:mt-65 w-full sm:w-auto">
             <Link
               to="/classes"
-              className="relative group w-auto bg-gradient-to-r from-[#EC4899] to-[#4B2E83] hover:from-[#EC4899]/90 hover:to-[#4B2E83]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
+              className="relative group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
               aria-label="לקביעת שיעור"
               title="לקביעת שיעור"
             >
