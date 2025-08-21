@@ -9,10 +9,11 @@ interface ProductEditModalProps {
   onClose: () => void;
   product: any | null;
   categories: any[];
+  products: any[];
   onSaved: () => Promise<void> | void;
 }
 
-export default function ProductEditModal({ isOpen, onClose, product, categories, onSaved }: ProductEditModalProps) {
+export default function ProductEditModal({ isOpen, onClose, product, categories, products, onSaved }: ProductEditModalProps) {
   const [form, setForm] = useState({
     name: '',
     category_id: '',
@@ -20,7 +21,20 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
     price: '',
     stock_quantity: '',
     main_image: '',
-    gallery_images: ''
+    gallery_images: '',
+    // Shoes
+    sizes: [] as string[],
+    heel_height: '',
+    sole_type: '',
+    materials: '',
+    // Identifiers & SEO
+    slug: '',
+    keywords: '',
+    meta_description: '',
+    // Marketing
+    related_products: [] as string[],
+    trending: false,
+    recommended: false
   });
   const [saving, setSaving] = useState(false);
   const [mainImageFile, setMainImageFile] = useState<File | null>(null);
@@ -40,10 +54,41 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
         price: product.price != null ? String(product.price) : '',
         stock_quantity: product.stock_quantity != null ? String(product.stock_quantity) : '',
         main_image: product.main_image || '',
-        gallery_images: Array.isArray(product.gallery_images) ? product.gallery_images.join(', ') : ''
+        gallery_images: Array.isArray(product.gallery_images) ? product.gallery_images.join(', ') : '',
+        // Shoes
+        sizes: Array.isArray(product.sizes) ? product.sizes.map(String) : [],
+        heel_height: product.heel_height != null ? String(product.heel_height) : '',
+        sole_type: product.sole_type || '',
+        materials: product.materials || '',
+        // Identifiers & SEO
+        slug: product.slug || '',
+        keywords: product.keywords || '',
+        meta_description: product.meta_description || '',
+        // Marketing
+        related_products: Array.isArray(product.related_products) ? product.related_products : [],
+        trending: !!product.trending,
+        recommended: !!product.recommended
       });
     } else {
-      setForm({ name: '', category_id: '', description: '', price: '', stock_quantity: '', main_image: '', gallery_images: '' });
+      setForm({
+        name: '',
+        category_id: '',
+        description: '',
+        price: '',
+        stock_quantity: '',
+        main_image: '',
+        gallery_images: '',
+        sizes: [],
+        heel_height: '',
+        sole_type: '',
+        materials: '',
+        slug: '',
+        keywords: '',
+        meta_description: '',
+        related_products: [],
+        trending: false,
+        recommended: false
+      });
     }
     setMainImageFile(null);
     setGalleryFiles([]);
@@ -97,6 +142,18 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
     return parts.length > 1 ? parts.pop() || 'jpg' : 'jpg';
   };
 
+  const generateSlug = (value: string) => {
+     const s = (value || '').trim();
+     return s
+       .toLowerCase()
+       .replace(/\s+/g, '-')
+       .replace(/[\u2000-\u206F\u2E00-\u2E7F'"!@#$%^&*(),.•·/:;?{}+_=<>\[\]`~\\]+/g, '-')
+       .replace(/-+/g, '-')
+       .replace(/^-|-$/g, '');
+   };
+ 
+  // Note: no automatic filling of slug/SEO fields in the modal
+
   const uploadImageToProducts = async (file: File, path: string): Promise<string> => {
     const { data, error } = await supabase.storage.from('products').upload(path, file, {
       upsert: true,
@@ -140,6 +197,17 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
           ? form.gallery_images.split(',').map(s => s.trim()).filter(Boolean)
           : []
       };
+      // professional, SEO and marketing fields
+      basePayload.sizes = Array.isArray(form.sizes) ? form.sizes : [];
+      basePayload.heel_height = form.heel_height !== '' ? Number(form.heel_height) : null;
+      basePayload.sole_type = form.sole_type || null;
+      basePayload.materials = form.materials?.trim() || null;
+      basePayload.slug = (form.slug?.trim() || generateSlug(form.name)) || null;
+      basePayload.keywords = form.keywords?.trim() || null;
+      basePayload.meta_description = form.meta_description?.trim() || null;
+      basePayload.related_products = Array.isArray(form.related_products) ? form.related_products : [];
+      basePayload.trending = !!form.trending;
+      basePayload.recommended = !!form.recommended;
       if (product && product.id) {
         let payload = basePayload;
         if (mainImageFile || galleryFiles.length) {
@@ -216,6 +284,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                     value={form.category_id}
                     onChange={(val) => setForm({ ...form, category_id: val })}
                     options={(categories || []).map((c: any) => ({ value: String(c.id), label: c.name }))}
+                    placeholder="בחרי"
                     menuZIndex={70}
                   />
                 </div>
@@ -235,6 +304,181 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
               <div className="mt-3 sm:mt-4">
                 <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תיאור</label>
                 <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+              </div>
+            </div>
+
+            {/* Shoes */}
+            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-6">
+              <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4">נעליים</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">מידות (EU / בגדים)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["35","36","37","38","39","40","41","42","S","M","L","XL"].map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => {
+                            const selected = new Set(prev.sizes);
+                            if (selected.has(size)) selected.delete(size); else selected.add(size);
+                            return { ...prev, sizes: Array.from(selected).sort() };
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${form.sizes.includes(size) ? 'border-[#EC4899] bg-[#EC4899]/10 text-[#EC4899]' : 'border-gray-300 text-gray-700 hover:border-[#EC4899]'}`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">גובה עקב (ס"מ)</label>
+                    <input type="number" step="0.1" value={form.heel_height} onChange={e => setForm({ ...form, heel_height: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none [field-sizing:content]" />
+                  </div>
+                  <div>
+                    <ResponsiveSelect
+                      id="sole-type"
+                      name="sole-type"
+                      label="סוג סוליה"
+                      value={form.sole_type}
+                      onChange={(val) => setForm({ ...form, sole_type: val })}
+                      options={[
+                        { value: 'מחליק', label: 'מחליק' },
+                        { value: 'לא מחליק', label: 'לא מחליק' }
+                      ]}
+                      placeholder="בחרי"
+                      menuZIndex={70}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 sm:mt-4">
+                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חומרי גלם</label>
+                <textarea rows={2} value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+              </div>
+            </div>
+
+            {/* Identifiers & SEO */}
+            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-3 sm:p-6">
+              <h3 className="text-base sm:text-lg font-bold text-[#4B2E83] mb-3 sm:mb-4">מזהים ו-SEO</h3>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">Slug (ידידותי ל-SEO)</label>
+                  <input value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} placeholder="נוצר אוטומטית מהשם אם ריק" className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+                </div>
+                <div></div>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מילות מפתח</label>
+                  <textarea rows={2} value={form.keywords} onChange={e => setForm({ ...form, keywords: e.target.value })} placeholder="מילה1, מילה2, ..." className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תיאור למנועי חיפוש</label>
+                  <textarea rows={2} value={form.meta_description} onChange={e => setForm({ ...form, meta_description: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Marketing */}
+            <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="text-base sm:text-lg font-bold text-[#4B2E83]">שיווק והמלצות</h3>
+                <span className="text-xs text-[#4B2E83]/70">שיפור חשיפה וקידום מוצרים</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+                <div className="md:col-span-8">
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מוצרים קשורים</label>
+                  <div className="border border-[#EC4899]/20 rounded-xl p-2 sm:p-3 bg-white h-full">
+                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+                      {(products || []).map((p: any) => {
+                        const selected = form.related_products.includes(String(p.id));
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => {
+                                const set = new Set(prev.related_products.map(String));
+                                if (set.has(String(p.id))) set.delete(String(p.id)); else set.add(String(p.id));
+                                return { ...prev, related_products: Array.from(set) };
+                              });
+                            }}
+                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border text-xs sm:text-sm text-right ${selected ? 'bg-[#EC4899]/10 border-[#EC4899]/40 text-[#4B2E83]' : 'bg-gray-50 border-gray-200 text-[#4B2E83]/80 hover:bg-gray-100'}`}
+                            title={p.name}
+                          >
+                            <div className="w-6 h-6 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                              {p.main_image ? (
+                                <img src={p.main_image} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10" />
+                              )}
+                            </div>
+                            <span className="truncate">{p.name}</span>
+                            {selected && (
+                              <svg className="w-4 h-4 text-[#EC4899] ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {form.related_products.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {form.related_products.map((id) => {
+                          const prod = (products || []).find((pp: any) => String(pp.id) === String(id));
+                          return (
+                            <span key={id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[#EC4899]/10 text-[#4B2E83] border border-[#EC4899]/20">
+                              {prod?.name || id}
+                              <button type="button" onClick={() => setForm(prev => ({ ...prev, related_products: prev.related_products.filter((x) => String(x) !== String(id)) }))} className="text-[#4B2E83]/60 hover:text-[#4B2E83]">×</button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="mt-2 text-[11px] text-[#4B2E83]/60">בחרי מוצרים שיוצגו כהצעות ללקוחה בדף המוצר.</p>
+                  </div>
+                </div>
+                <div className="md:col-span-4">
+                  <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תיוג וקידום</label>
+                  <div className="border border-[#EC4899]/20 rounded-xl p-2 sm:p-3 bg-white h-full">
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        aria-pressed={form.trending}
+                        onClick={() => setForm(prev => ({ ...prev, trending: !prev.trending }))}
+                        className={`w-full text-right p-4 rounded-xl border transition flex items-start gap-3 shadow-sm hover:shadow ${form.trending ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-md' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                        title="סימון מוצר כחם/חדש"
+                      >
+                        <span className={`inline-flex w-8 h-8 items-center justify-center rounded-full ${form.trending ? 'bg-white/20' : 'bg-[#EC4899]/10 text-[#EC4899]'}`}>🔥</span>
+                        <div className="flex-1">
+                          <div className={`text-sm font-semibold ${form.trending ? 'text-white' : 'text-[#4B2E83]'}`}>מוצר חם/חדש</div>
+                          <div className={`text-[11px] ${form.trending ? 'text-white/80' : 'text-[#4B2E83]/60'}`}>מסומן להדגשה וחשיפה משופרת.</div>
+                        </div>
+                        {form.trending && (
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={form.recommended}
+                        onClick={() => setForm(prev => ({ ...prev, recommended: !prev.recommended }))}
+                        className={`w-full text-right p-4 rounded-xl border transition flex items-start gap-3 shadow-sm hover:shadow ${form.recommended ? 'bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white border-transparent shadow-md' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
+                        title="סימון מוצר כמומלץ"
+                      >
+                        <span className={`inline-flex w-8 h-8 items-center justify-center rounded-full ${form.recommended ? 'bg-white/20' : 'bg-[#4B2E83]/10 text-[#4B2E83]'}`}>⭐</span>
+                        <div className="flex-1">
+                          <div className={`text-sm font-semibold ${form.recommended ? 'text-white' : 'text-[#4B2E83]'}`}>מומלץ</div>
+                          <div className={`text-[11px] ${form.recommended ? 'text-white/80' : 'text-[#4B2E83]/60'}`}>מופיע במקטעי "מומלצים" ברחבי האתר.</div>
+                        </div>
+                        {form.recommended && (
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

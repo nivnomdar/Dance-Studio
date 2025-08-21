@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiService } from '../../../lib/api';
+import { usePopup } from '../../../contexts/PopupContext';
 
 interface ProductDeleteModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ProductDeleteModalProps {
 
 export default function ProductDeleteModal({ isOpen, onClose, product, onDeleted }: ProductDeleteModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { showPopup } = usePopup();
   if (!isOpen || !product) return null;
 
   const handleDelete = async () => {
@@ -18,6 +20,13 @@ export default function ProductDeleteModal({ isOpen, onClose, product, onDeleted
       await apiService.shop.deleteProduct(product.id);
       await onDeleted();
       onClose();
+    } catch (e) {
+      showPopup({
+        title: 'שגיאה',
+        message: 'אירעה שגיאה במחיקת המוצר. נסי שוב.',
+        type: 'error',
+        duration: 3000
+      });
     } finally {
       setIsLoading(false);
     }

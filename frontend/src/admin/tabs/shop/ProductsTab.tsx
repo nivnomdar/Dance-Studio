@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import ProductEditModal from '../../modals/shop/ProductEditModal';
 import ProductStatusModal from '../../modals/shop/ProductStatusModal';
 import ProductDeleteModal from '../../modals/shop/ProductDeleteModal';
+import { StatusModal } from '../../../components/common/StatusModal';
 
 
 export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop: () => Promise<void> }) {
@@ -14,7 +15,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 8;
 
   const [editOpen, setEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<any | null>(null);
@@ -22,6 +23,8 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   const [statusProduct, setStatusProduct] = useState<any | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteProduct, setDeleteProduct] = useState<any | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
 
   const categoryById = useMemo(() => {
     const map: Record<string, any> = {};
@@ -31,6 +34,9 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
 
   const filteredSortedProducts = useMemo(() => {
     let list: any[] = [...(data.products || [])];
+    if (hiddenIds.size > 0) {
+      list = list.filter(p => !hiddenIds.has(String(p.id)));
+    }
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
       list = list.filter(p => (p.name || '').toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
@@ -55,7 +61,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
       }
     });
     return list;
-  }, [data.products, categoryById, searchTerm, filterCategoryId, stockFilter, statusFilter, sortKey, sortDir]);
+  }, [data.products, categoryById, searchTerm, filterCategoryId, stockFilter, statusFilter, sortKey, sortDir, hiddenIds]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSortedProducts.length / pageSize));
   const pagedProducts = useMemo(() => {
@@ -178,7 +184,13 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
         <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83]">ניהול מוצרים</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83]">ניהול מוצרים</h2>
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 text-[#4B2E83] border border-[#EC4899]/20">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+                {data.products?.length || 0}
+              </span>
+            </div>
             <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
               <button
                 type="button"
@@ -266,8 +278,16 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                     </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       <div className="flex gap-1 justify-center">
-                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">עריכה</button>
-                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="px-1 sm:px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">מחיקה</button>
+                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} aria-label="עריכה" title="עריכה" className="px-1 sm:px-2 py-1 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 16l4 4 12-12-4-4-12 12z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} aria-label="מחיקה" title="מחיקה" className="px-1 sm:px-2 py-1 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-[11px] sm:text-xs cursor-pointer">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7H5m3-3h8m-1 3l-1 12a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7m5 4v6m4-6v6" />
+                          </svg>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -282,15 +302,15 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           </div>
         ) : (
           <div className="p-3 sm:p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {pagedProducts.map((p: any) => (
-                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow h-[22rem] flex flex-col">
+                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow_hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                   <div className="relative bg-gray-50 flex-shrink-0">
                     {p.main_image ? (
                       <img
                         src={p.main_image}
                         alt={p.name || ''}
-                        className="w-full h-32 object-cover"
+                        className="w-full h-24 sm:h-32 object-cover"
                         loading="lazy"
                         decoding="async"
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -318,7 +338,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 flex-1 flex flex-col">
+                  <div className="p-3 sm:p-4 flex flex-col">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-[#4B2E83] text-sm truncate" title={p.name}>{p.name}</div>
@@ -327,15 +347,27 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       <div className="text-[#EC4899] font-bold text-lg whitespace-nowrap flex-shrink-0">₪{p.price}</div>
                     </div>
                     <div
-                      className="text-xs text-[#4B2E83]/70 mb-2 line-clamp-2 min-h-[32px] sm:min-h-[36px]"
+                      className="text-xs text-[#4B2E83]/70 mb-2 line-clamp-2"
                       title={p.description || ''}
                     >
                       {p.description || ''}
                     </div>
-                    <div className="mt-auto">
+                    <div className="mt-2">
                       <div className="flex gap-2">
-                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer">עריכה</button>
-                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} className="flex-1 px-3 py-2 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-xs cursor-pointer">מחיקה</button>
+                        <button onClick={() => { setEditProduct(p); setEditOpen(true); }} aria-label="עריכה" title="עריכה" className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer">
+                          <span className="flex items-center justify-center">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M4 16l4 4 12-12-4-4-12 12z" />
+                            </svg>
+                          </span>
+                        </button>
+                        <button onClick={() => { setDeleteProduct(p); setDeleteOpen(true); }} aria-label="מחיקה" title="מחיקה" className="flex-1 px-3 py-2 bg-red-600/80 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-300 text-xs cursor-pointer">
+                          <span className="flex items-center justify-center">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7H5m3-3h8m-1 3l-1 12a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7m5 4v6m4-6v6" />
+                            </svg>
+                          </span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -360,6 +392,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         onClose={() => setEditOpen(false)}
         product={editProduct}
         categories={data.categories || []}
+        products={data.products || []}
         onSaved={fetchShop}
       />
       <ProductStatusModal
@@ -372,7 +405,24 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         isOpen={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         product={deleteProduct}
-        onDeleted={fetchShop}
+        onDeleted={async () => {
+          if (deleteProduct?.id) {
+            setHiddenIds(prev => {
+              const next = new Set(prev);
+              next.add(String(deleteProduct.id));
+              return next;
+            });
+          }
+          await fetchShop();
+          setDeleteSuccessOpen(true);
+        }}
+      />
+      <StatusModal
+        isOpen={deleteSuccessOpen}
+        onClose={() => setDeleteSuccessOpen(false)}
+        type="success"
+        title="המוצר נמחק"
+        message="המוצר הוסר בהצלחה מהמלאי"
       />
     </div>
   );

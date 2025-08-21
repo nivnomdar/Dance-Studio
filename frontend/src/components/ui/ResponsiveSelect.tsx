@@ -87,7 +87,7 @@ export default function ResponsiveSelect({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           aria-labelledby={labelId}
-          className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none disabled:opacity-50"
+          className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none disabled:opacity-50"
         >
           {!value && (
             <option value="" disabled>
@@ -111,7 +111,7 @@ export default function ResponsiveSelect({
           aria-controls={open ? listboxId : undefined}
           aria-labelledby={`${labelId}-mobile`}
           disabled={disabled}
-          className="w-full px-3 py-2 text-xs border border-[#EC4899]/20 rounded-lg flex items-center justify-between disabled:opacity-50"
+          className="w-full px-3 py-2 text-sm border border-[#EC4899]/20 rounded-lg flex items-center justify-between disabled:opacity-50"
         >
           <span className="truncate text-[#4B2E83]">{current?.label || placeholder}</span>
           <svg className="w-4 h-4 text-[#4B2E83]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

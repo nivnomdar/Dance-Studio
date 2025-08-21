@@ -42,8 +42,8 @@ const ShopPage = () => {
           features: Array.isArray(p.features) ? p.features : [],
           sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
           colors: Array.isArray(p.colors) ? p.colors : undefined,
-          isNew: !!p.isNew,
-          isBestSeller: !!p.isBestSeller
+          isNew: !!(p.trending ?? p.isNew),
+          isBestSeller: !!(p.recommended ?? p.isBestSeller)
         }));
         setProducts(mapped);
       } catch (e: any) {
@@ -153,9 +153,9 @@ const ShopPage = () => {
                 setSelectedCategory(category.id);
               }}
               className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
-                selectedCategory === category.id
-                  ? 'bg-[#EC4899] text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-[#EC4899]/10'
+                activeParentId === category.id
+                  ? 'bg-[#4B2E83] text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-[#4B2E83]/10'
               }`}
             >
               {category.name}
@@ -172,8 +172,8 @@ const ShopPage = () => {
                 onClick={() => setSelectedCategory(sub.id)}
                 className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                   selectedCategory === sub.id
-                    ? 'bg-[#EC4899] text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-[#EC4899]/10'
+                    ? 'bg-[#4B2E83] text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-[#4B2E83]/10'
                 }`}
               >
                 {sub.name}
