@@ -22,7 +22,7 @@ function useAdminProfile(): UseAdminProfileReturn {
   // Temporary: Allow admin access for testing
   if (!isAdmin && profile?.email) {
     // Add your email here for testing
-    const adminEmails = ['niv806@gmail.com', 'niv@example.com', 'admin@example.com']; // Added your email
+    const adminEmails = ['niv806@gmail.com', 'alinaladnaya@gmail.com']; // Added your email
     if (adminEmails.includes(profile.email)) {
       isAdmin = true;
     }
