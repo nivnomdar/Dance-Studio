@@ -4,7 +4,7 @@ import { assetUrl } from '../../lib/assets';
 
 function HeroSection() {
   return (
-    <section className="relative w-full h-screen overflow-hidden">
+    <section className="relative w-full h-auto md:h-screen overflow-visible md:overflow-hidden">
       {/* Large screens background image */}
       <div className="absolute inset-0 w-full h-full hidden md:block">
         <div
@@ -16,11 +16,11 @@ function HeroSection() {
       </div>
 
       {/* Small screens background image */}
-      <div className="absolute inset-0 w-full h-auto block md:hidden">
+      <div className="block md:hidden w-full">
         <img
           src={assetUrl(HOMEPAGE_ASSETS.hero.mobile)}
           alt="Studio Dance Background"
-          className="absolute inset-0 w-full h-full object-contain"
+          className="w-full h-auto object-contain"
           style={{
             objectFit: 'contain',
             objectPosition: 'top'
@@ -34,7 +34,7 @@ function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 h-full text-white px-8 sm:px-6 lg:px-8">
-        <div className="absolute inset-x-0 bottom-[47vh] sm:bottom-28 md:bottom-32 lg:bottom-40 xl:bottom-48 flex flex-row items-center justify-center gap-3 sm:gap-4 w-full">
+        <div className="md:absolute inset-x-0 md:bottom-32 lg:bottom-40 xl:bottom-48 flex flex-row items-center justify-center gap-3 sm:gap-4 w-full mt-3">
           <Link
             to="/classes"
             className="relative group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"

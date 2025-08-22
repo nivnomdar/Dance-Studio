@@ -6,7 +6,7 @@ import 'swiper/swiper-bundle.css';
 
 function PhotosCarousel() {
   return (
-    <section className="py-8 sm:py-12 lg:py-16 bg-black">
+    <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-16 bg-black">
       <style>{`
         .swiper-button-next,
         .swiper-button-prev {

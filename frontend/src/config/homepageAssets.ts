@@ -4,7 +4,7 @@ export const HOMEPAGE_ASSETS = {
     mobile: 'hero/v1/mobile.png',
   },
   about: {
-    portrait: 'about/v1/portrait.webp',
+    portrait: 'about/v1/portrait.png',
   },
 } as const;
 
