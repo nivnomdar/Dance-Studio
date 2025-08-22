@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import Modal from '../../../components/common/Modal';
 import { StatusModal } from '../../../components/common/StatusModal';
 import { apiService } from '../../../lib/api';
@@ -20,6 +21,11 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
   const [localCategories, setLocalCategories] = useState<any[]>(categories || []);
   const [successState, setSuccessState] = useState<{ title: string; message: string } | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  // Filters state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
+  const [filterParentId, setFilterParentId] = useState<'all' | string>('all');
+  const [showParentsOnly, setShowParentsOnly] = useState(false);
 
   // Sync with incoming props when they change
   useEffect(() => {
@@ -37,6 +43,28 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
     });
     return map;
   }, [localCategories]);
+
+  // Derived: filtered parents according to filters
+  const filteredParents = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    let list: any[] = [...parents];
+
+    if (filterParentId !== 'all') {
+      list = list.filter(p => String(p.id) === String(filterParentId));
+    }
+
+    if (statusFilter === 'active') {
+      list = list.filter(p => p.is_active !== false);
+    } else if (statusFilter === 'inactive') {
+      list = list.filter(p => (p.is_active === false) || ((childrenByParent[String(p.id)] || []).some(s => s.is_active === false)));
+    }
+
+    if (q) {
+      list = list.filter(p => (p.name || '').toLowerCase().includes(q) || (childrenByParent[String(p.id)] || []).some(s => (s.name || '').toLowerCase().includes(q)));
+    }
+
+    return list;
+  }, [parents, childrenByParent, filterParentId, statusFilter, searchTerm]);
 
   // Stats for badges
   // Counts for badges: only subcategories are considered "categories"
@@ -121,16 +149,7 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
     <>
     <div className="bg-white p-6 rounded-2xl border border-[#EC4899]/10">
       <div className="flex items-center justify-between mb-4">
-        {(() => {
-          const total = categories?.length || 0;
-          const parentCount = parents.length;
-          const subs = total - parentCount;
-          return (
-            <h3 className="text-lg font-semibold text-[#4B2E83]">
-              קטגוריות ({parentCount} ראשיות · {subs} תתי־קטגוריות)
-            </h3>
-          );
-        })()}
+        <h3 className="text-lg font-semibold text-[#4B2E83]">קטגוריות</h3>
         <button
           onClick={() => setIsAddOpen(true)}
           className="w-auto min-w-[140px] px-3 py-2.5 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-sm flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl h-10 sm:h-12 cursor-pointer"
@@ -140,6 +159,75 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
           </svg>
           <span>קטגוריה חדשה</span>
         </button>
+      </div>
+
+      {/* Filters bar */}
+      <div className="bg-[#F7F7F8] rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-200 mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-8 gap-3 sm:gap-4 items-end">
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש קטגוריות</label>
+            <div className="relative">
+              <input
+                placeholder="חפש לפי שם..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); }}
+                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg className="w-5 h-5 text-[#4B2E83]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                </svg>
+              </div>
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4B2E83]/40 hover:text-[#4B2E83] transition-colors cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            <ResponsiveSelect
+              label="סינון לפי קטגוריית אם"
+              value={filterParentId === 'all' ? '' : String(filterParentId)}
+              onChange={(val) => setFilterParentId((val || 'all') as any)}
+              options={[{ value: '', label: 'כל הקטגוריות הראשיות' }, ...parents.map((c: any) => ({ value: String(c.id), label: c.name }))]}
+              placeholder="כל הקטגוריות הראשיות"
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <ResponsiveSelect
+              label="סטטוס"
+              value={statusFilter}
+              onChange={(val) => setStatusFilter((val as any) || 'all')}
+              options={[
+                { value: 'active', label: 'פעיל' },
+                { value: 'inactive', label: 'לא פעיל' },
+                { value: 'all', label: 'הכל' }
+              ]}
+              placeholder="בחרי סטטוס"
+            />
+          </div>
+          <div className="lg:col-span-2">
+            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">תצוגה</label>
+            <button
+              type="button"
+              onClick={() => setShowParentsOnly(v => !v)}
+              aria-pressed={showParentsOnly}
+              className={`w-full h-[44px] sm:h-[48px] inline-flex items-center justify-between px-3 sm:px-4 text-sm rounded-xl border transition ${showParentsOnly ? 'bg-[#EC4899]/10 border-[#EC4899]/30' : 'bg-gray-50 border border-gray-200 hover:bg-white hover:shadow-sm'}`}
+            >
+              <span className="text-[#4B2E83]">קטגוריות ראשיות בלבד</span>
+              <span className={`inline-flex w-9 h-5 items-center rounded-full transition ${showParentsOnly ? 'bg-[#EC4899]' : 'bg-gray-300'}`}>
+                <span className={`h-4 w-4 bg-white rounded-full shadow transform transition ${showParentsOnly ? 'translate-x-4' : 'translate-x-0'}`} />
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Badges row */}
@@ -162,9 +250,9 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
       
       </div>
 
-      {parents.length > 0 ? (
+      {filteredParents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {parents.map((cat: any) => {
+          {filteredParents.map((cat: any) => {
             const parentInactive = (cat.is_active === false);
             return (
             <div key={cat.id} className={`p-3 rounded-xl border ${parentInactive ? 'bg-gray-50 border-gray-200' : 'bg-[#EC4899]/5 border-[#EC4899]/10'}`}>
@@ -211,8 +299,24 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
                   </button>
                 </div>
               </div>
+              {!showParentsOnly && (
               <div className="mt-2 space-y-1 max-h-36 overflow-y-auto pr-1">
-                {(childrenByParent[String(cat.id)] || []).map((sub: any) => (
+                {(() => {
+                  const q = searchTerm.trim().toLowerCase();
+                  let subsList: any[] = [...(childrenByParent[String(cat.id)] || [])];
+                  if (statusFilter === 'active') {
+                    // Show only active subcategories AND only under active parents
+                    subsList = subsList.filter(s => s.is_active !== false && cat.is_active !== false);
+                  } else if (statusFilter === 'inactive') {
+                    // If parent is inactive, show all its subcategories regardless of their own status
+                    // If parent is active, show only inactive subcategories
+                    subsList = (cat.is_active === false) ? subsList : subsList.filter(s => s.is_active === false);
+                  }
+                  if (q) {
+                    subsList = subsList.filter(s => (s.name || '').toLowerCase().includes(q));
+                  }
+                  return subsList;
+                })().map((sub: any) => (
                   <div key={sub.id} className="flex items-center justify-between gap-2 text-sm truncate" title={sub.name}>
                     <span className={`truncate ${sub.is_active === false ? 'text-[#4B2E83]/50' : 'text-[#4B2E83]/80'}`}>• {sub.name}</span>
                     <span className="flex items-center gap-1 flex-shrink-0">
@@ -252,6 +356,7 @@ export default function CategoriesManager({ categories, fetchShop }: CategoriesM
                   </div>
                 ))}
               </div>
+              )}
             </div>
             );
           })}

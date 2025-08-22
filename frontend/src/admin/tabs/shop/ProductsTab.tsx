@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
  
 import ProductEditModal from '../../modals/shop/ProductEditModal';
 import ProductStatusModal from '../../modals/shop/ProductStatusModal';
@@ -10,7 +11,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'in' | 'out' | 'low'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
   const [sortKey, setSortKey] = useState<'name' | 'price' | 'stock' | 'created'>('created');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
@@ -133,68 +134,61 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
             </div>
           </div>
           <div className="lg:col-span-1">
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">קטגוריה</label>
-            <select
-              value={filterCategoryId}
-              onChange={(e) => { setFilterCategoryId(e.target.value); setPage(1); }}
-              className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
-            >
-              <option value="all">כל הקטגוריות</option>
-              {(data.categories || []).map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <ResponsiveSelect
+              label="קטגוריה"
+              value={filterCategoryId === 'all' ? '' : filterCategoryId}
+              onChange={(val) => { setFilterCategoryId(val || 'all'); setPage(1); }}
+              options={[{ value: '', label: 'כל הקטגוריות' }, ...((data.categories || []).map((c: any) => ({ value: String(c.id), label: c.name })))]}
+              placeholder="כל הקטגוריות"
+            />
           </div>
           <div className="col-span-2 sm:col-span-2 lg:col-span-3 grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מלאי</label>
-              <select
+              <ResponsiveSelect
+                label="מלאי"
                 value={stockFilter}
-                onChange={(e) => { setStockFilter(e.target.value as any); setPage(1); }}
-                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
-              >
-                <option value="all">כל המלאי</option>
-                <option value="in">במלאי</option>
-                <option value="low">מלאי נמוך (≤5)</option>
-                <option value="out">אזל מהמלאי</option>
-              </select>
+                onChange={(val) => { setStockFilter((val as any) || 'all'); setPage(1); }}
+                options={[
+                  { value: 'all', label: 'כל המלאי' },
+                  { value: 'in', label: 'במלאי' },
+                  { value: 'low', label: 'מלאי נמוך (≤5)' },
+                  { value: 'out', label: 'אזל מהמלאי' }
+                ]}
+                placeholder="בחרי מלאי"
+              />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">סטטוס</label>
-              <select
+              <ResponsiveSelect
+                label="סטטוס"
                 value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value as any); setPage(1); }}
-                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
-              >
-                <option value="all">הכל</option>
-                <option value="active">פעיל</option>
-                <option value="inactive">לא פעיל</option>
-              </select>
+                onChange={(val) => { setStatusFilter((val as any) || 'all'); setPage(1); }}
+                options={[{ value: 'active', label: 'פעיל' }, { value: 'inactive', label: 'לא פעיל' }, { value: 'all', label: 'הכל' }]}
+                placeholder="בחרי סטטוס"
+              />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">מיון</label>
-              <select
+              <ResponsiveSelect
+                label="מיון"
                 value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as any)}
-                className="w-full px-3 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
-              >
-                <option value="created">תאריך</option>
-                <option value="name">שם</option>
-                <option value="price">מחיר</option>
-                <option value="stock">מלאי</option>
-              </select>
+                onChange={(val) => setSortKey((val as any) || 'created')}
+                options={[
+                  { value: 'created', label: 'תאריך' },
+                  { value: 'name', label: 'שם' },
+                  { value: 'price', label: 'מחיר' },
+                  { value: 'stock', label: 'מלאי' }
+                ]}
+                placeholder="בחרי מיון"
+              />
             </div>
           </div>
           <div className="lg:col-span-1">
-            <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">כיוון</label>
-            <select
+            <ResponsiveSelect
+              label="כיוון"
               value={sortDir}
-              onChange={(e) => setSortDir(e.target.value as any)}
-              className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
-            >
-              <option value="desc">יורד</option>
-              <option value="asc">עולה</option>
-            </select>
+              onChange={(val) => setSortDir((val as any) || 'desc')}
+              options={[{ value: 'desc', label: 'יורד' }, { value: 'asc', label: 'עולה' }]}
+              placeholder="בחרי כיוון"
+            />
           </div>
           <div className="lg:col-span-1">
             <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2 invisible">פעולה</label>
