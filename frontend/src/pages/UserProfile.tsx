@@ -2,15 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { useProfile } from '../hooks/useProfile';
+// import { useProfile } from '../hooks/useProfile';
 import ProfileTabs from '../components/profile/ProfileTabs';
 import type { UserProfile } from '../types/auth';
 import { registrationsService } from '../lib/registrations';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 import { LoadingPage, ErrorPage, StatusModal } from '../components/common';
+import { CreditGroup } from '../types/subscription';
 
 function UserProfile() {
-  const { user, loading: authLoading, session, profile: contextProfile, profileLoading, loadProfile } = useAuth();
+  const { user, loading: authLoading, session, profile: contextProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,15 +30,15 @@ function UserProfile() {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [localProfile, setLocalProfile] = useState<UserProfile | null>(null);
   const [classesCount, setClassesCount] = useState(0);
-  const [hasAnyTrialUsed, setHasAnyTrialUsed] = useState(false);
-  const [subscriptionCredits, setSubscriptionCredits] = useState(0);
+  const [creditsTotals, setCreditsTotals] = useState<Record<CreditGroup, number>>({ group: 0, private: 0, zoom: 0, workshop: 0, intensive: 0 });
   const [isFetchingCount, setIsFetchingCount] = useState(false);
+  const [trialStatuses, setTrialStatuses] = useState<Array<{ id: string; name: string; used: boolean }>>([]);
   const navigate = useNavigate();
 
   // Move profile loading logic to useCallback to avoid setState during render
   const loadProfileData = useCallback(async () => {
     if (!user || !session?.access_token) return;
-
+    
     try {
       // Check if we're already creating a profile to prevent race condition
       const creatingKey = `creating_profile_${user.id}`;
@@ -270,16 +271,35 @@ function UserProfile() {
     if (!user || !session) return;
     
     try {
-      const userCredits = await subscriptionCreditsService.getUserCredits(user.id);
-      const totalCredits = userCredits.total_group_credits + userCredits.total_private_credits + userCredits.total_zoom_credits;
+      // const userCredits = await subscriptionCreditsService.getUserCredits(user.id);
+      const totals = await subscriptionCreditsService.getTotalCredits(user.id);
       // Use setTimeout to avoid setState during render
       setTimeout(() => {
-        setSubscriptionCredits(totalCredits);
+        setCreditsTotals(totals);
       }, 0);
     } catch (error) {
       console.error('Error fetching subscription credits:', error);
     }
   }, [user, session]);
+
+  // Detailed trial usage: per trial class (category = 'trial'), each can be used once per user
+  const fetchTrialStatus = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const [{ data: trials, error: trialsErr }, { data: usedRows, error: usedErr }] = await Promise.all([
+        supabase.from('classes').select('id, name').eq('category', 'trial'),
+        supabase.from('user_trial_classes').select('class_id').eq('user_id', user.id)
+      ]);
+      if (trialsErr) throw trialsErr;
+      if (usedErr) throw usedErr;
+      const usedSet = new Set((usedRows || []).map((r: any) => r.class_id));
+      const statuses = (trials || []).map((c: any) => ({ id: c.id as string, name: (c.name as string) || 'Trial', used: usedSet.has(c.id) }));
+      setTimeout(() => setTrialStatuses(statuses), 0);
+    } catch (e) {
+      console.error('Error fetching trial status:', e);
+      setTimeout(() => setTrialStatuses([]), 0);
+    }
+  }, [user?.id]);
 
   // פונקציה לספירת השיעורים של המשתמש עם debouncing ו-retry
   const fetchClassesCount = useCallback(async (retryCount = 0) => {
@@ -313,21 +333,17 @@ function UserProfile() {
       try {
         const registrations = await registrationsService.getMyRegistrations(user.id);
         
-        // ספירת הרשמות פעילות ועבר (לא בוטלות)
-        const validRegistrations = registrations.filter((registration: any) => {
-          // בדיקה שההרשמה לא בוטלה
+        // Count only completed (past) lessons, exclude cancelled and future
+        const now = new Date();
+        const completedRegistrations = registrations.filter((registration: any) => {
           if (registration.status === 'cancelled') return false;
-          
-          // בדיקה אם זה שיעור עבר או עתידי
-          const registrationDate = new Date(registration.selected_date);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          // כולל שיעורים עתידיים ושיעורים שהסתיימו (עבר)
-          return true;
+          const dateValue = registration.selected_date || registration.date || registration.created_at;
+          if (!dateValue) return false;
+          const d = new Date(dateValue);
+          return d < now;
         });
-        
-        const count = validRegistrations.length;
+
+        const count = completedRegistrations.length;
         // Use setTimeout to avoid setState during render
         setTimeout(() => {
           setClassesCount(count);
@@ -366,24 +382,23 @@ function UserProfile() {
       setTimeout(() => {
         fetchClassesCount();
         fetchSubscriptionCredits();
+        fetchTrialStatus();
       }, 0);
     }
-  }, [user?.id, session, authLoading, fetchClassesCount, fetchSubscriptionCredits]);
+  }, [user?.id, session, authLoading, fetchClassesCount, fetchSubscriptionCredits, fetchTrialStatus]);
 
   // Load if user has any trial usage records for status badge (UI only)
   useEffect(() => {
     const loadAnyTrialUsage = async () => {
       try {
         if (!user?.id || !session?.access_token) {
-          setHasAnyTrialUsed(false);
           return;
         }
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('user_trial_classes')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id);
         if (error) {
-          setHasAnyTrialUsed(false);
           return;
         }
         // when head:true, data is null; rely on count in response (not returned by supabase-js v2 select?). Fallback: simple select
@@ -392,18 +407,15 @@ function UserProfile() {
       }
       try {
         if (!user?.id) return;
-        const { data: rows, error: selErr } = await supabase
+        const { error: selErr } = await supabase
           .from('user_trial_classes')
           .select('id')
           .eq('user_id', user.id)
           .limit(1);
         if (selErr) {
-          setHasAnyTrialUsed(false);
           return;
         }
-        setHasAnyTrialUsed(Boolean(rows && rows.length > 0));
       } catch {
-        setHasAnyTrialUsed(false);
       }
     };
     loadAnyTrialUsage();
@@ -554,17 +566,7 @@ function UserProfile() {
                         </svg>
                       </div>
                     </div>
-                    {isEditing && (
-                      <button
-                        type="button"
-                        className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 bg-white p-2 sm:p-3 rounded-full shadow-lg hover:bg-gray-50 transition-all duration-200 hover:scale-110"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </button>
-                    )}
+                    {/* Disable avatar editing per requirements: no image change in edit mode */}
                   </div>
                   
                   {/* User Info */}
@@ -582,27 +584,22 @@ function UserProfile() {
 
               {/* Quick Stats */}
               <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 mb-4 sm:mb-6">
                   <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 rounded-xl sm:rounded-2xl relative group">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#EC4899]">{classesCount}</div>
-                    <div className="text-xs sm:text-sm text-[#4B2E83]/70 mb-2 h-6 sm:h-8 flex items-center justify-center">השיעורים שלי</div>
-                    <button
-                      onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white text-xs rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
-                    >
-                      הרשמה לשיעור
-                    </button>
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-[#4B2E83]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5V8H2v12h5m10 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v16m10 0H7" />
+                      </svg>
+                      <span className="text-xs sm:text-sm text-[#4B2E83]/80 font-semibold whitespace-nowrap">השיעורים שלי</span>
+                    </div>
+                    <div className="inline-flex items-baseline gap-3 px-4 py-2 rounded-lg bg-white/80 border border-[#4B2E83]/10">
+                    <span className="text-[12px] sm:text-sm text-[#4B2E83]/70 whitespace-nowrap">השתתפת ב-</span>
+
+                      <span className="text-2xl sm:text-3xl font-extrabold text-[#EC4899]">{classesCount}</span>
+                      <span className="text-[12px] sm:text-sm text-[#4B2E83]/70 whitespace-nowrap">שיעורים</span>
+                    </div>
                   </div>
-                  <div className="text-center p-3 sm:p-4 bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl sm:rounded-2xl relative group">
-                    <div className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83]">{subscriptionCredits}</div>
-                    <div className="text-xs sm:text-sm text-[#4B2E83]/70 mb-2 h-6 sm:h-8 flex items-center justify-center">שיעורים זמינים</div>
-                    <button
-                      onClick={() => window.open(`${window.location.origin}/classes`, '_blank')}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-xs rounded-lg font-medium hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 hover:scale-105 shadow-md cursor-pointer"
-                    >
-                      הרשמה לשיעור
-                    </button>
-                  </div>
+              
                 </div>
 
                 {/* Admin Dashboard Link - רק למנהלים */}
@@ -624,50 +621,36 @@ function UserProfile() {
                 <div className="space-y-2 sm:space-y-3">
                   {/* Trial Class Status */}
                   <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
-                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                      <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">שיעור ניסיון</span>
+                    <div className="mb-1.5 sm:mb-2 text-center">
+                      <span className="text-sm font-semibold text-[#4B2E83]">שיעור ניסיון</span>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${hasAnyTrialUsed ? 'bg-red-400' : 'bg-green-400'}`}></div>
-                        <span className="text-xs sm:text-sm text-[#4B2E83]/80">סטטוס שיעור ניסיון</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className={`text-xs font-semibold ${hasAnyTrialUsed ? 'text-red-500' : 'text-green-500'}`}>
-                          {hasAnyTrialUsed ? 'נוצל' : 'זמין לך'}
-                        </span>
-                        {!hasAnyTrialUsed && user && (
-                          <Link
-                            to="/classes"
-                            className="bg-green-500 text-white px-1.5 sm:px-2 py-0.5 rounded-md hover:bg-green-600 transition-colors text-xs font-medium"
-                          >
-                            בחירת שיעור ניסיון
-                          </Link>
-                        )}
-                      </div>
+                    <div className="space-y-1.5">
+                      {trialStatuses.length === 0 ? (
+                        <div className="text-xs sm:text-sm text-[#4B2E83]/70">אין שיעורי ניסיון זמינים כרגע.</div>
+                      ) : (
+                        trialStatuses.map((t) => (
+                          <div key={t.id} className="flex items-center justify-between rounded-md px-2 py-1 bg-white/60">
+                            <span className="text-xs sm:text-sm text-[#4B2E83]/80 line-clamp-1">{t.name}</span>
+                            <span className={`text-xs font-semibold ${t.used ? 'text-red-500' : 'text-green-600'}`}>{t.used ? 'נוצל' : 'זמין'}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
+                    {trialStatuses.some(t => !t.used) && (
+                      <div className="mt-2 text-center">
+                        <Link to="/classes" className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 transition-colors text-xs font-medium">בחירת שיעור ניסיון</Link>
+                      </div>
+                    )}
                   </div>
 
                   {/* Credits Status */}
                   <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
-                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                      <span className="text-xs font-medium text-[#4B2E83]/60 uppercase tracking-wide">יתרה</span>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${subscriptionCredits > 0 ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                        <span className="text-xs text-[#4B2E83]/70">
-                          {subscriptionCredits > 0 ? 'פעיל' : 'לא זמין'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm text-[#4B2E83]/80">שיעורים זמינים</span>
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <span className="text-sm sm:text-lg font-bold text-[#4B2E83]">{subscriptionCredits}</span>
-                        {subscriptionCredits > 0 && (
-                          <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                        )}
+                    <div className="text-center">
+                      <span className="text-sm font-semibold text-[#4B2E83]">שיעורי מנוי</span>
+                      <div className="mt-1 inline-flex items-baseline gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-[#4B2E83]/10">
+                        <span className="text-xl sm:text-2xl font-extrabold text-[#4B2E83]">{creditsTotals['group'] || 0}</span>
+                        <span className="text-[11px] sm:text-xs text-[#4B2E83]/70">זמין/ים</span>
+
                       </div>
                     </div>
                   </div>
