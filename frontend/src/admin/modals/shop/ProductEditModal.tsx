@@ -227,11 +227,13 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
         }
         await apiService.shop.updateProduct(product.id, payload);
       } else {
-        const created = await apiService.shop.createProduct(basePayload);
+        // New product: default to active unless specified otherwise
+        const createPayload = { ...basePayload, is_active: true };
+        const created = await apiService.shop.createProduct(createPayload);
         if (mainImageFile || galleryFiles.length) {
           const uploads = await uploadAllSelected(created.id);
           const payload = {
-            ...basePayload,
+            ...createPayload,
             main_image: uploads.main ?? basePayload.main_image,
             gallery_images: [...basePayload.gallery_images, ...uploads.gallery]
           };
@@ -483,11 +485,11 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                         aria-pressed={form.trending}
                         onClick={() => setForm(prev => ({ ...prev, trending: !prev.trending }))}
                         className={`w-full text-right p-4 rounded-xl border transition flex items-start gap-3 shadow-sm hover:shadow ${form.trending ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-md' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
-                        title="סימון מוצר כחם/חדש"
+                        title="סימון מוצר כחדש"
                       >
                         <span className={`inline-flex w-8 h-8 items-center justify-center rounded-full ${form.trending ? 'bg-white/20' : 'bg-[#EC4899]/10 text-[#EC4899]'}`}>🔥</span>
                         <div className="flex-1">
-                          <div className={`text-sm font-semibold ${form.trending ? 'text-white' : 'text-[#4B2E83]'}`}>מוצר חם/חדש</div>
+                          <div className={`text-sm font-semibold ${form.trending ? 'text-white' : 'text-[#4B2E83]'}`}>מוצר חדש</div>
                           <div className={`text-[11px] ${form.trending ? 'text-white/80' : 'text-[#4B2E83]/60'}`}>מסומן להדגשה וחשיפה משופרת.</div>
                         </div>
                         {form.trending && (
@@ -532,7 +534,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 rounded-lg bg-white/40 overflow-hidden flex items-center justify-center border border-[#EC4899]/20">
                         {(mainPreview || form.main_image) ? (
-                          <img src={mainPreview || form.main_image} alt="תמונה ראשית" className="w-full h-full object-contain" />
+                          <img src={`${mainPreview || form.main_image}${(!mainPreview && form.main_image) ? (form.main_image.includes('?') ? '&' : '?') + 'v=' + Date.now() : ''}`} alt="תמונה ראשית" className="w-full h-full object-contain" />
                         ) : (
                           <svg className="w-8 h-8 text-[#4B2E83]/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7l6 6-6 6M21 7l-6 6 6 6" />

@@ -23,7 +23,7 @@ interface AdminDataContextType {
   error: string | null;
   fetchOverview: () => Promise<void>;
   fetchClasses: (forceRefresh?: boolean) => Promise<void>;
-  fetchShop: () => Promise<void>;
+  fetchShop: (forceRefresh?: boolean) => Promise<void>;
   fetchContact: (forceRefresh?: boolean) => Promise<void>;
   fetchCalendar: () => Promise<void>;
   fetchProfiles: (search?: string) => Promise<any[]>;
@@ -198,7 +198,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // (unused) debouncedFetchClasses removed to avoid linter warnings
 
   // טעינת נתוני חנות
-  const fetchShop = useCallback(async () => {
+  const fetchShop = useCallback(async (forceRefresh: boolean = false) => {
     if (!session || isFetchingRef.current) {
       return;
     }
@@ -206,7 +206,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       setError('יותר מדי בקשות. אנא המתן דקה ונסה שוב, או לחצי על "איפוס הגבלה".');
       return;
     }
-    if (dataRef.current.products.length > 0 && isDataFresh()) {
+    if (!forceRefresh && dataRef.current.products.length > 0 && isDataFresh()) {
       return;
     }
 

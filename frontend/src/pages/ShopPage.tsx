@@ -41,7 +41,14 @@ const ShopPage = () => {
         // Map backend products to UI-friendly shape
         const mapped = (prods || []).map((p: any) => ({
           ...p,
-          image: p.main_image || p.image || '',
+          image: (() => {
+            const url = p.main_image || p.image || '';
+            const ts = p.updated_at || p.created_at;
+            if (!url) return url;
+            if (!ts) return url;
+            const ver = new Date(ts).getTime();
+            return `${url}${url.includes('?') ? '&' : '?'}v=${ver}`;
+          })(),
           features: Array.isArray(p.features) ? p.features : [],
           sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
           colors: Array.isArray(p.colors) ? p.colors : undefined,

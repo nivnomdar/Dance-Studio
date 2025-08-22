@@ -214,7 +214,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           <div className="sm:col-span-2 lg:col-span-2 flex items-center gap-3">
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#EC4899]/20 bg-[#EC4899]/5">
               <input id="filter-trending" type="checkbox" checked={trendingOnly} onChange={(e) => { setTrendingOnly(e.target.checked); setPage(1); }} className="h-4 w-4 text-[#EC4899] border-gray-300 rounded cursor-pointer" />
-              <label htmlFor="filter-trending" className="text-xs sm:text-sm text-[#4B2E83] cursor-pointer">חם/חדש</label>
+              <label htmlFor="filter-trending" className="text-xs sm:text-sm text-[#4B2E83] cursor-pointer">חדש</label>
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#4B2E83]/20 bg-[#4B2E83]/5">
               <input id="filter-recommended" type="checkbox" checked={recommendedOnly} onChange={(e) => { setRecommendedOnly(e.target.checked); setPage(1); }} className="h-4 w-4 text-[#EC4899] border-gray-300 rounded cursor-pointer" />
@@ -274,12 +274,12 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
             <table className="w-full table-fixed min-w-[1000px] lg:min-w-0">
               <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
                 <tr>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[34%]">מוצר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[16%]">קטגוריה</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[7%]">מחיר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[34%] whitespace-nowrap">מוצר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[14%] whitespace-nowrap">קטגוריה</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[9%] whitespace-nowrap">מחיר</th>
                   <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[6%]">מלאי</th>
                   <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[7%]">תמונות</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[13%]">עודכן</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[13%] whitespace-nowrap">עודכן</th>
                   
                   <th className="px-1 sm:px-2 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[6%]">סטטוס</th>
                   <th className="px-1 sm:px-2 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">פעולות</th>
@@ -306,7 +306,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       <div className="flex items-center gap-3 min-w-0">
                         {p.main_image && (
                           <img
-                            src={p.main_image}
+                            src={`${p.main_image}${(p.updated_at || p.created_at) ? (p.main_image.includes('?') ? '&' : '?') + 'v=' + new Date(p.updated_at || p.created_at).getTime() : ''}`}
                             alt=""
                             className="w-10 h-10 rounded object-cover flex-shrink-0"
                             loading="lazy"
@@ -325,7 +325,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                         {categoryById[p.category_id]?.name || '-'}
                       </div>
                     </td>
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">₪{p.price}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center whitespace-nowrap font-mono tabular-nums">₪{p.price}</td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">{p.stock_quantity ?? 0}</td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       {(() => {
@@ -396,7 +396,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                   <div className="relative bg-gray-50 flex-shrink-0">
                     {p.main_image ? (
                       <img
-                        src={p.main_image}
+                        src={`${p.main_image}${(p.updated_at || p.created_at) ? (p.main_image.includes('?') ? '&' : '?') + 'v=' + new Date(p.updated_at || p.created_at).getTime() : ''}`}
                         alt={p.name || ''}
                         className="w-full h-24 sm:h-32 object-cover"
                         loading="lazy"
@@ -496,7 +496,9 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         product={editProduct}
         categories={data.categories || []}
         products={data.products || []}
-        onSaved={fetchShop}
+        onSaved={async () => {
+          await (fetchShop as any)(true); // force refresh to include the newly created product
+        }}
       />
       <ProductStatusModal
         isOpen={statusOpen}
