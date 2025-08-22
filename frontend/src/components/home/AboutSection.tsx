@@ -1,8 +1,20 @@
 import React from 'react';
+import { HOMEPAGE_FLAGS, HOMEPAGE_ASSETS, HOMEPAGE_ALTS } from '../../config/homepageAssets';
+import { assetUrl } from '../../lib/assets';
 
 function AboutSection() {
   return (
     <section className="relative py-12 sm:py-16 lg:py-20 bg-black overflow-hidden">
+      {HOMEPAGE_FLAGS.aboutUseImage && (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+          <img
+            src={assetUrl(HOMEPAGE_ASSETS.about.portrait, { width: 1200, quality: 80, format: 'webp', resize: 'cover' })}
+            alt={HOMEPAGE_ALTS.aboutPortrait}
+            className="w-full h-auto rounded-xl object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* קו דקורטיבי עליון */}
         <div className="flex justify-center mb-4 sm:mb-6">
