@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
@@ -17,6 +18,7 @@ type ShopProduct = {
 function TrendingProducts() {
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -96,7 +98,7 @@ function TrendingProducts() {
                   <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-[#E6C17C] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 transition">לפרטים</button>
+                    <button onClick={() => navigate(`/product/${p.id}`)} className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 transition">למוצר</button>
                   </div>
                 </div>
               </article>

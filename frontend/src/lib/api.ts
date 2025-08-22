@@ -1,7 +1,6 @@
 import { supabase } from './supabase';
 import { Class } from '../types/class';
 import { RegistrationWithDetails, CreateRegistrationRequest } from '../types/registration';
-import { calculateRetryDelay } from '../utils/constants';
 
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
@@ -49,6 +48,7 @@ class RequestQueue {
 }
 
 const requestQueue = new RequestQueue();
+void requestQueue;
 
 // Simple fetch with retry
 const fetchWithRetryAndQueue = async <T>(
@@ -114,6 +114,7 @@ class ApiError extends Error {
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+void delay;
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -132,6 +133,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
   return response.json();
 }
+void handleResponse;
 
 // פונקציה לקבלת headers עם authorization - עם cache
 let cachedSession: any = null;
@@ -164,7 +166,7 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     }
 
     // אם אין cache או שהוא פג תוקף, קבל session חדש
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
       cachedSession = session;
@@ -223,6 +225,28 @@ export const apiService = {
         console.error('Shop API getProducts error:', error);
         return [];
       });
+    },
+
+    async getProductById(id: string): Promise<any | null> {
+      try {
+        const response = await fetch(`${API_BASE_URL}/shop/products/${id}`);
+        if (response.status === 404) {
+          return null;
+        }
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if ((errorData as any)?.message) errorMessage = (errorData as any).message;
+            else if ((errorData as any)?.error) errorMessage = (errorData as any).error;
+          } catch {}
+          throw new Error(errorMessage);
+        }
+        return (await response.json()) as any;
+      } catch (error) {
+        console.error('Shop API getProductById error:', error);
+        return null;
+      }
     },
 
     // Admin endpoints

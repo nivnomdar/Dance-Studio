@@ -14,6 +14,7 @@ import AuthCallback from './pages/AuthCallback';
 import ClassDetailPage from './components/ClassDetailPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import ProductPage from './pages/ProductPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -41,6 +42,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
           <Route path="/shop" element={<ShopPage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/auth/v1/callback" element={<AuthCallback />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Product } from '../types/product';
 import { useCart } from '../contexts/CartContext';
@@ -6,6 +7,7 @@ import { usePopup } from '../contexts/PopupContext';
 import { apiService } from '../lib/api';
 
 const ShopPage = () => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeParentId, setActiveParentId] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
@@ -20,6 +22,7 @@ const ShopPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const pageSizeAll = 18;
+  void error;
 
   const topLevelCategories = useMemo(() => {
     const top = categories.filter(c => !c.parent_id);
@@ -99,10 +102,7 @@ const ShopPage = () => {
   };
 
   const handleQuickView = (product: Product) => {
-    setSelectedProduct(product);
-    setSelectedSize(product.sizes?.[0] || '');
-    setSelectedColor(product.colors?.[0] || '');
-    setQuantity(1);
+    navigate(`/product/${(product as any).id}`);
   };
 
   const handleAddToCart = () => {
