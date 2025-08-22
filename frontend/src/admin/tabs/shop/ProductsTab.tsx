@@ -302,9 +302,9 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           </div>
         ) : (
           <div className="p-3 sm:p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-stretch">
               {pagedProducts.map((p: any) => (
-                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow_hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                <div key={p.id} className="rounded-xl border border-[#EC4899]/10 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                   <div className="relative bg-gray-50 flex-shrink-0">
                     {p.main_image ? (
                       <img
@@ -338,7 +338,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       </div>
                     </div>
                   </div>
-                  <div className="p-3 sm:p-4 flex flex-col">
+                  <div className="p-3 sm:p-4 flex flex-col flex-1">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-[#4B2E83] text-sm truncate" title={p.name}>{p.name}</div>
@@ -352,7 +352,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                     >
                       {p.description || ''}
                     </div>
-                    <div className="mt-2">
+                    <div className="mt-auto pt-2">
                       <div className="flex gap-2">
                         <button onClick={() => { setEditProduct(p); setEditOpen(true); }} aria-label="עריכה" title="עריכה" className="flex-1 px-3 py-2 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 text-xs cursor-pointer">
                           <span className="flex items-center justify-center">

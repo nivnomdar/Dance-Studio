@@ -45,6 +45,11 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [successOpen, setSuccessOpen] = useState(false);
 
+  // Existing gallery URLs from the saved product (comma-separated in form)
+  const existingGalleryUrls = (form.gallery_images
+    ? form.gallery_images.split(',').map(s => s.trim()).filter(Boolean)
+    : []);
+
   useEffect(() => {
     if (product) {
       setForm({
@@ -260,7 +265,16 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                 <p className="text-white/80 text-sm mt-1">{isNew ? 'צרי מוצר חדש בחנות' : 'ערכי את פרטי המוצר'}</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/80 hover:text-white text-3xl font-light transition-colors duration-200 hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center">×</button>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white transition-colors duration-200 hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center p-0 leading-none"
+              aria-label="סגור"
+              title="סגור"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -533,6 +547,35 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                     onDrop={handleDropGallery}
                     className={`relative border-2 border-dashed rounded-xl p-3 sm:p-4 transition-colors ${dragActiveGallery ? 'border-[#EC4899] bg-[#EC4899]/5' : 'border-[#EC4899]/20 hover:border-[#EC4899]/40'}`}
                   >
+                    {/* Existing gallery (from saved product) */}
+                    {existingGalleryUrls.length > 0 && (
+                      <div className="mb-3 grid grid-cols-4 sm:grid-cols-5 gap-2">
+                        {existingGalleryUrls.map((src, idx) => (
+                          <div key={`${src}_${idx}`} className="relative aspect-square rounded-lg overflow-hidden border border-[#EC4899]/20 bg-white">
+                            <img src={src} alt={`גלריה קיימת ${idx + 1}`} className="w-full h-full object-contain" />
+                            <button
+                              type="button"
+                              onClick={() => setForm(prev => ({
+                                ...prev,
+                                gallery_images: (prev.gallery_images || '')
+                                  .split(',')
+                                  .map(s => s.trim())
+                                  .filter(Boolean)
+                                  .filter(u => u !== src)
+                                  .join(', ')
+                              }))}
+                              className="absolute top-1 right-1 w-6 h-6 bg-white/90 text-[#4B2E83] rounded-full flex items-center justify-center shadow hover:bg-white p-0 leading-none"
+                              aria-label="מחקי תמונה קיימת"
+                              title="מחק"
+                            >
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M7 6l1 14h8l1-14M10 11v6M14 11v6" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <p className="text-xs sm:text-sm text-[#4B2E83]">גררי ושחררי כאן כמה תמונות, או לחצי להוספה</p>
                     <div className="mt-2">
                       <label className="px-3 py-1.5 inline-block text-xs sm:text-sm bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-lg cursor-pointer hover:from-[#4B2E83] hover:to-[#EC4899] transition-colors">
@@ -549,10 +592,12 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                             <button
                               type="button"
                               onClick={() => setGalleryFiles(prev => prev.filter((_, i) => i !== idx))}
-                              className="absolute top-1 right-1 w-6 h-6 bg-white/90 text-[#4B2E83] rounded-full flex items-center justify-center shadow hover:bg-white"
-                              aria-label="הסר תמונה"
+                              className="absolute top-1 right-1 w-6 h-6 bg-white/90 text-[#4B2E83] rounded-full flex items-center justify-center shadow hover:bg-white p-0 leading-none"
+                              aria-label="מחק תמונה"
                             >
-                              ×
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6V4h8v2M7 6l1 14h8l1-14M10 11v6M14 11v6" />
+                              </svg>
                             </button>
                           </div>
                         ))}

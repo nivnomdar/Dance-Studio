@@ -121,9 +121,32 @@ router.get('/products/:id', async (req: Request, res: Response, next: NextFuncti
 // Create new product (admin only)
 router.post('/products', admin, validateProduct, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Allow only known columns that exist in products table
+    const {
+      name,
+      category_id,
+      description,
+      price,
+      stock_quantity,
+      is_active,
+      main_image,
+      gallery_images
+    } = req.body;
+
+    const payload: any = {
+      name,
+      category_id,
+      description,
+      price,
+      stock_quantity,
+      is_active,
+      main_image,
+      gallery_images
+    };
+
     const { data, error } = await supabase
       .from('products')
-      .insert([req.body])
+      .insert([payload])
       .select()
       .single();
 
@@ -141,9 +164,32 @@ router.post('/products', admin, validateProduct, async (req: Request, res: Respo
 router.put('/products/:id', admin, validateProduct, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    // Allow only known columns that exist in products table
+    const {
+      name,
+      category_id,
+      description,
+      price,
+      stock_quantity,
+      is_active,
+      main_image,
+      gallery_images
+    } = req.body;
+
+    const payload: any = {
+      name,
+      category_id,
+      description,
+      price,
+      stock_quantity,
+      is_active,
+      main_image,
+      gallery_images
+    };
+
     const { data, error } = await supabase
       .from('products')
-      .update(req.body)
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
