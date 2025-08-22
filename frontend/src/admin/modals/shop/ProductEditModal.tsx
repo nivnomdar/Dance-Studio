@@ -485,12 +485,12 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                         aria-pressed={form.trending}
                         onClick={() => setForm(prev => ({ ...prev, trending: !prev.trending }))}
                         className={`w-full text-right p-4 rounded-xl border transition flex items-start gap-3 shadow-sm hover:shadow ${form.trending ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-md' : 'bg-white text-[#4B2E83] border-[#EC4899]/20 hover:bg-[#EC4899]/5'}`}
-                        title="סימון מוצר כחדש"
+                        title="סימון מוצר כחם"
                       >
                         <span className={`inline-flex w-8 h-8 items-center justify-center rounded-full ${form.trending ? 'bg-white/20' : 'bg-[#EC4899]/10 text-[#EC4899]'}`}>🔥</span>
                         <div className="flex-1">
-                          <div className={`text-sm font-semibold ${form.trending ? 'text-white' : 'text-[#4B2E83]'}`}>מוצר חדש</div>
-                          <div className={`text-[11px] ${form.trending ? 'text-white/80' : 'text-[#4B2E83]/60'}`}>מסומן להדגשה וחשיפה משופרת.</div>
+                          <div className={`text-sm font-semibold ${form.trending ? 'text-white' : 'text-[#4B2E83]'}`}>חם</div>
+                          <div className={`text-[11px] ${form.trending ? 'text-white/80' : 'text-[#4B2E83]/60'}`}>מוצג כמוצר חם לשיפור חשיפה.</div>
                         </div>
                         {form.trending && (
                           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>

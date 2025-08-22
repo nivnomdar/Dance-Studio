@@ -31,6 +31,8 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
 
   const outOfStockProducts = data.products.filter((product: any) => product.stock_quantity === 0);
   const pendingOrders = data.orders.filter(order => order.status === 'pending');
+  const trendingCount = data.products.filter((p: any) => !!p.trending).length;
+  const recommendedCount = data.products.filter((p: any) => !!p.recommended).length;
   
   // Calculate completed orders this week
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -223,25 +225,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
         </div>
       </Modal>
 
-      {/* Statistics Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-2xl font-bold text-[#EC4899]">{data.products.length}</div>
-          <div className="text-sm text-[#4B2E83]/70">מספר מוצרים במערכת</div>
-        </div>
-        <div className="bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-2xl font-bold text-[#4B2E83]">{outOfStockProducts.length}</div>
-          <div className="text-sm text-[#4B2E83]/70">מוצרים אזלו מהמלאי</div>
-        </div>
-        <div className="bg-gradient-to-br from-[#EC4899]/5 to-[#4B2E83]/5 p-4 rounded-xl border border-[#EC4899]/10 text-center">
-          <div className="text-2xl font-bold text-[#EC4899]">{pendingOrders.length}</div>
-          <div className="text-sm text-[#4B2E83]/70">הזמנות ממתינות לטיפול</div>
-        </div>
-        <div className="bg-gradient-to-br from-[#4B2E83]/5 to-[#EC4899]/5 p-4 rounded-xl border border-[#4B2E83]/10 text-center">
-          <div className="text-2xl font-bold text-[#4B2E83]">{completedOrdersThisWeek}</div>
-          <div className="text-sm text-[#4B2E83]/70">הזמנות שהושלמו השבוע</div>
-        </div>
-      </div>
+      {/* Removed statistics summary cards per request */}
     </div>
   );
 } 
