@@ -205,6 +205,16 @@ export const apiService = {
       });
     },
 
+    async getCategoriesAdmin(): Promise<any[]> {
+      return fetchWithRetryAndQueue<any[]>(async () => {
+        const headers = await getAuthHeaders();
+        return fetch(`${API_BASE_URL}/shop/categories/admin`, { headers });
+      }).catch(error => {
+        console.error('Shop API getCategoriesAdmin error:', error);
+        return [];
+      });
+    },
+
     async getProducts(params?: { category_id?: string }): Promise<any[]> {
       const query = params?.category_id ? `?category_id=${encodeURIComponent(params.category_id)}` : '';
       return fetchWithRetryAndQueue<any[]>(() =>
@@ -227,7 +237,7 @@ export const apiService = {
       );
     },
 
-    async updateCategory(id: string, payload: Partial<{ name: string; parent_id: string | null; description: string | null }>): Promise<any> {
+    async updateCategory(id: string, payload: Partial<{ name: string; parent_id: string | null; description: string | null; is_active: boolean }>): Promise<any> {
       const headers = await getAuthHeaders();
       return fetchWithRetryAndQueue<any>(() =>
         fetch(`${API_BASE_URL}/shop/categories/${id}`, {

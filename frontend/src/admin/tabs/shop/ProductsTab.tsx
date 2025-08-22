@@ -227,40 +227,41 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
       {/* Products - Table or Cards */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
         <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
+          {/* Badges row centered above title */}
+          <div className="w-full flex items-center justify-center gap-2 flex-wrap mb-2">
+            {/* Total */}
+            <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 text-[#4B2E83] border border-[#EC4899]/20">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+              {data.products?.length || 0}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">סה"כ מוצרים</div>
+            </span>
+            {/* Trending */}
+            <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/30">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2 3 3 4.5 3 6.5A3.5 3.5 0 116 9.5C6 7.5 7 6 9 4c1-1 1.5-1.5 3-1zM6 12c0 5 4 9 6 9s6-4 6-9"/></svg>
+              {data.products?.filter((p:any)=>!!p.trending).length || 0}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">חם</div>
+            </span>
+            {/* Recommended */}
+            <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-[#4B2E83]/10 text-[#4B2E83] border border-[#4B2E83]/30">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              {data.products?.filter((p:any)=>!!p.recommended).length || 0}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">מומלצים</div>
+            </span>
+            {/* Out of stock */}
+            <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-white text-[#4B2E83] border border-[#4B2E83]/20">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4l2-2h6l2 2h4v12H3z"/></svg>
+              {data.products?.filter((p:any)=> (p.stock_quantity ?? 0) === 0).length || 0}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">אזלו מהמלאי</div>
+            </span>
+            {/* Pending orders */}
+            <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-white text-[#EC4899] border border-[#EC4899]/30">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5l3 2M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              {data.orders?.filter((o:any)=>o.status==='pending').length || 0}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">הזמנות ממתינות</div>
+            </span>
+          </div>
           <div className="flex items-center justify-between mb-1 sm:mb-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83]">ניהול מוצרים</h2>
-              {/* Total */}
-              <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-gradient-to-r from-[#EC4899]/10 to-[#4B2E83]/10 text-[#4B2E83] border border-[#EC4899]/20">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
-                {data.products?.length || 0}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">סה"כ מוצרים</div>
-              </span>
-              {/* Trending */}
-              <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/30">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2 3 3 4.5 3 6.5A3.5 3.5 0 116 9.5C6 7.5 7 6 9 4c1-1 1.5-1.5 3-1zM6 12c0 5 4 9 6 9s6-4 6-9"/></svg>
-                {data.products?.filter((p:any)=>!!p.trending).length || 0}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">חם</div>
-              </span>
-              {/* Recommended */}
-              <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-[#4B2E83]/10 text-[#4B2E83] border border-[#4B2E83]/30">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                {data.products?.filter((p:any)=>!!p.recommended).length || 0}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">מומלצים</div>
-              </span>
-              {/* Out of stock */}
-              <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-white text-[#4B2E83] border border-[#4B2E83]/20">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4l2-2h6l2 2h4v12H3z"/></svg>
-                {data.products?.filter((p:any)=> (p.stock_quantity ?? 0) === 0).length || 0}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">אזלו מהמלאי</div>
-              </span>
-              {/* Pending orders */}
-              <span className="group relative inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-white text-[#EC4899] border border-[#EC4899]/30">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5l3 2M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-                {data.orders?.filter((o:any)=>o.status==='pending').length || 0}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">הזמנות ממתינות</div>
-              </span>
-            </div>
+            <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83]">ניהול מוצרים</h2>
             <div role="group" aria-label="החלפת תצוגה" className="flex items-center gap-2">
               <button
                 type="button"
@@ -318,13 +319,15 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                       {(p.trending || p.recommended) && (
                         <div className="absolute top-1 left-1 flex items-center gap-1 z-10">
                           {p.trending && (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
+                            <span className="relative group inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
                               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2 3 3 4.5 3 6.5A3.5 3.5 0 116 9.5C6 7.5 7 6 9 4c1-1 1.5-1.5 3-1zM6 12c0 5 4 9 6 9s6-4 6-9"/></svg>
+                              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">חם</div>
                             </span>
                           )}
                           {p.recommended && (
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#4B2E83]/10 text-[#4B2E83] border border-[#4B2E83]/20">
+                            <span className="relative group inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#4B2E83]/10 text-[#4B2E83] border border-[#4B2E83]/20">
                               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">מומלץ</div>
                             </span>
                           )}
                         </div>
@@ -343,6 +346,14 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold text-xs sm:text-sm text-[#4B2E83] truncate" title={p.name}>{p.name}</div>
                           <div className="text-[11px] sm:text-xs text-[#4B2E83]/70 truncate" title={p.description}>{p.description}</div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(p.stock_quantity ?? 0) === 0 && (
+                              <span className="relative group inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-[#4B2E83] border border-[#4B2E83]/20">
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4l2-2h6l2 2h4v12H3z"/></svg>
+                                <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">אזל</div>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

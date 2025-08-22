@@ -37,7 +37,7 @@ const ShopPage = () => {
           apiService.shop.getProducts()
         ]);
         if (!mounted) return;
-        setCategories(cats || []);
+        setCategories((cats || []).filter((c: any) => c.is_active !== false));
         // Map backend products to UI-friendly shape
         const mapped = (prods || []).map((p: any) => ({
           ...p,

@@ -13,6 +13,22 @@ router.get('/categories', async (req: Request, res: Response, next: NextFunction
     const { data, error } = await supabase
       .from('categories')
       .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw new AppError('Failed to fetch categories', 500);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all categories (admin - includes inactive)
+router.get('/categories/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw new AppError('Failed to fetch categories', 500);
@@ -130,7 +146,9 @@ router.post('/products', admin, validateProductCreate, async (req: Request, res:
       stock_quantity,
       is_active,
       main_image,
-      gallery_images
+      gallery_images,
+      trending,
+      recommended
     } = req.body;
 
     const payload: any = {
@@ -141,7 +159,9 @@ router.post('/products', admin, validateProductCreate, async (req: Request, res:
       stock_quantity,
       is_active,
       main_image,
-      gallery_images
+      gallery_images,
+      trending: !!trending,
+      recommended: !!recommended
     };
 
     const { data, error } = await supabase
@@ -173,7 +193,9 @@ router.put('/products/:id', admin, validateProductUpdate, async (req: Request, r
       stock_quantity,
       is_active,
       main_image,
-      gallery_images
+      gallery_images,
+      trending,
+      recommended
     } = req.body;
 
     const payload: any = {
@@ -184,7 +206,9 @@ router.put('/products/:id', admin, validateProductUpdate, async (req: Request, r
       stock_quantity,
       is_active,
       main_image,
-      gallery_images
+      gallery_images,
+      trending: typeof trending === 'boolean' ? trending : undefined,
+      recommended: typeof recommended === 'boolean' ? recommended : undefined
     };
 
     const { data, error } = await supabase

@@ -4,6 +4,7 @@ import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../components';
 import { apiService } from '../../../lib/api';
 import Modal from '../../../components/common/Modal';
+import CategoriesManager from '../../components/shop/CategoriesManager';
 
 import { ProductsTab, OrdersTab } from './index';
 
@@ -135,44 +136,7 @@ export default function AdminShop({ profile: _profile }: AdminShopProps) {
 
       {/* Categories Management - only for Products tab */}
       {activeTab === 'products' && (
-      <div className="bg-white p-6 rounded-2xl border border-[#EC4899]/10">
-        <div className="flex items-center justify-between mb-4">
-          {(() => {
-            const total = data.categories?.length || 0;
-            const parents = data.categories?.filter((c: any) => !c.parent_id).length || 0;
-            const subs = total - parents;
-            return (
-              <h3 className="text-lg font-semibold text-[#4B2E83]">
-                קטגוריות ({parents} ראשיות · {subs} תתי־קטגוריות)
-              </h3>
-            );
-          })()}
-          <button
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="px-4 py-2 bg-[#EC4899] text-white rounded-lg hover:bg-[#EC4899]/80 cursor-pointer"
-          >
-            הוסף קטגוריה
-          </button>
-        </div>
-        {data.categories && data.categories.length > 0 ? (
-          <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
-            {data.categories.filter((c: any) => !c.parent_id).map((cat: any) => (
-              <div key={cat.id} className="p-3 rounded-xl bg-[#EC4899]/5 border border-[#EC4899]/10">
-                <div className="font-medium text-[#4B2E83] truncate" title={cat.name}>{cat.name}</div>
-                <div className="mt-2 space-y-1 max-h-28 overflow-y-auto pr-1">
-                  {data.categories.filter((s: any) => s.parent_id === cat.id).map((sub: any) => (
-                    <div key={sub.id} className="text-sm text-[#4B2E83]/80 truncate" title={sub.name}>• {sub.name}</div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-50 p-4 rounded-xl">
-            <p className="text-[#4B2E83]/70 text-center">אין קטגוריות כרגע</p>
-          </div>
-        )}
-      </div>
+        <CategoriesManager categories={data.categories || []} fetchShop={fetchShop} />
       )}
 
       {/* Add Category Modal */}

@@ -217,7 +217,7 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
     
     try {
       const [categories, products] = await Promise.all([
-        apiService.shop.getCategories(),
+        apiService.shop.getCategoriesAdmin(),
         apiService.shop.getProducts()
       ]);
       setData(prev => ({

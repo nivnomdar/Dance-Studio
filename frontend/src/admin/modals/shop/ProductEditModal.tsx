@@ -46,6 +46,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
   const [mainPreview, setMainPreview] = useState<string | null>(null);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState<string | null>(null);
 
   // Existing gallery URLs from the saved product (comma-separated in form)
   const existingGalleryUrls = (form.gallery_images
@@ -242,6 +243,8 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
       }
       await onSaved();
       setSuccessOpen(true);
+    } catch (e: any) {
+      setErrorOpen(e?.message || 'אירעה שגיאה בשמירה');
     } finally {
       setSaving(false);
     }
@@ -645,6 +648,13 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
       type="success"
       title={product && product.id ? 'המוצר עודכן בהצלחה' : 'המוצר נוצר בהצלחה'}
       message="הפרטים נשמרו במערכת"
+    />
+    <StatusModal
+      isOpen={!!errorOpen}
+      onClose={() => setErrorOpen(null)}
+      type="error"
+      title="שגיאה בשמירה"
+      message={errorOpen || ''}
     />
     </>
   );

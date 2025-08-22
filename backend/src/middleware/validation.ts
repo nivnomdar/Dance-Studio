@@ -122,5 +122,11 @@ export const validateProductUpdate = (req: Request, res: Response, next: NextFun
   if ('gallery_images' in body && body.gallery_images != null && !Array.isArray(body.gallery_images)) {
     throw new AppError('Invalid field: gallery_images must be an array', 400);
   }
+  if ('trending' in body && typeof body.trending !== 'boolean') {
+    throw new AppError('Invalid field: trending', 400);
+  }
+  if ('recommended' in body && typeof body.recommended !== 'boolean') {
+    throw new AppError('Invalid field: recommended', 400);
+  }
   next();
 };
