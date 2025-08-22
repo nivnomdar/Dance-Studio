@@ -18,6 +18,9 @@ export default function ProductStatusModal({ isOpen, onClose, product, onSaved }
   const onConfirm = async () => {
     try {
       setIsLoading(true);
+      // Optimistic UI: inform parent to flip status immediately via a custom event
+      const event = new CustomEvent('product-status-optimistic', { detail: { id: product.id, is_active: !product.is_active } });
+      window.dispatchEvent(event);
       await apiService.shop.updateProduct(product.id, { is_active: !product.is_active });
       await onSaved();
       onClose();

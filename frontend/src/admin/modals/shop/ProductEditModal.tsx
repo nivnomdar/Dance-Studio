@@ -14,6 +14,8 @@ interface ProductEditModalProps {
 }
 
 export default function ProductEditModal({ isOpen, onClose, product, categories, products, onSaved }: ProductEditModalProps) {
+  const numericSizes = ["35","36","37","38","39","40","41","42"];
+  const clothingSizes = ["S","M","L","XL"];
   const [form, setForm] = useState({
     name: '',
     category_id: '',
@@ -328,7 +330,25 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">מידות (EU / בגדים)</label>
                   <div className="flex flex-wrap gap-2">
-                    {["35","36","37","38","39","40","41","42","S","M","L","XL"].map((size) => (
+                    {numericSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => {
+                            const selected = new Set(prev.sizes);
+                            if (selected.has(size)) selected.delete(size); else selected.add(size);
+                            return { ...prev, sizes: Array.from(selected).sort() };
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${form.sizes.includes(size) ? 'border-[#EC4899] bg-[#EC4899]/10 text-[#EC4899]' : 'border-gray-300 text-gray-700 hover:border-[#EC4899]'}`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {clothingSizes.map((size) => (
                       <button
                         key={size}
                         type="button"

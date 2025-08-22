@@ -163,15 +163,8 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
 
 
       {/* פילטרים מתקדמים */}
-      <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
-        <div className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5 px-6 py-4 border-b border-[#EC4899]/10">
-          <div className="flex items-center gap-3">
-            
-           
-          </div>
-        </div>
-        
-        <div className="p-6">
+      <div className="bg-[#F7F7F8] rounded-2xl p-3 sm:p-6 shadow-sm border border-gray-200">
+        <div className="p-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             {/* חיפוש */}
             <div className="lg:col-span-2">

@@ -79,7 +79,7 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
   next();
 };
 
-export const validateProduct = (req: Request, res: Response, next: NextFunction) => {
+export const validateProductCreate = (req: Request, res: Response, next: NextFunction) => {
   const { name, description, price, category_id } = req.body;
   if (!name || typeof name !== 'string') {
     throw new AppError('Missing or invalid field: name', 400);
@@ -92,6 +92,35 @@ export const validateProduct = (req: Request, res: Response, next: NextFunction)
   }
   if (!category_id || typeof category_id !== 'string') {
     throw new AppError('Missing or invalid field: category_id', 400);
+  }
+  next();
+};
+
+export const validateProductUpdate = (req: Request, res: Response, next: NextFunction) => {
+  const body = req.body || {};
+  if ('name' in body && (typeof body.name !== 'string' || body.name.trim() === '')) {
+    throw new AppError('Invalid field: name', 400);
+  }
+  if ('description' in body && typeof body.description !== 'string') {
+    throw new AppError('Invalid field: description', 400);
+  }
+  if ('price' in body && (typeof body.price !== 'number' || isNaN(body.price) || body.price < 0)) {
+    throw new AppError('Invalid field: price must be a non-negative number', 400);
+  }
+  if ('category_id' in body && typeof body.category_id !== 'string') {
+    throw new AppError('Invalid field: category_id', 400);
+  }
+  if ('stock_quantity' in body && (typeof body.stock_quantity !== 'number' || !Number.isInteger(body.stock_quantity) || body.stock_quantity < 0)) {
+    throw new AppError('Invalid field: stock_quantity', 400);
+  }
+  if ('is_active' in body && typeof body.is_active !== 'boolean') {
+    throw new AppError('Invalid field: is_active', 400);
+  }
+  if ('main_image' in body && body.main_image != null && typeof body.main_image !== 'string') {
+    throw new AppError('Invalid field: main_image', 400);
+  }
+  if ('gallery_images' in body && body.gallery_images != null && !Array.isArray(body.gallery_images)) {
+    throw new AppError('Invalid field: gallery_images must be an array', 400);
   }
   next();
 };

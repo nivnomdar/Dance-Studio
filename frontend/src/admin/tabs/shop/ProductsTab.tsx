@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
  
 import ProductEditModal from '../../modals/shop/ProductEditModal';
 import ProductStatusModal from '../../modals/shop/ProductStatusModal';
@@ -16,6 +16,8 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
   const [page, setPage] = useState(1);
   const pageSize = 8;
+  const [trendingOnly, setTrendingOnly] = useState(false);
+  const [recommendedOnly, setRecommendedOnly] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<any | null>(null);
@@ -25,6 +27,24 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   const [deleteProduct, setDeleteProduct] = useState<any | null>(null);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
   const [deleteSuccessOpen, setDeleteSuccessOpen] = useState(false);
+  const [statusSuccessOpen, setStatusSuccessOpen] = useState(false);
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, boolean>>({});
+
+  // Clear optimistic overrides when new products data arrives
+  useEffect(() => {
+    setStatusOverrides({});
+  }, [data.products]);
+
+  // Listen for optimistic status changes from the modal
+  useEffect(() => {
+    const handler = (e: any) => {
+      const { id, is_active } = e.detail || {};
+      if (!id) return;
+      setStatusOverrides(prev => ({ ...prev, [String(id)]: !!is_active }));
+    };
+    window.addEventListener('product-status-optimistic' as any, handler);
+    return () => window.removeEventListener('product-status-optimistic' as any, handler);
+  }, []);
 
   const categoryById = useMemo(() => {
     const map: Record<string, any> = {};
@@ -34,6 +54,15 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
 
   const filteredSortedProducts = useMemo(() => {
     let list: any[] = [...(data.products || [])];
+
+    // Apply local status overrides (optimistic UI)
+    if (statusOverrides && Object.keys(statusOverrides).length > 0) {
+      list = list.map((p: any) =>
+        p && Object.prototype.hasOwnProperty.call(statusOverrides, String(p.id))
+          ? { ...p, is_active: statusOverrides[String(p.id)] }
+          : p
+      );
+    }
     if (hiddenIds.size > 0) {
       list = list.filter(p => !hiddenIds.has(String(p.id)));
     }
@@ -49,6 +78,8 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
     if (stockFilter === 'low') list = list.filter(p => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= 5);
     if (statusFilter === 'active') list = list.filter(p => p.is_active);
     if (statusFilter === 'inactive') list = list.filter(p => !p.is_active);
+    if (trendingOnly) list = list.filter(p => !!p.trending);
+    if (recommendedOnly) list = list.filter(p => !!p.recommended);
     list.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       switch (sortKey) {
@@ -61,7 +92,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
       }
     });
     return list;
-  }, [data.products, categoryById, searchTerm, filterCategoryId, stockFilter, statusFilter, sortKey, sortDir, hiddenIds]);
+  }, [data.products, categoryById, searchTerm, filterCategoryId, stockFilter, statusFilter, sortKey, sortDir, hiddenIds, statusOverrides, trendingOnly, recommendedOnly]);
 
   const totalPages = Math.max(1, Math.ceil(filteredSortedProducts.length / pageSize));
   const pagedProducts = useMemo(() => {
@@ -72,7 +103,7 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
   return (
     <div className="space-y-3 sm:space-y-6 overflow-x-hidden">
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-3 sm:p-6 shadow-sm border border-[#EC4899]/10">
+      <div className="bg-[#F7F7F8] rounded-2xl p-3 sm:p-6 shadow-sm border border-gray-200">
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-8 gap-3 sm:gap-4 items-end">
           <div className="sm:col-span-2 lg:col-span-2">
             <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חיפוש מוצר</label>
@@ -178,6 +209,19 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
             </button>
           </div>
         </div>
+        {/* Second filter row: Trending/Recommended */}
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 xl:grid-cols-8 gap-3 sm:gap-4 items-center">
+          <div className="sm:col-span-2 lg:col-span-2 flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#EC4899]/20 bg-[#EC4899]/5">
+              <input id="filter-trending" type="checkbox" checked={trendingOnly} onChange={(e) => { setTrendingOnly(e.target.checked); setPage(1); }} className="h-4 w-4 text-[#EC4899] border-gray-300 rounded cursor-pointer" />
+              <label htmlFor="filter-trending" className="text-xs sm:text-sm text-[#4B2E83] cursor-pointer">חם/חדש</label>
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#4B2E83]/20 bg-[#4B2E83]/5">
+              <input id="filter-recommended" type="checkbox" checked={recommendedOnly} onChange={(e) => { setRecommendedOnly(e.target.checked); setPage(1); }} className="h-4 w-4 text-[#EC4899] border-gray-300 rounded cursor-pointer" />
+              <label htmlFor="filter-recommended" className="text-xs sm:text-sm text-[#4B2E83] cursor-pointer">מומלץ</label>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Products - Table or Cards */}
@@ -226,22 +270,39 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
           <p className="text-sm sm:text-base text-[#4B2E83]/70">הצגת מוצרים, מחירים, מלאי וסטטוס</p>
         </div>
         {viewMode === 'table' ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] table-fixed">
+          <div className="overflow-x-auto lg:overflow-visible">
+            <table className="w-full table-fixed min-w-[1000px] lg:min-w-0">
               <thead className="bg-gradient-to-r from-[#EC4899]/5 to-[#4B2E83]/5">
                 <tr>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[40%]">מוצר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[22%]">קטגוריה</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מחיר</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">מלאי</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">סטטוס</th>
-                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[14%]">פעולות</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-right text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[34%]">מוצר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[16%]">קטגוריה</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[7%]">מחיר</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[6%]">מלאי</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[7%]">תמונות</th>
+                  <th className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[13%]">עודכן</th>
+                  
+                  <th className="px-1 sm:px-2 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[6%]">סטטוס</th>
+                  <th className="px-1 sm:px-2 py-2 sm:py-3 text-center text-[11px] sm:text-sm font-semibold text-[#4B2E83] border-l border-[#EC4899]/10 w-[8%]">פעולות</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EC4899]/10">
                 {pagedProducts.map((p: any) => (
                   <tr key={p.id} className="hover:bg-[#EC4899]/5 transition-colors">
-                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10">
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 relative">
+                      {(p.trending || p.recommended) && (
+                        <div className="absolute top-1 left-1 flex items-center gap-1 z-10">
+                          {p.trending && (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2 3 3 4.5 3 6.5A3.5 3.5 0 116 9.5C6 7.5 7 6 9 4c1-1 1.5-1.5 3-1zM6 12c0 5 4 9 6 9s6-4 6-9"/></svg>
+                            </span>
+                          )}
+                          {p.recommended && (
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#4B2E83]/10 text-[#4B2E83] border border-[#4B2E83]/20">
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3 min-w-0">
                         {p.main_image && (
                           <img
@@ -266,6 +327,33 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                     </td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">₪{p.price}</td>
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">{p.stock_quantity ?? 0}</td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      {(() => {
+                        let gallery: any[] = [];
+                        if (Array.isArray(p.gallery_images)) gallery = p.gallery_images as any[];
+                        else if (typeof p.gallery_images === 'string') {
+                          try { gallery = JSON.parse(p.gallery_images) || []; } catch {}
+                        }
+                        const total = (p.main_image ? 1 : 0) + (Array.isArray(gallery) ? gallery.length : 0);
+                        return (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs bg-white border border-[#EC4899]/20 text-[#4B2E83]">
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4l2-2h6l2 2h4v12H3z"/></svg>
+                            {total}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
+                      {(() => {
+                        const dt = p.updated_at || p.created_at;
+                        try {
+                          return new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(dt));
+                        } catch {
+                          return '-';
+                        }
+                      })()}
+                    </td>
+                    
                     <td className="px-2 sm:px-3 py-2 sm:py-3 border-l border-[#EC4899]/10 text-center">
                       <button
                         type="button"
@@ -318,6 +406,21 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
                     ) : (
                       <div className="w-full h-32 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 flex items-center justify-center text-[#4B2E83]/60 text-sm">אין תמונה</div>
                     )}
+                    {/* Images count badge - bottom right of image */}
+                    <div className="absolute bottom-2 right-2">
+                      {(() => {
+                        let gallery: any[] = [];
+                        if (Array.isArray(p.gallery_images)) gallery = p.gallery_images as any[];
+                        else if (typeof p.gallery_images === 'string') { try { gallery = JSON.parse(p.gallery_images) || []; } catch {} }
+                        const total = (p.main_image ? 1 : 0) + (Array.isArray(gallery) ? gallery.length : 0);
+                        return (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-xs bg-white/90 backdrop-blur border border-[#EC4899]/20 text-[#4B2E83] shadow">
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7h4l2-2h6l2 2h4v12H3z"/></svg>
+                            {total}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <div className="absolute top-2 left-2">
                       <button
                         type="button"
@@ -399,7 +502,10 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         isOpen={statusOpen}
         onClose={() => setStatusOpen(false)}
         product={statusProduct}
-        onSaved={fetchShop}
+        onSaved={async () => {
+          await fetchShop();
+          setStatusSuccessOpen(true);
+        }}
       />
       <ProductDeleteModal
         isOpen={deleteOpen}
@@ -423,6 +529,13 @@ export default function ProductsTab({ data, fetchShop }: { data: any; fetchShop:
         type="success"
         title="המוצר נמחק"
         message="המוצר הוסר בהצלחה מהמלאי"
+      />
+      <StatusModal
+        isOpen={statusSuccessOpen}
+        onClose={() => setStatusSuccessOpen(false)}
+        type="success"
+        title="סטטוס עודכן"
+        message="הסטטוס של המוצר עודכן בהצלחה"
       />
     </div>
   );

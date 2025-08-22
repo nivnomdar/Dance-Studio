@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { supabase } from '../database';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
-import { validateProduct } from '../middleware/validation';
+import { validateProductCreate, validateProductUpdate } from '../middleware/validation';
 import { admin, auth } from '../middleware/auth';
 
 const router = Router();
@@ -119,7 +119,7 @@ router.get('/products/:id', async (req: Request, res: Response, next: NextFuncti
 });
 
 // Create new product (admin only)
-router.post('/products', admin, validateProduct, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/products', admin, validateProductCreate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Allow only known columns that exist in products table
     const {
@@ -161,7 +161,7 @@ router.post('/products', admin, validateProduct, async (req: Request, res: Respo
 });
 
 // Update product (admin only)
-router.put('/products/:id', admin, validateProduct, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/products/:id', admin, validateProductUpdate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     // Allow only known columns that exist in products table
