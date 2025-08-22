@@ -4,7 +4,7 @@ import { assetUrl } from '../../lib/assets';
 function AboutSection() {
   if (HOMEPAGE_FLAGS.aboutUseImage) {
     return (
-      <section className="relative -mt-4 sm:mt-0 pt-0 sm:pt-12 lg:pt-16 pb-6 sm:pb-8 lg:pb-10 bg-black overflow-hidden">
+      <section className="relative -mt-4 sm:-mt-0 pt-0 sm:pt-10 lg:pt-12 pb-6 sm:pb-8 lg:pb-10 bg-black overflow-hidden">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <img
             src={assetUrl(HOMEPAGE_ASSETS.about.portrait)}
@@ -18,7 +18,7 @@ function AboutSection() {
   }
 
   return (
-    <section className="relative -mt-4 sm:mt-0 pt-0 sm:pt-12 lg:pt-16 pb-6 sm:pb-8 lg:pb-10 bg-black overflow-hidden">
+    <section className="relative -mt-4 sm:mt-0 pt-0 sm:pt-10 lg:pt-12 pb-6 sm:pb-8 lg:pb-10 bg-black overflow-hidden">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* קו דקורטיבי עליון */}
         <div className="flex justify-center mb-4 sm:mb-6">

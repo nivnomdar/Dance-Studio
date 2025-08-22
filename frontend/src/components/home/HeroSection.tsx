@@ -34,7 +34,7 @@ function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 h-full text-white px-8 sm:px-6 lg:px-8">
-        <div className="md:absolute inset-x-0 md:bottom-32 lg:bottom-40 xl:bottom-48 flex flex-row items-center justify-center gap-3 sm:gap-4 w-full mt-3">
+        <div className="md:absolute inset-x-0 md:bottom-32 lg:bottom-44 xl:bottom-70 flex flex-row items-center justify-center gap-3 sm:gap-4 w-full mt-3">
           <Link
             to="/classes"
             className="relative group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
