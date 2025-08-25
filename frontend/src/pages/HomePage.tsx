@@ -5,7 +5,7 @@ import TrendingProducts from '../components/home/TrendingProducts';
 
 function HomePage() {
   return (
-    <main className="flex flex-col min-h-screen">
+    <main className="flex flex-col">
       <HeroSection />
       <AboutSection />
       <PhotosCarousel />

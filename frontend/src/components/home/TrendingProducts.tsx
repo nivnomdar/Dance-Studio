@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation } from 'swiper/modules';
+import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 import { apiService } from '../../lib/api';
 
@@ -105,13 +105,14 @@ function TrendingProducts() {
           <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto" />
         </div>
         <Swiper
-          modules={[Pagination, Navigation]}
+          modules={[Pagination, Navigation, Autoplay]}
           spaceBetween={16}
           slidesPerView={1.15}
           centeredSlides={false}
           loop={true}
           autoHeight={false}
           navigation
+          autoplay={{ delay: 3000 }}
           breakpoints={{
             640: { slidesPerView: 2.15, spaceBetween: 20 },
             768: { slidesPerView: 3, spaceBetween: 24 },

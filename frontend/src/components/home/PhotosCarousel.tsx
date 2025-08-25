@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation } from 'swiper/modules';
+import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 
 function PhotosCarousel() {
@@ -11,7 +11,7 @@ function PhotosCarousel() {
   const [isPaused, setIsPaused] = useState(false);
 
   return (
-    <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-16 bg-black">
+    <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-16 mb-8 sm:mb-12 lg:mb-16 bg-black overflow-visible">
       <style>{`
         .swiper-button-next,
         .swiper-button-prev {
@@ -39,7 +39,7 @@ function PhotosCarousel() {
         </div>
 
         <Swiper
-          modules={[Pagination, Navigation]}
+          modules={[Pagination, Navigation, Autoplay]}
           spaceBetween={20}
           slidesPerView={1}
           centeredSlides={true}
@@ -47,6 +47,11 @@ function PhotosCarousel() {
           keyboard={{ enabled: true }}
           pagination={{ clickable: true }}
           navigation
+          autoplay={{
+            delay: 5000,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true
+          }}
           breakpoints={{
             640: {
               slidesPerView: 1,
@@ -62,12 +67,13 @@ function PhotosCarousel() {
             },
           }}
           className="rounded-lg overflow-visible"
+          style={{ padding: '50px 0' }}
         >
           {/* Videos First */}
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-80 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-100 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -90,7 +96,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -113,7 +119,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -136,7 +142,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -161,7 +167,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -178,7 +184,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -195,7 +201,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}
@@ -212,7 +218,7 @@ function PhotosCarousel() {
           <SwiperSlide>
             {({ isActive }) => (
               <div 
-                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu ${
+                className={`relative w-full h-64 sm:h-80 lg:h-96 transition-all duration-500 transform-gpu overflow-visible ${
                   isActive ? 'scale-110 sm:scale-125 z-20 opacity-100' : 'scale-90 opacity-60'
                 }`}
                 style={{ transformOrigin: 'center center' }}

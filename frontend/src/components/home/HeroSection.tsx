@@ -53,7 +53,7 @@ function HeroSection() {
         <div className="absolute bottom-16 top-6 left-1/2 transform -translate-x-1/2 flex flex-row items-center justify-center gap-3 sm:gap-4 md:absolute md:bottom-20 md:top-auto lg:bottom-32 xl:bottom-44 2xl:bottom-52 md:left-1/2 md:transform-none">
           <Link
             to="/classes"
-            className="group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300"
+            className="group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300 whitespace-nowrap"
             aria-label="לקביעת שיעור"
             title="לקביעת שיעור"
           >
