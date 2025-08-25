@@ -57,8 +57,7 @@ function TrendingProducts() {
       <style>{`
         .swiper-button-next,
         .swiper-button-prev { color: #EC4899 !important; }
-        .swiper-pagination-bullet { background-color: #EC4899 !important; }
-        .swiper-pagination-bullet-active { background-color: #EC4899 !important; }
+        .swiper-pagination { display: none !important; }
         @media (max-width: 640px) {
           .swiper-button-next, .swiper-button-prev { display: none !important; }
         }
@@ -73,8 +72,7 @@ function TrendingProducts() {
           spaceBetween={16}
           slidesPerView={1.15}
           centeredSlides={false}
-          loop={false}
-          pagination={{ clickable: true }}
+          loop={true}
           navigation
           breakpoints={{
             640: { slidesPerView: 2.15, spaceBetween: 20 },
@@ -97,8 +95,13 @@ function TrendingProducts() {
                   <h3 className="text-white font-semibold text-base sm:text-lg line-clamp-1">{p.name}</h3>
                   <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-[#E6C17C] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button onClick={() => navigate(`/product/${p.id}`)} className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 transition">למוצר</button>
+                    <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
+                    <button onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 transition inline-flex items-center gap-1.5 cursor-pointer">
+                      <span>צפי במוצר</span>
+                      <svg className="w-4 h-4 transition" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </article>
