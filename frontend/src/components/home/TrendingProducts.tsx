@@ -56,7 +56,44 @@ function TrendingProducts() {
     <section className="bg-black pt-6 sm:pt-8 lg:pt-10 pb-10 sm:pb-14 lg:pb-16">
       <style>{`
         .swiper-button-next,
-        .swiper-button-prev { color: #EC4899 !important; }
+        .swiper-button-prev {
+          color: #EC4899 !important;
+          width: 44px !important;
+          height: 44px !important;
+          border-radius: 9999px !important;
+          background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(75,46,131,0.12)) !important;
+          border: 2px solid #EC4899 !important;
+          backdrop-filter: blur(8px);
+          box-shadow: 0 6px 18px rgba(236,72,153,0.25);
+          display: flex; align-items: center; justify-content: center;
+          top: 50% !important; transform: translateY(-50%);
+          transition: transform .2s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+          z-index: 10;
+        }
+        .swiper-button-next::after,
+        .swiper-button-prev::after { font-size: 18px !important; }
+        .swiper-button-prev { right: max(8px, env(safe-area-inset-right)) !important; left: auto !important; }
+        .swiper-button-next { left: max(8px, env(safe-area-inset-left)) !important; right: auto !important; }
+        .swiper-button-next:hover,
+        .swiper-button-prev:hover {
+          transform: translateY(-50%) scale(1.05);
+          box-shadow: 0 10px 28px rgba(236,72,153,0.35);
+          background: linear-gradient(135deg, rgba(236,72,153,0.18), rgba(75,46,131,0.18)) !important;
+        }
+        .swiper-button-next:active,
+        .swiper-button-prev:active {
+          transform: translateY(-50%) scale(0.98);
+        }
+        .swiper-button-next:focus-visible,
+        .swiper-button-prev:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(236,72,153,0.45);
+        }
+        .swiper-button-disabled {
+          opacity: .35 !important;
+          box-shadow: none !important;
+          cursor: not-allowed !important;
+        }
         .swiper-pagination { display: none !important; }
         @media (max-width: 640px) {
           .swiper-button-next, .swiper-button-prev { display: none !important; }
@@ -73,6 +110,7 @@ function TrendingProducts() {
           slidesPerView={1.15}
           centeredSlides={false}
           loop={true}
+          autoHeight={false}
           navigation
           breakpoints={{
             640: { slidesPerView: 2.15, spaceBetween: 20 },
@@ -82,21 +120,23 @@ function TrendingProducts() {
           className="overflow-visible"
         >
           {trending.map((p) => (
-            <SwiperSlide key={p.id}>
-              <article className="bg-white/5 rounded-xl border border-white/10 overflow-hidden shadow-sm hover:shadow-pink-500/10 transition-all duration-200">
-                <div className="aspect-[4/3] w-full bg-white/5 overflow-hidden">
+            <SwiperSlide key={p.id} className="h-auto">
+              <article className="bg-white/5 rounded-xl border border-white/10 overflow-hidden shadow-sm hover:shadow-pink-500/10 transition-all duration-200 flex flex-col h-full">
+                <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
                   {p.main_image ? (
-                    <img src={p.main_image} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                    <>
+                      <img src={p.main_image} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                    </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white/40">No image</div>
                   )}
                 </div>
-                <div className="p-4">
-                  <h3 className="text-white font-semibold text-base sm:text-lg line-clamp-1">{p.name}</h3>
+                <div className="p-4 flex-1 flex flex-col">
+                  <h3 className="text-white font-semibold text-base sm:text-lg line-clamp-1 min-h-[1.75rem]">{p.name}</h3>
                   <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-auto pt-3 flex items-center justify-between">
                     <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 transition inline-flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" aria-label={`צפי במוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer">
                       <span>צפי במוצר</span>
                       <svg className="w-4 h-4 transition" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
