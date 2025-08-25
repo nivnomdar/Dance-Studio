@@ -322,6 +322,13 @@ export const apiService = {
       );
     },
 
+    async getAllForUser(): Promise<Class[]> {
+      return fetchWithRetryAndQueue<Class[]>(async () => {
+        const headers = await getAuthHeaders();
+        return fetch(`${API_BASE_URL}/classes/for-user`, { headers });
+      });
+    },
+
     async getAllForAdmin(): Promise<Class[]> {
       const headers = await getAuthHeaders();
       return fetchWithRetryAndQueue<Class[]>(() => 

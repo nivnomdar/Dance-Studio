@@ -541,6 +541,48 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// Get active classes for current user, excluding trials already used
+router.get('/for-user', auth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) {
+      throw new AppError('Unauthorized', 401);
+    }
+
+    const userId = req.user.id;
+
+    const { data: usedTrials, error: usedTrialsError } = await supabase
+      .from('user_trial_classes')
+      .select('class_id')
+      .eq('user_id', userId);
+
+    if (usedTrialsError) {
+      throw new AppError('Failed to fetch user trials', 500);
+    }
+
+    const usedIds = new Set((usedTrials || []).map((r: any) => r.class_id));
+
+    const { data: classes, error: classesError } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (classesError) {
+      throw new AppError('Failed to fetch classes', 500);
+    }
+
+    const filtered = (classes || []).filter((cls: any) => {
+      const isTrial = (cls.category || '').toLowerCase() === 'trial';
+      if (!isTrial) return true;
+      return !usedIds.has(cls.id);
+    });
+
+    res.json(filtered);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get all classes (admin only)
 router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {

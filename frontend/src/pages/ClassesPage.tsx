@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
  
-import { FaRedo, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaRedo } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
 import { Class } from '../types/class';
  
@@ -9,10 +9,10 @@ import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth';
 import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
 import { RefreshButton } from '../admin';
+import ClassCard from '../components/ClassCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
-import ClassCard from '../components/ClassCard';
 
 // Cache key for sessionStorage
 const CLASSES_CACHE_KEY = 'classes_cache';
@@ -81,12 +81,12 @@ function ClassesPage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [usedTrialClassIds, setUsedTrialClassIds] = useState<Set<string>>(new Set());
-  // Swiper ref for external navigation controls
-  const carouselSwiperRef = useRef<any>(null);
+  
   
   // Refs to prevent duplicate calls
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
+  const didRefetchWithUserRef = useRef(false);
 
   
 
@@ -143,7 +143,8 @@ function ClassesPage() {
       setLoading(true);
       setError(null);
       
-      const data = await classesService.getAllClasses();
+      // If user is logged in, fetch per-user filtered classes (exclude used trials)
+      const data = user ? await classesService.getAllClassesForUser() : await classesService.getAllClasses();
       
       // Filter to show only active classes
       const activeClasses = data.filter(cls => cls.is_active === true);
@@ -181,7 +182,7 @@ function ClassesPage() {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, []);
+  }, [user]);
 
   // Load classes on mount - only once
   useEffect(() => {
@@ -189,6 +190,15 @@ function ClassesPage() {
       fetchClasses();
     }
   }, [fetchClasses]);
+
+  // When user becomes available, refetch per-user filtered classes once
+  useEffect(() => {
+    if (user && !didRefetchWithUserRef.current) {
+      didRefetchWithUserRef.current = true;
+      hasFetchedRef.current = false;
+      fetchClasses(true);
+    }
+  }, [user, fetchClasses]);
 
   // Load profile if not available in context
   useEffect(() => {
@@ -414,89 +424,51 @@ function ClassesPage() {
           </p>
         </div>
 
-        {/* Classes Carousel (inline) */}
-        <div className="mb-8 sm:mb-12 lg:mb-16">
-          {(() => {
-            const visibleClasses = classes.filter((classItem) => {
-              const isTrial = (classItem.category || '').toLowerCase() === 'trial';
-              const isUsedTrial = isTrial && usedTrialClassIds.has(classItem.id);
-              return !isUsedTrial;
-            });
-            if (visibleClasses.length === 0) return null;
+        
 
-            return (
-              <section className="py-2">
-                <style>{`
-                  /* Prevent horizontal overflow on small screens */
-                  #classes-carousel .swiper,
-                  #classes-carousel .swiper-wrapper { overflow: hidden !important; }
-                  
-                  /* Re-enable overflow visibility for nice scaling on larger screens */
-                  @media (min-width: 768px) {
-                    #classes-carousel .swiper,
-                    #classes-carousel .swiper-wrapper { overflow: visible !important; }
-                  }
-                  
-                  /* Keep images stable across slides for consistent proportions */
-                  #classes-carousel .card-hero img { transition: transform 0.3s ease; transform: none; }
-                `}</style>
-
-                <div id="classes-carousel" className="w-full sm:flex items-center justify-between gap-4 relative">
-                  <button
-                    type="button"
-                    aria-label="Previous classes"
-                    onClick={() => carouselSwiperRef.current?.slidePrev()}
-                    className="hidden sm:grid w-10 h-10 place-items-center rounded-full bg-white/90 text-[#4B2E83] shadow border border-gray-200 hover:bg-white transition z-20 pointer-events-auto relative"
-                  >
-                    <FaChevronRight className="w-5 h-5" />
-                  </button>
-
-                  <div className="mx-auto w-full overflow-visible">
-                    <Swiper
-                      modules={[Navigation]}
-                      spaceBetween={24}
-                      slidesPerView={3}
-                      loop={visibleClasses.length > 3}
-                      loopAdditionalSlides={3}
-                      breakpoints={{
-                        0: { slidesPerView: 1, spaceBetween: 0 },
-                        640: { slidesPerView: 1, spaceBetween: 8 },
-                        768: { slidesPerView: 2, spaceBetween: 16 },
-                        1024: { slidesPerView: 3, spaceBetween: 24 },
-                        1280: { slidesPerView: 4, spaceBetween: 24 },
-                        1440: { slidesPerView: 4, spaceBetween: 24 },
-                      }}
-                      onSwiper={(swiper) => { carouselSwiperRef.current = swiper; }}
-                      className="relative z-10 rounded-lg overflow-hidden sm:overflow-visible pointer-events-auto"
-                    >
-                    {visibleClasses.map((classItem) => (
-                      <SwiperSlide key={classItem.id}>
+        {/* Inline Classes Carousel */}
+        <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-12" id="classes-carousel">
+          <style>{`
+            .swiper-button-next, .swiper-button-prev { color: #EC4899 !important; }
+            .swiper-pagination { display: none !important; }
+            /* Remove card shadow only inside the carousel to avoid gray cast */
+            #classes-carousel .shadow-xl { box-shadow: none !important; border: 1px solid #E5E7EB !important; }
+          `}</style>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative overflow-hidden">
+              <Swiper
+                modules={[Navigation]}
+                spaceBetween={20}
+                slidesPerView={1}
+                centeredSlides={true}
+                centeredSlidesBounds={true}
+                loop={classes.length > 2}
+                navigation
+                breakpoints={{
+                  640: { slidesPerView: 1, spaceBetween: 30 },
+                  768: { slidesPerView: 2, spaceBetween: 30 },
+                  1024: { slidesPerView: 3, spaceBetween: 30 },
+                }}
+                className="rounded-lg overflow-visible w-full mx-auto"
+              >
+                {classes.map((classItem) => (
+                  <SwiperSlide key={classItem.id}>
+                    {({ isActive }) => (
+                      <div
+                        className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 ${
+                          isActive ? 'scale-[1.04]' : 'scale-[0.95]'
+                        }`}
+                        style={{ transformOrigin: 'center center' }}
+                      >
                         <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
-                      </SwiperSlide>
-                    ))}
-                    </Swiper>
-                  </div>
-
-                  <button
-                    type="button"
-                    aria-label="Next classes"
-                    onClick={() => carouselSwiperRef.current?.slideNext()}
-                    className="hidden sm:grid w-10 h-10 place-items-center rounded-full bg-white/90 text-[#4B2E83] shadow border border-gray-200 hover:bg-white transition z-20 pointer-events-auto relative"
-                  >
-                    <FaChevronLeft className="w-5 h-5" />
-                  </button>
-                </div>
-              </section>
-            );
-          })()}
-        </div>
-
-        {/* Classes Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {classes.map((classItem) => (
-            <ClassCard key={classItem.id} classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
-          ))}
-        </div>
+                      </div>
+                    )}
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          </div>
+        </section>
 
 
       </div>

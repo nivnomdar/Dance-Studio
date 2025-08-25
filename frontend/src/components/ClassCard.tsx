@@ -16,12 +16,23 @@ const ClassCard: React.FC<ClassCardProps> = ({ classItem, usedTrialClassIds }) =
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-xl h-full lg:flex lg:flex-col relative transition-all duration-300 ${
+      className={`w-75 bg-white rounded-2xl shadow-xl h-full lg:flex lg:flex-col relative transition-all duration-300 ${
         hasUsedTrial ? 'lg:opacity-50 opacity-40 grayscale' : ''
       }`}
     >
+      {/* Trial ribbon (only for unused trials) */}
+      {isTrialClass && !hasUsedTrial && (
+        <div className="pointer-events-none absolute top-2 right-2 z-20 select-none">
+          <div className={`flex items-center gap-1.5 rounded-full px-3.5 py-1 shadow-md ring-1 ring-white/40 ${colorScheme.bgColor} text-white`}>
+            <svg className="w-3.5 h-3.5 opacity-90" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.017 3.134a1 1 0 00.95.69h3.297c.969 0 1.371 1.24.588 1.81l-2.667 1.94a1 1 0 00-.364 1.118l1.017 3.135c.3.92-.755 1.688-1.54 1.118l-2.667-1.94a1 1 0 00-1.176 0l-2.667 1.94c-.784.57-1.838-.198-1.54-1.118l1.017-3.135a1 1 0 00-.364-1.118L2.097 8.56c-.783-.57-.38-1.81.588-1.81h3.297a1 1 0 00.95-.69l1.017-3.134z"/>
+            </svg>
+            <span className="text-[12px] sm:text-sm font-agrandir-grand font-semibold tracking-[0.04em]">ניסיון</span>
+          </div>
+        </div>
+      )}
       {/* Desktop Image */}
-      <div className="relative h-32 sm:h-40 lg:h-48 hidden lg:block">
+      <div className="relative h-32 sm:h-40 lg:h-56 hidden lg:block">
         <img
           src={classItem.image_url || '/carousel/image1.png'}
           alt={classItem.name}

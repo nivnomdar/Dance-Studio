@@ -7,6 +7,11 @@ export const classesService = {
     return apiService.classes.getAll();
   },
 
+  // Get all active classes for current user (excludes used trials)
+  async getAllClassesForUser(): Promise<Class[]> {
+    return apiService.classes.getAllForUser();
+  },
+
   // Get class by ID
   async getClassById(id: string): Promise<Class | null> {
     return apiService.classes.getById(id);
