@@ -81,6 +81,7 @@ function ClassesPage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [usedTrialClassIds, setUsedTrialClassIds] = useState<Set<string>>(new Set());
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
   
   
   // Refs to prevent duplicate calls
@@ -190,6 +191,12 @@ function ClassesPage() {
       fetchClasses();
     }
   }, [fetchClasses]);
+
+  // Mobile swipe hint – auto-hide after 5s
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSwipeHint(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // When user becomes available, refetch per-user filtered classes once
   useEffect(() => {
@@ -433,9 +440,51 @@ function ClassesPage() {
             .swiper-pagination { display: none !important; }
             /* Remove card shadow only inside the carousel to avoid gray cast */
             #classes-carousel .shadow-xl { box-shadow: none !important; border: 1px solid #E5E7EB !important; }
+            /* Ensure arrows are visible and sized nicely on small screens */
+            @media (max-width: 767px) {
+              .swiper-button-next, .swiper-button-prev { display: block !important; }
+              .swiper-button-next:after, .swiper-button-prev:after { font-size: 18px !important; }
+            }
+            /* Symmetric arrow positioning around centered card on small screens */
+            @media (max-width: 639px) {
+              #classes-carousel { --card-w: 360px; }
+              #classes-carousel .swiper-button-prev, #classes-carousel .swiper-button-next {
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                right: auto !important;
+              }
+              /* Swap sides so visual left/right match arrows on mobile */
+              #classes-carousel .swiper-button-prev { left: calc(50% + var(--card-w) / 2 + 20px) !important; }
+              #classes-carousel .swiper-button-next { left: calc(50% - var(--card-w) / 2 - 20px) !important; }
+            }
+            @media (min-width: 640px) and (max-width: 1023px) {
+              #classes-carousel { --card-w: 420px; }
+              #classes-carousel .swiper-button-prev, #classes-carousel .swiper-button-next {
+                top: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                right: auto !important;
+              }
+              /* Swap sides so visual left/right match arrows on tablet */
+              #classes-carousel .swiper-button-prev { left: calc(50% + var(--card-w) / 2 + 20px) !important; }
+              #classes-carousel .swiper-button-next { left: calc(50% - var(--card-w) / 2 - 20px) !important; }
+            }
           `}</style>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="relative overflow-hidden">
+            <div className="relative overflow-hidden pb-15">
+              {showSwipeHint && (
+                <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center md:hidden pointer-events-none">
+                  <div className="backdrop-blur-sm bg-black/50 text-white text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
+                  <svg className="w-4 h-4 opacity-90 animate-pulse" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L13.586 11H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span className="font-agrandir-regular">החליקי שמאלה או ימינה כדי לראות עוד שיעורים</span>
+                  
+                    <svg className="w-4 h-4 opacity-90 transform -scale-x-100 animate-pulse" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L13.586 11H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              )}
               <Swiper
                 modules={[Navigation]}
                 spaceBetween={20}
@@ -445,8 +494,8 @@ function ClassesPage() {
                 loop={classes.length > 2}
                 navigation
                 breakpoints={{
-                  640: { slidesPerView: 1, spaceBetween: 30 },
-                  768: { slidesPerView: 2, spaceBetween: 30 },
+                  640: { slidesPerView: 1, spaceBetween: 20 },
+                  768: { slidesPerView: 1, spaceBetween: 24 },
                   1024: { slidesPerView: 3, spaceBetween: 30 },
                 }}
                 className="rounded-lg overflow-visible w-full mx-auto"
@@ -455,7 +504,7 @@ function ClassesPage() {
                   <SwiperSlide key={classItem.id}>
                     {({ isActive }) => (
                       <div
-                        className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 ${
+                        className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] lg:max-w-none px-4 ${
                           isActive ? 'scale-[1.04]' : 'scale-[0.95]'
                         }`}
                         style={{ transformOrigin: 'center center' }}
