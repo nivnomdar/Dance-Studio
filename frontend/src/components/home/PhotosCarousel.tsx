@@ -1,10 +1,15 @@
-import React from 'react';
+import { useMemo, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation, EffectCoverflow } from 'swiper/modules';
-import { Link } from 'react-router-dom';
+import { Pagination, Navigation } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 
 function PhotosCarousel() {
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+  const [isPaused, setIsPaused] = useState(false);
+
   return (
     <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-16 bg-black">
       <style>{`
@@ -39,6 +44,7 @@ function PhotosCarousel() {
           slidesPerView={1}
           centeredSlides={true}
           loop={true}
+          keyboard={{ enabled: true }}
           pagination={{ clickable: true }}
           navigation
           breakpoints={{
@@ -69,12 +75,15 @@ function PhotosCarousel() {
                 <video
                   src="/videos/NewHeroVideo.MP4"
                   className="w-full h-full object-cover rounded-lg"
-                  autoPlay
-                  loop
+                  autoPlay={!prefersReducedMotion && !isPaused}
+                  loop={!prefersReducedMotion && !isPaused}
                   muted
                   playsInline
-                  loading="lazy"
+                  aria-label="וידאו תדמיתי של הסטודיו"
                 />
+                <button type="button" onClick={() => setIsPaused(p => !p)} className="absolute bottom-2 left-2 px-2 py-1 text-xs rounded bg-black/50 text-white" aria-pressed={isPaused} aria-label={isPaused ? 'המשך ניגון' : 'השהה ניגון'}>
+                  {isPaused ? 'המשך' : 'השהה'}
+                </button>
               </div>
             )}
           </SwiperSlide>
@@ -89,12 +98,15 @@ function PhotosCarousel() {
                 <video
                   src="/videos/ClassesVideo.mp4"
                   className="w-full h-full object-cover rounded-lg"
-                  autoPlay
-                  loop
+                  autoPlay={!prefersReducedMotion && !isPaused}
+                  loop={!prefersReducedMotion && !isPaused}
                   muted
                   playsInline
-                  loading="lazy"
+                  aria-label="וידאו שיעורים בסטודיו"
                 />
+                <button type="button" onClick={() => setIsPaused(p => !p)} className="absolute bottom-2 left-2 px-2 py-1 text-xs rounded bg-black/50 text-white" aria-pressed={isPaused} aria-label={isPaused ? 'המשך ניגון' : 'השעה ניגון'}>
+                  {isPaused ? 'המשך' : 'השהה'}
+                </button>
               </div>
             )}
           </SwiperSlide>
@@ -109,12 +121,15 @@ function PhotosCarousel() {
                 <video
                   src="/videos/HeroVideo.MP4"
                   className="w-full h-full object-cover rounded-lg"
-                  autoPlay
-                  loop
+                  autoPlay={!prefersReducedMotion && !isPaused}
+                  loop={!prefersReducedMotion && !isPaused}
                   muted
                   playsInline
-                  loading="lazy"
+                  aria-label="וידאו רקע הסטודיו"
                 />
+                <button type="button" onClick={() => setIsPaused(p => !p)} className="absolute bottom-2 left-2 px-2 py-1 text-xs rounded bg-black/50 text-white" aria-pressed={isPaused} aria-label={isPaused ? 'המשך ניגון' : 'השהה ניגון'}>
+                  {isPaused ? 'המשך' : 'השהה'}
+                </button>
               </div>
             )}
           </SwiperSlide>
@@ -129,12 +144,15 @@ function PhotosCarousel() {
                 <video
                   src="/videos/Heronew.mp4"
                   className="w-full h-full object-cover rounded-lg"
-                  autoPlay
-                  loop
+                  autoPlay={!prefersReducedMotion && !isPaused}
+                  loop={!prefersReducedMotion && !isPaused}
                   muted
                   playsInline
-                  loading="lazy"
+                  aria-label="וידאו תדמית נוסף"
                 />
+                <button type="button" onClick={() => setIsPaused(p => !p)} className="absolute bottom-2 left-2 px-2 py-1 text-xs rounded bg-black/50 text-white" aria-pressed={isPaused} aria-label={isPaused ? 'המשך ניגון' : 'השהה ניגון'}>
+                  {isPaused ? 'המשך' : 'השהה'}
+                </button>
               </div>
             )}
           </SwiperSlide>

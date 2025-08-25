@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { handleAuthStateChange } from '../../lib/auth';
 import { usePopup } from '../../contexts/PopupContext';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,14 +17,14 @@ function Navbar() {
   const navigate = useNavigate();
   const { showPopup } = usePopup();
   const { cartCount, clearCart } = useCart();
-  const { user, profile, signOut, session } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { profile: localProfile } = useProfile();
 
   // שימוש בפרופיל מהטעינה המקומית קודם, אחרת מה-AuthContext
   const currentProfile = localProfile || profile;
 
   // אם יש משתמש, תמיד יש פרופיל (זמני או אמיתי)
-  const hasProfile = user && (currentProfile || user);
+  // const hasProfile = user && (currentProfile || user);
 
   // לוגים לדיבוג - הוסרו כי הכל עובד
 
@@ -117,18 +116,22 @@ function Navbar() {
                   }}
                   className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 profile-button"
                   title="פרופיל משתמש"
+                  aria-haspopup="menu"
+                  aria-expanded={isProfileMenuOpen}
+                  aria-controls="profile-menu-desktop"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" aria-hidden="true" />
                   </svg>
                 </button>
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
+                  <div id="profile-menu-desktop" role="menu" aria-label="תפריט פרופיל" className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
                     <div className="py-1">
                       <Link
                         to="/profile"
                         onClick={() => setIsProfileMenuOpen(false)}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        role="menuitem"
                       >
                         פרופיל משתמש
                       </Link>
@@ -138,6 +141,7 @@ function Navbar() {
                           to="/admin"
                           onClick={() => setIsProfileMenuOpen(false)}
                           className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                          role="menuitem"
                         >
                           דשבורד מנהלים
                         </Link>
@@ -145,6 +149,7 @@ function Navbar() {
                       <button
                         onClick={handleLogout}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        role="menuitem"
                       >
                         התנתק
                       </button>
@@ -157,10 +162,11 @@ function Navbar() {
                 onClick={handleLoginClick}
                 className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
                 title="התחבר"
+                aria-label="פתיחת חלונית התחברות"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <circle cx="12" cy="8" r="4" strokeWidth="1.5" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" aria-hidden="true" />
                 </svg>
               </button>
             )}
@@ -175,6 +181,9 @@ function Navbar() {
                 setIsProfileMenuOpen(false); // סגירת התפריט הפרופיל כשהתפריט הנייד נפתח
               }}
               className="inline-flex items-center justify-center p-2 rounded-md text-[#FDF9F6] hover:text-black hover:bg-[#EC4899] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#E6C17C] transition-colors duration-200"
+              aria-label={isMenuOpen ? 'סגירת תפריט' : 'פתיחת תפריט'}
+              aria-controls="mobile-menu"
+              aria-expanded={isMenuOpen}
             >
               <span className="sr-only">פתח תפריט</span>
               <svg
@@ -184,7 +193,7 @@ function Navbar() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" aria-hidden="true" />
               </svg>
               <svg
                 className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
@@ -193,7 +202,7 @@ function Navbar() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" aria-hidden="true" />
               </svg>
             </button>
             
@@ -207,18 +216,22 @@ function Navbar() {
                   }}
                   className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 profile-button"
                   title="פרופיל משתמש"
+                  aria-haspopup="menu"
+                  aria-expanded={isProfileMenuOpen}
+                  aria-controls="profile-menu-mobile"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor" aria-hidden="true" />
                   </svg>
                 </button>
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
+                  <div id="profile-menu-mobile" role="menu" aria-label="תפריט פרופיל" className="absolute right-0 top-full mt-1 w-48 rounded-md shadow-lg bg-[#EC4899] ring-1 ring-black ring-opacity-5 profile-menu z-[9999] border-2 border-white">
                     <div className="py-1">
                       <Link
                         to="/profile"
                         onClick={() => setIsProfileMenuOpen(false)}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        role="menuitem"
                       >
                         פרופיל משתמש
                       </Link>
@@ -228,6 +241,7 @@ function Navbar() {
                           to="/admin"
                           onClick={() => setIsProfileMenuOpen(false)}
                           className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                          role="menuitem"
                         >
                           דשבורד מנהלים
                         </Link>
@@ -235,6 +249,7 @@ function Navbar() {
                       <button
                         onClick={handleLogout}
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
+                        role="menuitem"
                       >
                         התנתק
                       </button>
@@ -247,10 +262,11 @@ function Navbar() {
                 onClick={handleLoginClick}
                 className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200"
                 title="התחבר"
+                aria-label="פתיחת חלונית התחברות"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <circle cx="12" cy="8" r="4" strokeWidth="1.5" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" aria-hidden="true" />
                 </svg>
               </button>
             )}
@@ -270,11 +286,11 @@ function Navbar() {
           {/* Desktop Layout - left side */}
           <div className="hidden md:flex items-center">
             {/* Shopping Cart Button - left side */}
-            <Link to="/cart" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 relative" title="סל קניות">
+            <Link to="/cart" className="text-[#FDF9F6] hover:text-black p-2 transition-colors duration-200 relative" title="סל קניות" aria-label={`סל קניות${cartCount > 0 ? `, ${cartCount} פריטים` : ''}`}>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                <circle cx="9" cy="12" r="1" />
-                <circle cx="15" cy="12" r="1" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" aria-hidden="true" />
+                <circle cx="9" cy="12" r="1" aria-hidden="true" />
+                <circle cx="15" cy="12" r="1" aria-hidden="true" />
               </svg>
               {/* Cart Items Counter */}
               {cartCount > 0 && (
@@ -308,12 +324,13 @@ function Navbar() {
       <SecondaryNavbar />
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-[#FFF5F9] shadow-lg`}>
+      <div id="mobile-menu" className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden bg-[#FFF5F9] shadow-lg`} role="menu" aria-label="תפריט ראשי">
         <div className="px-2 pt-1 pb-2 space-y-0.5 sm:px-3 sm:pt-2 sm:pb-3 sm:space-y-1">
           <Link
             to="/"
             className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
+            role="menuitem"
           >
             דף הבית
           </Link>
@@ -321,6 +338,7 @@ function Navbar() {
             to="/classes"
             className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
+            role="menuitem"
           >
             שיעורים
           </Link>
@@ -328,6 +346,7 @@ function Navbar() {
             to="/shop"
             className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
+            role="menuitem"
           >
             חנות
           </Link>
@@ -335,6 +354,7 @@ function Navbar() {
             to="/contact"
             className="block px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-sm sm:text-base font-medium text-[#EC4899] hover:text-black hover:bg-[#EC4899]/10 transition-colors duration-200 text-right"
             onClick={() => setIsMenuOpen(false)}
+            role="menuitem"
           >
             צור קשר
           </Link>

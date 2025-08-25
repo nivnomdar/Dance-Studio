@@ -136,7 +136,7 @@ function TrendingProducts() {
                   <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
                   <div className="mt-auto pt-3 flex items-center justify-between">
                     <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button type="button" aria-label={`צפי במוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" aria-label={`הצגת מוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer">
                       <span>צפי במוצר</span>
                       <svg className="w-4 h-4 transition" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />

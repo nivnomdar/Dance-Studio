@@ -56,7 +56,7 @@ function ContactPage() {
           <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
             <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="p-3 sm:p-4 rounded-md bg-red-50 text-red-700 text-sm sm:text-base">
+                <div className="p-3 sm:p-4 rounded-md bg-red-50 text-red-700 text-sm sm:text-base" role="alert" id="contact-form-error">
                   {error}
                 </div>
               )}
@@ -72,6 +72,7 @@ function ContactPage() {
                   value={form.name}
                   onChange={handleChange}
                   required
+                  aria-describedby={error ? 'contact-form-error' : undefined}
                 />
               </div>
               <div>
@@ -86,6 +87,7 @@ function ContactPage() {
                   value={form.email}
                   onChange={handleChange}
                   required
+                  aria-describedby={error ? 'contact-form-error' : undefined}
                 />
               </div>
               <div>
@@ -100,6 +102,7 @@ function ContactPage() {
                   value={form.phone}
                   onChange={handleChange}
                   required
+                  aria-describedby={error ? 'contact-form-error' : undefined}
                 />
               </div>
               <div>
@@ -113,6 +116,7 @@ function ContactPage() {
                   className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-md focus:ring-[#4B2E83] focus:border-[#4B2E83] text-sm"
                   value={form.subject}
                   onChange={handleChange}
+                  aria-describedby={error ? 'contact-form-error' : undefined}
                 />
               </div>
               <div>
@@ -127,6 +131,7 @@ function ContactPage() {
                   value={form.message}
                   onChange={handleChange}
                   required
+                  aria-describedby={error ? 'contact-form-error' : undefined}
                 ></textarea>
               </div>
               <button

@@ -14,6 +14,7 @@ import AuthCallback from './pages/AuthCallback';
 import ClassDetailPage from './components/ClassDetailPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import AccessibilityStatement from './pages/AccessibilityStatement';
 import ProductPage from './pages/ProductPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
@@ -47,6 +48,7 @@ function AppContent() {
           <Route path="/auth/v1/callback" element={<AuthCallback />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/accessibility-statement" element={<AccessibilityStatement />} />
         </Routes>
       </main>
       {!isAdminPath ? <Footer /> : <DeveloperCredit />}

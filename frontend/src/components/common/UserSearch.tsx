@@ -196,6 +196,8 @@ export default function UserSearch({
                 ? 'border-red-300 focus:ring-red-200 focus:border-red-500' 
                 : 'border-gray-200 hover:border-gray-300'
             } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            aria-label={placeholder}
+            aria-describedby={error ? 'user-search-error' : undefined}
           />
           
           {/* Search Icon */}
@@ -346,7 +348,7 @@ export default function UserSearch({
 
       {/* Enhanced Error Message */}
       {error && (
-        <div className="mt-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+        <div className="mt-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl" role="alert" id="user-search-error">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
               <FaTimes className="w-3 h-3 text-white" />

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 interface GoogleLoginModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ export const GoogleLogin = () => {
       setIsLoading(true)
       setError(null)
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/v1/callback`,
@@ -68,13 +68,15 @@ export const GoogleLogin = () => {
 export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true)
       setError(null)
       
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/v1/callback`,
@@ -97,15 +99,66 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
     }
   }
 
+  const getFocusableElements = useCallback((): HTMLElement[] => {
+    const container = dialogRef.current
+    if (!container) return []
+    const selectors = [
+      'a[href]', 'button:not([disabled])', 'textarea:not([disabled])', 'input:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    ]
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(','))).filter(el => !el.hasAttribute('disabled') && el.tabIndex !== -1 && el.offsetParent !== null)
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null
+    const focusables = getFocusableElements()
+    const target = focusables[0] || dialogRef.current
+    target?.focus()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+        return
+      }
+      if (e.key === 'Tab') {
+        const items = getFocusableElements()
+        if (items.length === 0) {
+          e.preventDefault()
+          return
+        }
+        const first = items[0]
+        const last = items[items.length - 1]
+        const active = document.activeElement as HTMLElement | null
+        if (e.shiftKey) {
+          if (active === first || !items.includes(active as HTMLElement)) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (active === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true)
+      previouslyFocusedRef.current?.focus?.()
+    }
+  }, [isOpen, onClose, getFocusableElements])
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-md w-full mx-auto overflow-hidden border border-white/20">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4" role="presentation" onClick={onClose}>
+      <div ref={dialogRef} className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-md w-full mx-auto overflow-hidden border border-white/20" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="google-login-title" aria-describedby="google-login-desc" tabIndex={-1}>
         {/* Header */}
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-4 sm:p-6 text-white text-center relative overflow-hidden">
           {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" aria-hidden="true"></div>
           
           {/* Logo */}
           <div className="relative z-10 mb-4 sm:mb-6">
@@ -118,8 +171,8 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
           
           {/* Welcome Text */}
           <div className="relative z-10">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 font-agrandir-grand">ברוכה הבאה</h2>
-            <p className="text-sm sm:text-base text-white/90">התחברי לסטודיו אביגיל</p>
+            <h2 id="google-login-title" className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 font-agrandir-grand">ברוכה הבאה</h2>
+            <p id="google-login-desc" className="text-sm sm:text-base text-white/90">התחברי לסטודיו אביגיל</p>
           </div>
         </div>
 
@@ -147,7 +200,7 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
 
           {/* Error Message */}
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="assertive" id="google-login-error">
               <p className="text-red-600 text-sm text-center">{error}</p>
             </div>
           )}
