@@ -25,8 +25,6 @@ const PhysicalAccessibility: React.FC = () => {
                   ועומד בדרישות תקן ישראלי 5568 וחוק שוויון זכויות לאנשים עם מוגבלות התשנ"ח-1998.
                 </p>
               </div>
-              
-              
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
@@ -56,19 +54,7 @@ const PhysicalAccessibility: React.FC = () => {
                     <li><strong>גישה לסטודיו:</strong> מדרגות בלבד - אין רמפה נגישה</li>
                     <li><strong>מעלית:</strong> לא קיימת מעלית בבניין</li>
                     <li><strong>שירותים:</strong> שירותים רגילים בקומה העליונה</li>
-                    <li><strong>חניה:</strong> חניה רגילה+ חניית נכים נגישה אחת</li>
-                  </ul>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                  <h3 className="text-xl font-semibold text-[#4B2E83] mb-3">התאמות אלטרנטיביות:</h3>
-                  <p className="text-[#2B2E83] mb-3">
-                    למרות המגבלות הפיזיות, אנו מציעים פתרונות אלטרנטיביים:
-                  </p>
-                  <ul className="list-disc list-inside text-[#2B2E83] space-y-1 mr-4">
-                    <li><strong>שיעורים מקוונים:</strong> שיעורי ריקוד מקוונים עם מדריכים מקצועיים</li>
-                    <li><strong>סדנאות מיוחדות:</strong> סדנאות במקומות נגישים לפי תיאום מראש</li>
-                    <li><strong>תמיכה טכנית:</strong> תמיכה טכנית בשיעורים מקוונים</li>
+                    <li><strong>חניה:</strong> חניה רגילה + חניית נכים נגישה אחת</li>
                   </ul>
                 </div>
               </section>
@@ -97,9 +83,8 @@ const PhysicalAccessibility: React.FC = () => {
                     <li><strong>תשלומים מקוונים:</strong> תשלומים מאובטחים דרך האתר</li>
                     <li><strong>צ'אט תמיכה:</strong> תמיכה מקוונת נגישה</li>
                     <li><strong>אימייל נגיש:</strong> תכתובת נגישה</li>
-                    <li><strong>חנות נגישה: </strong>חנות מקוונת נגישה</li>
-
-</ul>
+                    <li><strong>חנות נגישה:</strong> חנות מקוונת נגישה</li>
+                  </ul>
                 </div>
               </section>
 
@@ -108,7 +93,6 @@ const PhysicalAccessibility: React.FC = () => {
                   יצירת קשר לנגישות
                 </h2>
               
-
                 <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
                   <h3 className="font-bold text-[#4B2E83] mb-2">טופס פנייה לנגישות באתר</h3>
                   <p className="text-[#2B2E83] text-sm mb-2">
@@ -120,7 +104,6 @@ const PhysicalAccessibility: React.FC = () => {
                 </div>
               </section>
 
-             
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-gray-600 text-sm text-center">
                   דף זה מתעדכן מעת לעת בהתאם לשיפורים בנגישות הסטודיו. 

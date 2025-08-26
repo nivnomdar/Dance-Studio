@@ -276,10 +276,7 @@ const Footer: React.FC = () => {
                   הצהרת נגישות
                 </Link>
                 <span className="text-gray-500 text-xs">•</span>
-                <Link
-                  to="/physical-accessibility"
-                  className="text-gray-600 hover:text-[#4B2E83] transition-colors duration-200"
-                >
+                <Link to="/physical-accessibility" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
                   נגישות פיזית
                 </Link>
             </div>

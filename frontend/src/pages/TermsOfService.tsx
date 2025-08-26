@@ -395,49 +395,15 @@ const TermsOfService: React.FC = () => {
                   <p className="text-gray-700 leading-relaxed mb-4">
                     לשאלות או הבהרות בנוגע לתנאי השימוש, ניתן ליצור קשר:
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-bold text-[#4B2E83] mb-2">פניות כלליות:</h3>
-                      <p className="text-gray-700">
-                        <strong>דוא"ל:</strong> info@ladances.com<br />
-                        <strong>טלפון:</strong> 03-1234567
-                      </p>
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-bold text-[#4B2E83] mb-2">פניות משפטיות</h3>
-                      <p className="text-gray-700 text-sm mb-2">
-                        <strong>דוא"ל:</strong> legal@ladances.com<br />
-                        <strong>טלפון:</strong> 03-1234567<br />
-                        <strong>שעות פעילות:</strong> ימים א'-ה' 9:00-18:00
-                      </p>
-                    </div>
-                  </div>
+                  
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-bold text-[#4B2E83] mb-2">פניות נגישות</h3>
+                    <h3 className="font-bold text-[#4B2E83] mb-2">טופס פנייה לנגישות באתר</h3>
                     <p className="text-gray-700 text-sm mb-2">
-                      <strong>דוא"ל:</strong> accessibility@ladances.com<br />
-                      <strong>טלפון:</strong> 03-1234567<br />
-                      <strong>שעות פעילות:</strong> ימים א'-ה' 9:00-18:00
+                      ניתן למלא טופס פנייה לנגישות ישירות באתר תחת "צור קשר" ← ולכתוב בנושא: "פנייה על התנאים"
                     </p>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <h3 className="font-bold text-[#4B2E83] mb-2">פניות נגישות:</h3>
-                    <p className="text-gray-700">
-                      <strong>דוא"ל:</strong> accessibility@ladances.com<br />
-                      <strong>זמן תגובה:</strong> עד 48 שעות
+                    <p className="text-gray-700 text-sm">
+                      הטופס כולל שדות נגישים עם תיאורים מפורטים ותמיכה מלאה במקלדת
                     </p>
-                    <div className="mt-2">
-                      <Link 
-                        to="/accessibility-statement" 
-                        className="inline-flex items-center gap-2 text-[#4B2E83] hover:text-[#EC4899] font-medium underline decoration-2 underline-offset-2 transition-all duration-200"
-                        aria-label="פירוט מלא על נגישות האתר"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        לפרטים מלאים על נגישות האתר
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </section>
