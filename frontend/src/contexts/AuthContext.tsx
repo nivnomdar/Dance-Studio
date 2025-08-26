@@ -13,6 +13,12 @@ import {
   createSafeSession,
   handleAuthError
 } from '../utils/authUtils';
+import { 
+  setDataWithTimestamp, 
+  getDataWithTimestamp, 
+  hasCookie, 
+  clearAllCookies 
+} from '../utils/cookieManager';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -49,14 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Check if we're already creating a profile to prevent race condition
       const creatingKey = `creating_profile_${safeUser.id}`;
-      if (sessionStorage.getItem(creatingKey)) {
+      if (hasCookie(creatingKey)) {
         // Another process is creating the profile, wait a bit and retry
         await new Promise(resolve => setTimeout(resolve, 500));
         return await createProfileForUser(safeUser);
       }
 
       // Set flag to prevent other processes from creating profile
-      sessionStorage.setItem(creatingKey, 'true');
+      setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
 
       const avatarUrl = safeUser.user_metadata?.avatar_url || '';
       const profileData = {
@@ -91,8 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Cache the new profile immediately
       if (newProfile) {
         const cacheKey = `profile_${safeUser.id}`;
-        const profileWithCache = { ...newProfile, _cacheTime: Date.now() };
-        sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+        setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000); // 5 דקות
       }
 
       return newProfile;
@@ -102,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Always remove the flag
       const creatingKey = `creating_profile_${safeUser.id}`;
-      sessionStorage.removeItem(creatingKey);
+      clearAllCookies(); // זה ימחק את כל ה-cookies כולל הדגל
     }
   }, []);
 
@@ -119,19 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Check cache first
       const cacheKey = `profile_${userId}`;
-      const cachedProfile = sessionStorage.getItem(cacheKey);
+      const cachedProfile = getDataWithTimestamp<UserProfile>(cacheKey, 5 * 60 * 1000);
       if (cachedProfile) {
-        try {
-          const parsedProfile = JSON.parse(cachedProfile);
-          const cacheTime = parsedProfile._cacheTime || 0;
-          const now = Date.now();
-          // Cache for 5 minutes
-          if (now - cacheTime < 5 * 60 * 1000) {
-            return parsedProfile;
-          }
-        } catch (e) {
-          // Invalid cache, continue to fetch
-        }
+        return cachedProfile;
       }
 
       const { data: profileData, error } = await supabase
@@ -152,8 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const newProfile = await createProfileForUserRef.current(currentUser);
           if (newProfile) {
             // Cache the new profile
-            const profileWithCache = { ...newProfile, _cacheTime: Date.now() };
-            sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+            setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000);
           }
           return newProfile;
         }
@@ -161,8 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Cache the profile
-      const profileWithCache = { ...profileData, _cacheTime: Date.now() };
-      sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+      setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
 
       return profileData;
     } catch (error) {
@@ -259,8 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profileData);
           // Cache the profile
           const cacheKey = `profile_${safeUser.id}`;
-          const profileWithCache = { ...profileData, _cacheTime: Date.now() };
-          sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+          setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
         }
 
         // Update last login time
@@ -330,7 +322,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem(key);
           }
         });
-        sessionStorage.clear();
+        clearAllCookies();
       } catch (e) {
         console.error('Could not clear storage:', e);
       }

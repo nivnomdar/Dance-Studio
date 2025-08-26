@@ -3,6 +3,11 @@ import { Product } from '../types/product';
 import { CartItem, CartContextType, CartProviderProps } from '../types/cart';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { 
+  setDataWithTimestamp, 
+  getDataWithTimestamp, 
+  hasCookie 
+} from '../utils/cookieManager';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -29,20 +34,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         const userCart = user.user_metadata?.cart;
         if (userCart) {
           try {
-            setCartItems(JSON.parse(userCart));
+            const parsedCart = JSON.parse(userCart);
+            if (Array.isArray(parsedCart)) {
+              setCartItems(parsedCart);
+            } else {
+              console.warn('User cart is not an array, resetting to empty array');
+              setCartItems([]);
+            }
           } catch (error) {
             console.error('Error loading cart from user metadata:', error);
+            setCartItems([]);
           }
+        } else {
+          setCartItems([]);
         }
       } else {
-        // אם אין משתמש, נסה לטעון מ-session storage (זמני)
-        const sessionCart = sessionStorage.getItem('temp_cart');
-        if (sessionCart) {
-          try {
-            setCartItems(JSON.parse(sessionCart));
-          } catch (error) {
-            console.error('Error loading cart from session storage:', error);
-          }
+        // אם אין משתמש, נסה לטעון מ-cookies (זמני)
+        const sessionCart = getDataWithTimestamp<CartItem[]>('temp_cart', 24 * 60 * 60 * 1000); // 24 שעות
+        if (sessionCart && Array.isArray(sessionCart)) {
+          setCartItems(sessionCart);
+        } else {
+          setCartItems([]);
         }
       }
     };
@@ -54,8 +66,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   useEffect(() => {
     const saveCart = async () => {
       if (!user) {
-        // שמירה זמנית ב-session storage
-        sessionStorage.setItem('temp_cart', JSON.stringify(cartItems));
+        // שמירה זמנית ב-cookies
+        setDataWithTimestamp('temp_cart', cartItems, 24 * 60 * 60 * 1000); // 24 שעות
         return;
       }
 
@@ -113,8 +125,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const clearCart = useCallback(() => {
     setCartItems([]);
-    // ניקוי מה-session storage
-    sessionStorage.removeItem('temp_cart');
+    // ניקוי מה-cookies
+    // Note: Cookies will be cleared automatically when expired
     
     // Clear any pending save operations
     if (saveTimeoutRef.current) {
@@ -130,30 +142,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         // ניקוי הסל בזמן התנתקות
         clearCart();
       } else if (event === 'SIGNED_IN' && session?.user) {
-        // העברת סל מ-session storage ל-user metadata
-        const sessionCart = sessionStorage.getItem('temp_cart');
+        // העברת סל מ-cookies ל-user metadata
+        const sessionCart = getDataWithTimestamp<CartItem[]>('temp_cart', 24 * 60 * 60 * 1000);
         if (sessionCart) {
-          try {
-            const cartData = JSON.parse(sessionCart);
-            setCartItems(cartData);
-            
-            // שמירה ב-user metadata עם delay למניעת rate limiting
-            setTimeout(async () => {
-              try {
-                await supabase.auth.updateUser({
-                  data: { cart: sessionCart }
-                });
-                // ניקוי מ-session storage רק אחרי שמירה מוצלחת
-                sessionStorage.removeItem('temp_cart');
-              } catch (error) {
-                console.error('Error saving cart after sign in:', error);
-                // Keep in session storage if save fails
-              }
-            }, 10000); // Wait 10 seconds before saving
-            
-          } catch (error) {
-            console.error('Error transferring cart from session to user metadata:', error);
-          }
+          setCartItems(sessionCart);
+          
+          // שמירה ב-user metadata עם delay למניעת rate limiting
+          setTimeout(async () => {
+            try {
+              await supabase.auth.updateUser({
+                data: { cart: JSON.stringify(sessionCart) }
+              });
+              // Note: Cookies will be cleared automatically when expired
+            } catch (error) {
+              console.error('Error saving cart after sign in:', error);
+              // Keep in cookies if save fails
+            }
+          }, 10000); // Wait 10 seconds before saving
         }
       }
     });
@@ -161,11 +166,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe();
   }, [clearCart]);
 
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const cartCount = Array.isArray(cartItems) ? cartItems.reduce((total, item) => total + item.quantity, 0) : 0;
 
   const addToCart = (product: Product, quantity: number, size?: string, color?: string) => {
     setCartItems(prev => {
-      const existingItem = prev.find(item => 
+      const currentItems = Array.isArray(prev) ? prev : [];
+      const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.size === size && 
         item.color === color
@@ -173,7 +179,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
       if (existingItem) {
         // Update existing item quantity
-        return prev.map(item =>
+        return currentItems.map(item =>
           item.product.id === product.id && 
           item.size === size && 
           item.color === color
@@ -182,13 +188,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         );
       } else {
         // Add new item
-        return [...prev, { product, quantity, size, color }];
+        return [...currentItems, { product, quantity, size, color }];
       }
     });
   };
 
   const removeFromCart = (productId: number) => {
-    setCartItems(prev => prev.filter(item => item.product.id !== productId));
+    setCartItems(prev => {
+      const currentItems = Array.isArray(prev) ? prev : [];
+      return currentItems.filter(item => item.product.id !== productId);
+    });
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
@@ -197,17 +206,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       return;
     }
 
-    setCartItems(prev =>
-      prev.map(item =>
+    setCartItems(prev => {
+      const currentItems = Array.isArray(prev) ? prev : [];
+      return currentItems.map(item =>
         item.product.id === productId
           ? { ...item, quantity }
           : item
-      )
-    );
+      );
+    });
   };
 
   const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return Array.isArray(cartItems) ? cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0) : 0;
   };
 
   const value: CartContextType = {

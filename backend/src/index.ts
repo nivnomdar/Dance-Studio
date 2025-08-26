@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
 import { config } from './config';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
@@ -64,6 +66,22 @@ app.use(cors({
 app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Cookie and Session middleware
+app.use(cookieParser());
+app.use(session({
+  name: 'ladances-session',
+  secret: process.env.SESSION_SECRET || 'ladances-dance-studio-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000, // 24 שעות
+    path: '/'
+  }
+}));
 
 // Rate limiting
 app.use(rateLimit({

@@ -9,6 +9,11 @@ import { registrationsService } from '../lib/registrations';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 import { LoadingPage, ErrorPage, StatusModal } from '../components/common';
 import { CreditGroup } from '../types/subscription';
+import { 
+  setDataWithTimestamp, 
+  getDataWithTimestamp, 
+  hasCookie 
+} from '../utils/cookieManager';
 
 function UserProfile() {
   const { user, loading: authLoading, session, profile: contextProfile } = useAuth();
@@ -42,7 +47,7 @@ function UserProfile() {
     try {
       // Check if we're already creating a profile to prevent race condition
       const creatingKey = `creating_profile_${user.id}`;
-      if (sessionStorage.getItem(creatingKey)) {
+      if (hasCookie(creatingKey)) {
         // Another process is creating the profile, wait a bit and retry
         setTimeout(() => {
           loadProfileData();
@@ -73,7 +78,7 @@ function UserProfile() {
         const lastName = nameParts.slice(1).join(' ') || '';
 
         // Set flag to prevent other processes from creating profile
-        sessionStorage.setItem(creatingKey, 'true');
+        setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
 
         // First, try to create the profile using upsert
         try {
@@ -135,7 +140,7 @@ function UserProfile() {
           }
         } catch (error) {
           // If upsert fails, try to load existing profile
-          sessionStorage.removeItem(creatingKey);
+          // Note: Cookie will be cleared automatically when expired
           
           // Final attempt to load existing profile
           try {
@@ -180,7 +185,7 @@ function UserProfile() {
           }
         } finally {
           // Always remove the flag
-          sessionStorage.removeItem(creatingKey);
+          // Note: Cookie will be cleared automatically when expired
         }
       } else {
         const profileData = profileDataArray[0];
@@ -307,20 +312,15 @@ function UserProfile() {
     
     // Add cache check to prevent unnecessary requests
     const cacheKey = `classesCount_${user.id}`;
-    const cachedData = sessionStorage.getItem(cacheKey);
-    const cacheTime = sessionStorage.getItem(`${cacheKey}_time`);
+    const cachedData = getDataWithTimestamp<number>(cacheKey, 5 * 60 * 1000); // 5 דקות
     
-    // Check if we have recent cached data (less than 5 minutes old)
-    if (cachedData && cacheTime) {
-      const now = Date.now();
-      const cacheAge = now - parseInt(cacheTime);
-      if (cacheAge < 5 * 60 * 1000) { // 5 minutes
-        // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          setClassesCount(parseInt(cachedData));
-        }, 0);
-        return;
-      }
+    // Check if we have recent cached data
+    if (cachedData !== null) {
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        setClassesCount(cachedData);
+      }, 0);
+      return;
     }
     
     // Use setTimeout to avoid setState during render
@@ -350,8 +350,7 @@ function UserProfile() {
         }, 0);
         
         // Cache the result
-        sessionStorage.setItem(cacheKey, count.toString());
-        sessionStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+        setDataWithTimestamp(cacheKey, count, 5 * 60 * 1000); // 5 דקות
         
       } catch (error) {
         console.error('Error fetching classes count:', error);

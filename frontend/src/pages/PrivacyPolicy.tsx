@@ -84,7 +84,47 @@ const PrivacyPolicy: React.FC = () => {
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
-                  5. אבטחת מידע
+                  5. Cookies וטכנולוגיות דומות
+                </h2>
+                <p className="text-gray-700 leading-relaxed mb-4">
+                  אנו משתמשים בטכנולוגיות אחסון שונות כדי לשפר את חוויית המשתמש באתר שלנו:
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-[#4B2E83] mb-2">Cookies חיוניים:</h3>
+                    <ul className="list-disc list-inside text-gray-700 space-y-1 mr-4">
+                      <li>Cookies לאימות משתמשים (HttpOnly, Secure)</li>
+                      <li>Cookies לניהול session מאובטח</li>
+                      <li>Cookies לפעולת האתר הבסיסית</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-[#4B2E83] mb-2">Cookies לשיפור ביצועים:</h3>
+                    <ul className="list-disc list-inside text-gray-700 space-y-1 mr-4">
+                      <li>Cache של נתונים לשיפור מהירות</li>
+                      <li>שמירת העדפות משתמש</li>
+                      <li>ניהול סל קניות זמני</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-[#4B2E83] mb-2">localStorage (Supabase Auth):</h3>
+                    <ul className="list-disc list-inside text-gray-700 space-y-1 mr-4">
+                      <li>Tokens לאימות משתמשים (לא סיסמאות גלויות)</li>
+                      <li>נדרש לצורך אבטחת התחברות OAuth2 (PKCE)</li>
+                      <li>נמחק אוטומטית ביציאה מהאתר</li>
+                      <li>מוגן עם HTTPS ו-expiration מוגבל</li>
+                    </ul>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    כל הטכנולוגיות שלנו מוגדרות עם אפשרויות אבטחה מתקדמות: HttpOnly, Secure (HTTPS), 
+                    SameSite=Strict למניעת CSRF, ותוקף מוגבל. אתם יכולים לשלוט ב-Cookies דרך הגדרות הדפדפן.
+                  </p>
+                </div>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
+                  6. אבטחת מידע
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
                   אנו נוקטים באמצעי אבטחה מתקדמים להגנה על המידע שלכם:
@@ -94,12 +134,14 @@ const PrivacyPolicy: React.FC = () => {
                   <li>גיבוי מאובטח</li>
                   <li>גישה מוגבלת למידע</li>
                   <li>ניטור מתמיד</li>
+                  <li>Cookies מאובטחים עם HttpOnly ו-Secure</li>
+                  <li>מניעת CSRF עם SameSite=Strict</li>
                 </ul>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
-                  6. זכויותיכם
+                  7. זכויותיכם
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
                   בהתאם לחוק הגנת הפרטיות, יש לכם הזכות:
@@ -110,22 +152,32 @@ const PrivacyPolicy: React.FC = () => {
                   <li>למחוק מידע (בכפוף למגבלות חוקיות)</li>
                   <li>להתנגד לשימוש במידע למטרות שיווק</li>
                   <li>לבקש העתק של המידע שלכם</li>
+                  <li>למחוק מידע אישי כולל cookies ו-localStorage לפי בקשה</li>
                 </ul>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
-                  7. Cookies
+                  8. מחיקת מידע אישי
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
-                  אנו משתמשים ב-Cookies לשיפור חוויית השימוש באתר. ניתן להשבית Cookies בהגדרות הדפדפן,
-                  אך הדבר עלול להשפיע על פונקציונליות האתר.
+                  אתם יכולים למחוק מידע אישי שלכם במספר דרכים:
+                </p>
+                <ul className="list-disc list-inside text-gray-700 space-y-2 mr-4">
+                  <li><strong>התנתקות מהאתר:</strong> כל ה-tokens והמידע ב-localStorage נמחקים אוטומטית</li>
+                  <li><strong>מחיקת Cookies:</strong> דרך הגדרות הדפדפן → Privacy & Security → Cookies</li>
+                  <li><strong>מחיקת localStorage:</strong> דרך Developer Tools → Application → Storage</li>
+                  <li><strong>בקשה ישירה:</strong> פנייה אלינו במייל privacy@ladances.com</li>
+                </ul>
+                <p className="text-gray-700 leading-relaxed mt-4">
+                  <strong>הערה:</strong> מידע חיוני לפעולת האתר (כמו tokens לאימות) יישמר עד להתנתקות, 
+                  כנדרש לצורך אבטחה ופעולת האתר.
                 </p>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
-                  8. שינויים במדיניות
+                  9. שינויים במדיניות
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
                   אנו עשויים לעדכן מדיניות זו מעת לעת.
@@ -134,14 +186,14 @@ const PrivacyPolicy: React.FC = () => {
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold text-[#4B2E83] mb-4 font-agrandir-text-bold">
-                  9. יצירת קשר
+                  10. יצירת קשר
                 </h2>
                 <p className="text-gray-700 leading-relaxed mb-4">
                   לשאלות או בקשות בנוגע למדיניות פרטיות זו, ניתן ליצור קשר:
                 </p>
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-gray-700">
-                    <strong>דוא"ל:</strong> privacy@ladance.co.il<br />
+                    <strong>דוא"ל:</strong> privacy@ladances.com<br />
                   </p>
                 </div>
               </section>

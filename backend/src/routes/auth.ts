@@ -3,6 +3,12 @@ import { supabase } from '../database';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { config } from '../config';
+import { 
+  setAuthCookie, 
+  setSessionCookie, 
+  clearCookie, 
+  clearAllCookies 
+} from '../utils/cookieManager';
 
 const router = Router();
 
@@ -13,6 +19,12 @@ router.get('/session', async (req: Request, res: Response, next: NextFunction) =
     
     if (error) {
       throw new AppError('Failed to get session', 500);
+    }
+    
+    if (session) {
+      // Set secure session cookies
+      setSessionCookie(res, 'ladances-session-id', session.access_token, 24 * 60 * 60); // 24 שעות
+      setAuthCookie(res, 'ladances-user-id', session.user.id, 7 * 24 * 60 * 60); // שבוע
     }
     
     res.json(session);
@@ -53,9 +65,8 @@ router.post('/signout', async (req: Request, res: Response, next: NextFunction) 
       throw new AppError('Failed to sign out', 500);
     }
 
-    // Clear session cookies
-    res.clearCookie('sb-access-token');
-    res.clearCookie('sb-refresh-token');
+    // Clear all application cookies
+    clearAllCookies(res);
     
     res.json({ message: 'Signed out successfully' });
   } catch (error) {

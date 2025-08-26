@@ -69,8 +69,8 @@ function Navbar() {
       // התנתקות מהמערכת
       await signOut();
 
-      // ניקוי session storage
-      sessionStorage.clear();
+      // ניקוי cookies
+      // Note: Cookies will be cleared automatically when expired
 
       // הצגת modal התנתקות מוצלחת
       setShowLogoutSuccess(true);

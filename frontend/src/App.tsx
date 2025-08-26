@@ -21,6 +21,7 @@ import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import AdminDashboard from './admin/pages/dashboard/AdminDashboard';
 import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper';
+import CookieConsentBanner from './components/layout/CookieConsentBanner';
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
 
 function AppContent() {
@@ -52,6 +53,7 @@ function AppContent() {
         </Routes>
       </main>
       {!isAdminPath ? <Footer /> : <DeveloperCredit />}
+      <CookieConsentBanner />
     </div>
   );
 }

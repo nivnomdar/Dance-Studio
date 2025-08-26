@@ -13,8 +13,13 @@ import ClassCard from '../components/ClassCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
+import { 
+  setDataWithTimestamp, 
+  getDataWithTimestamp, 
+  hasCookie 
+} from '../utils/cookieManager';
 
-// Cache key for sessionStorage
+// Cache key for cookies
 const CLASSES_CACHE_KEY = 'classes_cache';
 const CLASSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -94,14 +99,11 @@ function ClassesPage() {
   // Helper function to get cached classes
   const getCachedClasses = (): Class[] | null => {
     try {
-      const cached = sessionStorage.getItem(CLASSES_CACHE_KEY);
+      const cached = getDataWithTimestamp<{ data: Class[]; timestamp: number }>(CLASSES_CACHE_KEY, CLASSES_CACHE_DURATION);
       if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CLASSES_CACHE_DURATION) {
-          // Filter cached data to show only active classes
-          const activeCachedClasses = data.filter((cls: Class) => cls.is_active === true);
-          return activeCachedClasses;
-        }
+        // Filter cached data to show only active classes
+        const activeCachedClasses = cached.data.filter((cls: Class) => cls.is_active === true);
+        return activeCachedClasses;
       }
     } catch (error) {
       // Ignore cache errors
@@ -112,10 +114,10 @@ function ClassesPage() {
   // Helper function to cache classes
   const cacheClasses = (data: Class[]) => {
     try {
-      sessionStorage.setItem(CLASSES_CACHE_KEY, JSON.stringify({
+      setDataWithTimestamp(CLASSES_CACHE_KEY, {
         data,
         timestamp: Date.now()
-      }));
+      }, CLASSES_CACHE_DURATION);
     } catch (error) {
       // Ignore cache errors
     }
@@ -350,7 +352,7 @@ function ClassesPage() {
   const handleRefresh = () => {
     // Clear cache and force refresh
     try {
-      sessionStorage.removeItem(CLASSES_CACHE_KEY);
+      // Note: Cookies will be cleared automatically when expired
     } catch (error) {
       // Ignore cache errors
     }

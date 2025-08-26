@@ -1,6 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
+import { 
+  setDataWithTimestamp, 
+  getDataWithTimestamp, 
+  hasCookie 
+} from '../utils/cookieManager';
 
 interface UseProfileReturn {
   profile: UserProfile | null;
@@ -23,7 +28,7 @@ export function useProfile(): UseProfileReturn {
     try {
       // Check if we're already creating a profile to prevent race condition
       const creatingKey = `creating_profile_${user.id}`;
-      if (sessionStorage.getItem(creatingKey)) {
+      if (hasCookie(creatingKey)) {
         // Another process is creating the profile, wait a bit and retry
         setTimeout(() => {
           loadProfileWithFetch();
@@ -50,8 +55,7 @@ export function useProfile(): UseProfileReturn {
         const profileData = profileDataArray[0];
         // Cache the profile
         const cacheKey = `profile_${user.id}`;
-        const profileWithCache = { ...profileData, _cacheTime: Date.now() };
-        sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+        setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
         
         setLocalProfile(profileData);
         setProfileError(null);
@@ -74,7 +78,7 @@ export function useProfile(): UseProfileReturn {
     try {
       // Set flag to prevent other processes from creating profile
       const creatingKey = `creating_profile_${user.id}`;
-      sessionStorage.setItem(creatingKey, 'true');
+      setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000);
 
       // Extract name from user metadata
       const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
@@ -113,8 +117,7 @@ export function useProfile(): UseProfileReturn {
         if (response.ok) {
           // Profile created/updated successfully, cache it immediately
           const cacheKey = `profile_${user.id}`;
-          const profileWithCache = { ...newProfile, _cacheTime: Date.now() };
-          sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+          setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000);
           
           setLocalProfile(newProfile as UserProfile);
           setProfileError(null);
@@ -124,7 +127,7 @@ export function useProfile(): UseProfileReturn {
         }
       } catch (error) {
         // If upsert fails, try to load existing profile
-        sessionStorage.removeItem(creatingKey);
+        // Note: Cookie will be cleared by the finally block
         
         // Final attempt to load existing profile
         try {
@@ -142,8 +145,7 @@ export function useProfile(): UseProfileReturn {
               const profileData = profileDataArray[0];
               // Cache the profile
               const cacheKey = `profile_${user.id}`;
-              const profileWithCache = { ...profileData, _cacheTime: Date.now() };
-              sessionStorage.setItem(cacheKey, JSON.stringify(profileWithCache));
+              setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
               
               setLocalProfile(profileData);
               setProfileError(null);
@@ -159,7 +161,7 @@ export function useProfile(): UseProfileReturn {
         }
       } finally {
         // Always remove the flag
-        sessionStorage.removeItem(creatingKey);
+        // Note: Cookie will be cleared automatically when expired
       }
     } catch (error) {
       console.error('Error in createProfile:', error);

@@ -85,7 +85,7 @@ export function exampleFrontendIntegration() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('ladances-auth-token') || ''}`
         },
         body: JSON.stringify(formData)
       });
