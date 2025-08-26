@@ -34,6 +34,106 @@ input[type="date"] {
   position: relative;
 }
 
+/* עיצוב אחיד לצ'קבוקסים */
+input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 4px !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #4B2E83 !important;
+  border-color: #4B2E83 !important;
+}
+
+input[type="checkbox"]:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 2px !important;
+  top: 1px !important;
+  width: 6px !important;
+  height: 8px !important;
+  border: solid white !important;
+  border-width: 0 2px 2px 0 !important;
+  transform: rotate(45deg) !important;
+}
+
+input[type="checkbox"]:focus {
+  outline: none !important;
+  border-color: #4B2E83 !important;
+  box-shadow: 0 0 0 2px rgba(75, 46, 131, 0.2) !important;
+}
+
+input[type="checkbox"]:hover {
+  border-color: #9ca3af !important;
+}
+
+input[type="checkbox"]:checked:hover {
+  border-color: #3730a3 !important;
+  background-color: #3730a3 !important;
+}
+
+/* עיצוב ספציפי לצ'קבוקסים ב-GoogleLogin */
+.google-login-checkbox {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 4px !important;
+  background-color: white !important;
+  cursor: pointer !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.google-login-checkbox:checked {
+  background-color: #4B2E83 !important;
+  border-color: #4B2E83 !important;
+}
+
+.google-login-checkbox:checked::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 2px !important;
+  top: 1px !important;
+  width: 6px !important;
+  height: 8px !important;
+  border: solid white !important;
+  border-width: 0 2px 2px 0 !important;
+  transform: rotate(45deg) !important;
+}
+
+.google-login-checkbox:focus {
+  outline: none !important;
+  border-color: #4B2E83 !important;
+  box-shadow: 0 0 0 2px rgba(75, 46, 131, 0.2) !important;
+}
+
+.google-login-checkbox:hover {
+  border-color: #9ca3af !important;
+}
+
+.google-login-checkbox:checked:hover {
+  border-color: #3730a3 !important;
+  background-color: #3730a3 !important;
+}
+
 input[type="date"]::-webkit-datetime-edit {
   padding: 0;
 }

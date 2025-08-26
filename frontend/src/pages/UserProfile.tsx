@@ -99,8 +99,8 @@ function UserProfile() {
               avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
               created_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: true,
-              marketing_consent: true,
+              terms_accepted: false, // User must explicitly accept terms
+              marketing_consent: false, // User must explicitly consent to marketing
               last_login_at: new Date().toISOString(),
               language: 'he'
             })
@@ -116,8 +116,8 @@ function UserProfile() {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: true,
-              marketing_consent: true,
+              terms_accepted: false, // User must explicitly accept terms
+              marketing_consent: false, // User must explicitly consent to marketing
               last_login_at: new Date().toISOString(),
               language: 'he'
             };
@@ -235,8 +235,8 @@ function UserProfile() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_active: true,
-      terms_accepted: true,
-      marketing_consent: true,
+      terms_accepted: false, // User must explicitly accept terms
+      marketing_consent: false, // User must explicitly consent to marketing
       last_login_at: new Date().toISOString(),
       language: 'he',
       phone_number: '',

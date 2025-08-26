@@ -215,7 +215,14 @@ const Footer: React.FC = () => {
 
           {/* Newsletter */}
           <div className="lg:col-span-1">
-            <h4 className="text-lg font-semibold text-pink-400 mb-4">הישארי מעודכנת</h4>
+            <Link to="/contact" className="group">
+              <h4 className="text-lg font-semibold text-pink-400 mb-4 hover:text-pink-300 transition-colors duration-200 cursor-pointer flex items-center">
+                הישארי מעודכנת
+                <svg className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </h4>
+            </Link>
             <p className="text-gray-300 text-sm mb-4">
               הירשמי לעדכונים על שיעורים חדשים, אירועים מיוחדים ומבצעים
             </p>

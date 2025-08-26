@@ -97,8 +97,8 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
             role: 'user',
             created_at: new Date().toISOString(),
             is_active: true,
-            terms_accepted: false,
-            marketing_consent: false,
+            terms_accepted: false, // User must explicitly accept terms
+            marketing_consent: false, // User must explicitly consent to marketing
             last_login_at: new Date().toISOString(),
             language: 'he'
           })

@@ -84,12 +84,20 @@ export default function AuthCallback() {
             navigate('/', { replace: true });
           }
           
-          // Update profile in background (non-blocking)
+          // Get consent values from localStorage
+          const termsAccepted = localStorage.getItem('pending_terms_accepted') === 'true';
+          const marketingConsent = localStorage.getItem('pending_marketing_consent') === 'true';
+          
+          // Clear localStorage
+          localStorage.removeItem('pending_terms_accepted');
+          localStorage.removeItem('pending_marketing_consent');
+          
+          // Update profile in background (non-blocking) with actual consent values
           supabase
             .from('profiles')
             .update({
-              marketing_consent: true,
-              terms_accepted: true,
+              terms_accepted: termsAccepted,
+              marketing_consent: marketingConsent,
               updated_at: new Date().toISOString()
             })
             .eq('id', data.session.user.id)

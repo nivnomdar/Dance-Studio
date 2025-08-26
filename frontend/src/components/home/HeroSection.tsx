@@ -10,7 +10,7 @@ function HeroSection() {
         <div
           className="w-full h-full bg-cover bg-bottom bg-no-repeat"
           style={{ backgroundImage: `url(${assetUrl(HOMEPAGE_ASSETS.hero.desktop)})` }}
-          aria-label="רקע סטודיו לאדנסאס"
+          aria-label="רקע סטודיו לדנסאס"
           role="img"
         />
       </div>
@@ -19,7 +19,7 @@ function HeroSection() {
       <div className="block md:hidden w-full">
         <img
           src={assetUrl(HOMEPAGE_ASSETS.hero.mobile)}
-          alt="רקע סטודיו לאדנסאס"
+          alt="רקע סטודיו לדנסאס"
           className="w-full h-auto object-contain"
           style={{
             objectFit: 'contain',
@@ -38,14 +38,13 @@ function HeroSection() {
         <div className="absolute bottom-126 left-1/2 transform -translate-x-1/2 text-center md:absolute md:top-50 lg:top-42 xl:top-15 2xl:top-22 md:right-10 md:left-auto md:transform-none">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-agrandir-grand drop-shadow-lg">
             <span className="block md:hidden">Ladances</span>
-            <span className="hidden md:block">סטודיו</span>
           </h1>
         </div>
         
         {/* Subtitle - מיקום קבוע באמצע */}
         <div className="absolute bottom-120 left-1/2 transform -translate-x-1/2 text-center md:absolute md:top-110 lg:top-100 xl:top-95 2xl:top-85 md:left-1/2 md:transform-none">
           <p className="text-lg sm:text-xl lg:text-2xl text-white/90 font-hebrew-special drop-shadow-lg whitespace-nowrap">
-            ריקוד על עקבים למתחילות ומתקדמות
+          סטודיו לריקוד על עקבים למתחילות ומתקדמות       
           </p>
         </div>
         

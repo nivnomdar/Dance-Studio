@@ -11,8 +11,8 @@ BEGIN
     NEW.raw_user_meta_data->>'avatar_url',
     'user',
     true,
-    false,
-    false,
+    false, -- terms_accepted - user must explicitly accept
+    false, -- marketing_consent - user must explicitly consent
     NOW(),
     'he'
   );
