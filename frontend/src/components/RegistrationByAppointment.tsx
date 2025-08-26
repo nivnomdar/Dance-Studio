@@ -110,7 +110,7 @@ const RegistrationByAppointment: React.FC<RegistrationByAppointmentProps> = ({ c
           </a>
           
           <a
-            href="mailto:info@avigaildance.com?subject=תיאום שיעור אישי"
+            href="mailto:info@ladances.com?subject=תיאום שיעור אישי"
             className="flex items-center justify-center w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl transition-colors duration-300 font-bold shadow-lg hover:shadow-xl"
           >
             <FaEnvelope className="w-5 h-5 ml-2" />

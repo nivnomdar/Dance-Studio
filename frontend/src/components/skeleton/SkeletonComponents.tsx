@@ -2,11 +2,15 @@ import React from 'react';
 
 // Base Skeleton Components - Reusable across the app
 export const SkeletonBox = ({ className = "", ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`bg-gray-200 rounded animate-pulse ${className}`} {...props} />
+  <div 
+    className={`bg-gray-200 rounded animate-pulse ${className}`} 
+    aria-hidden="true"
+    {...props} 
+  />
 );
 
 export const SkeletonText = ({ lines = 1, className = "" }: { lines?: number; className?: string }) => (
-  <div className={`space-y-2 ${className}`}>
+  <div className={`space-y-2 ${className}`} aria-hidden="true">
     {Array.from({ length: lines }).map((_, index) => (
       <SkeletonBox 
         key={index} 

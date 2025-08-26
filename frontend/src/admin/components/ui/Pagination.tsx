@@ -103,9 +103,9 @@ export default function Pagination({
   }
 
   return (
-    <div className={`${ADMIN_STYLES.container} ${className}`}>
+    <nav className={`${ADMIN_STYLES.container} ${className}`} aria-label="ניווט בעמודים">
       {/* Items info */}
-      <div className={ADMIN_STYLES.info}>
+      <div className={ADMIN_STYLES.info} role="status" aria-live="polite">
         {totalItems > 0 ? (
           <>
             מציג {startItem}-{endItem} מתוך {totalItems.toLocaleString()} פריטים
@@ -141,14 +141,16 @@ export default function Pagination({
               disabled={currentPage === 1}
               className={`${ADMIN_STYLES.button} ${ADMIN_STYLES.buttonSecondary}`}
               title="עמוד קודם"
+              aria-label="עבור לעמוד הקודם"
+              aria-disabled={currentPage === 1}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
             {/* Page numbers */}
-            <div className={ADMIN_STYLES.pageNumbers}>
+            <div className={ADMIN_STYLES.pageNumbers} role="group" aria-label="מספרי עמודים">
               {getPageNumbers().map((page, index) => (
                 <button
                   key={index}
@@ -162,6 +164,9 @@ export default function Pagination({
                         : ADMIN_STYLES.pageNumberInactive
                   }`}
                   title={typeof page === 'number' ? `עמוד ${page}` : undefined}
+                  aria-label={typeof page === 'number' ? `עמוד ${page}` : 'המשך רשימת עמודים'}
+                  aria-current={page === currentPage ? 'page' : undefined}
+                  aria-disabled={page === '...'}
                 >
                   {page}
                 </button>
@@ -174,14 +179,16 @@ export default function Pagination({
               disabled={currentPage === totalPages}
               className={`${ADMIN_STYLES.button} ${ADMIN_STYLES.buttonSecondary}`}
               title="עמוד הבא"
+              aria-label="עבור לעמוד הבא"
+              aria-disabled={currentPage === totalPages}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-  </svg>
+              </svg>
             </button>
           </>
         )}
       </div>
-    </div>
+    </nav>
   );
 } 
