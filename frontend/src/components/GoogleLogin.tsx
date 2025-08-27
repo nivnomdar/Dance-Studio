@@ -48,6 +48,7 @@ export const GoogleLogin = () => {
           redirectTo: `${window.location.origin}/auth/v1/callback`,
           queryParams: {
             access_type: 'offline', // נשאר לקבלת refresh token
+            prompt: 'select_account', // מכריח Google להציג מסך בחירת חשבון
           },
         }
       })
@@ -140,6 +141,7 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
           redirectTo: `${window.location.origin}/auth/v1/callback`,
           queryParams: {
             access_type: 'offline', // נשאר לקבלת refresh token
+            prompt: 'select_account', // מכריח Google להציג מסך בחירת חשבון
           },
         }
       })
