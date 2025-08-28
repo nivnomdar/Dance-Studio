@@ -273,26 +273,17 @@ function Navbar() {
           </div>
 
           {/* Logo - Center for both mobile and desktop */}
-          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
+          <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2 z-[60]">
             <Link to="/" className="flex items-center">
               <img
-                src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.png"
+                src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg"
                 alt="Ladance Avigail"
-                className="h-30 w-auto mt-2 mb-1 sm:h-40 sm:mt-3 sm:mb-1 md:h-40 md:mt-6 md:mb-1 lg:h-40 lg:mt-6 lg:mb-1 xl:h-40 xl:mt-6 xl:mb-1 2xl:h-40 2xl:mt-6 xl:mb-1"
-                style={{
-                  height: '120px', // h-30 = 120px
-                  width: 'auto',
-                  marginTop: '8px', // mt-2 = 8px
-                  marginBottom: '4px' // mb-1 = 4px
-                }}
+                className="h-20 w-auto -mt-8 mb-1 sm:h-20 sm:-mt-8 sm:mb-1 md:h-26 md:-mt-8 md:mb-1 lg:h-30 lg:-mt-9 lg:mb-1 xl:h-30 xl:-mt-9 xl:mb-1 2xl:h-30 2xl:-mt-9 2xl:mb-1"
                 onError={(e) => {
                   // Fallback to local image if Supabase image fails to load
                   const target = e.target as HTMLImageElement;
                   target.src = "/images/LOGOladance.png";
                   console.log("Falling back to local logo image");
-                }}
-                onLoad={() => {
-                  console.log("Supabase logo loaded successfully");
                 }}
               />
             </Link>
