@@ -219,23 +219,23 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
               הגדרות הסכמה
             </h4>
             
-            {/* Terms Accepted */}
+            {/* Terms Accepted - Read Only */}
             <div className="flex items-start space-x-3 space-x-reverse">
               <input
                 type="checkbox"
                 id="termsAccepted"
                 name="termsAccepted"
                 checked={formData.termsAccepted}
-                onChange={onCheckboxChange}
-                disabled={!isEditing}
-                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50"
+                disabled={true}
+                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded opacity-50 cursor-not-allowed"
               />
               <label htmlFor="termsAccepted" className="text-sm text-gray-700 leading-relaxed">
                 אני מסכימה לתנאי השימוש של הסטודיו
+                <span className="text-xs text-gray-500 block mt-1">(לא ניתן לשינוי - terms_accepted)</span>
               </label>
             </div>
 
-            {/* Marketing Consent */}
+            {/* Marketing Consent - Editable */}
             <div className="flex items-start space-x-3 space-x-reverse">
               <input
                 type="checkbox"
@@ -248,6 +248,7 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
               />
               <label htmlFor="marketingConsent" className="text-sm text-gray-700 leading-relaxed">
                 אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
+                <span className="text-xs text-gray-500 block mt-1">(ניתן לשינוי - marketing_consent)</span>
               </label>
             </div>
           </div>

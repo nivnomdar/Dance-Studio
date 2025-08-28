@@ -23,6 +23,10 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     if (isAuthenticated && !profileLoading && !hasReloadedProfile.current && !profile) {
       console.log('TermsGuard: Reloading profile once because no profile exists');
       hasReloadedProfile.current = true;
+      
+      // Emergency cleanup of old cookies on first load
+      TermsCookieManager.emergencyCleanup();
+      
       loadProfile().catch(console.error);
     }
   }, [isAuthenticated, profileLoading, loadProfile, profile]);
@@ -34,9 +38,23 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
       return;
     }
 
-    // Check if terms are already accepted
-    const termsAccepted = profile.terms_accepted === true || 
-                         TermsCookieManager.isTermsAcceptedForUser(profile.id);
+    // Check if terms are already accepted - ONLY check Supabase profile, not cookie
+    const termsAccepted = profile.terms_accepted === true;
+    
+    // If terms are already accepted, don't show modal
+    if (termsAccepted) {
+      console.log('TermsGuard: Terms already accepted, hiding modal');
+      setShowTermsModal(false);
+      return;
+    }
+    
+    // Validate and cleanup cookies for current user
+    TermsCookieManager.validateAndCleanupTermsCookie(profile.id);
+    
+    // If profile says terms are not accepted, clear any existing cookie
+    if (profile.terms_accepted === false) {
+      TermsCookieManager.clearTermsCookie();
+    }
 
     // Show modal if:
     // 1. Not on allowed path
@@ -131,9 +149,9 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     return <>{children}</>;
   }
 
-  // If terms are already accepted, show the normal app
-  if (profile.terms_accepted === true || TermsCookieManager.isTermsAcceptedForUser(profile.id)) {
-    console.log('TermsGuard: Terms already accepted (profile or cookie), showing normal app');
+  // If terms are already accepted, show the normal app - ONLY check Supabase profile
+  if (profile.terms_accepted === true) {
+    console.log('TermsGuard: Terms already accepted (profile), showing normal app');
     return <>{children}</>;
   }
 
@@ -156,17 +174,15 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
             isOpen={true}
             userId={profile.id}
             marketingConsent={profile.marketing_consent}
-            isNewUser={profile.created_at === profile.updated_at}
+            isNewUser={false}
             onAccept={() => {
               // The modal will close and TermsGuard will re-evaluate
               console.log('TermsGuard: Modal accepted, profile should be updated');
               
-              // Force a profile reload to ensure we get the latest data
-              setTimeout(() => {
-                loadProfile().then(() => {
-                  console.log('TermsGuard: Profile reloaded after terms acceptance');
-                }).catch(console.error);
-              }, 1000);
+              // Force a profile reload immediately to ensure we get the latest data
+              loadProfile().then(() => {
+                console.log('TermsGuard: Profile reloaded after terms acceptance');
+              }).catch(console.error);
             }}
           />
         </div>

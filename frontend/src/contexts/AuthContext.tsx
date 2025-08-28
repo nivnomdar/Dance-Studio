@@ -261,6 +261,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (profileData) {
           setProfile(profileData);
           
+          // Clean up old cookies and validate current user data
+          TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
+          
           // Update terms cookie if terms are accepted
           if (profileData.terms_accepted) {
             TermsCookieManager.setTermsAccepted(profileData.id);
@@ -304,6 +307,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Load profile
         const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
         if (profileData) {
+          // Clean up old cookies and validate current user data
+          TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
+          
           // Update terms cookie if terms are accepted
           if (profileData.terms_accepted) {
             TermsCookieManager.setTermsAccepted(profileData.id);
@@ -337,20 +343,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(profileUpdateTimeoutRef.current);
       }
 
-      // Clear storage
-      try {
-        Object.keys(localStorage).forEach(key => {
-          if (key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
-            localStorage.removeItem(key);
-          }
-        });
-        clearAllCookies();
-        
-        // Clear terms cookie
-        TermsCookieManager.clearTermsCookie();
-      } catch (e) {
-        console.error('Could not clear storage:', e);
-      }
+              // Clear storage
+        try {
+          // Clear all profile cache entries
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('profile_') || key.includes('supabase') || key.includes('auth') || key.includes('avigail')) {
+              localStorage.removeItem(key);
+            }
+          });
+          
+          // Clear all cookies
+          clearAllCookies();
+          
+          // Clear terms cookie
+          TermsCookieManager.clearTermsCookie();
+          
+          // Clear any remaining profile cookies
+          const cookies = document.cookie.split(';');
+          cookies.forEach(cookie => {
+            const trimmedCookie = cookie.trim();
+            if (trimmedCookie.startsWith('profile_')) {
+              const cookieName = trimmedCookie.split('=')[0];
+              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            }
+          });
+        } catch (e) {
+          console.error('Could not clear storage:', e);
+        }
 
       // Background sign out
       await supabase.auth.signOut();
@@ -371,6 +390,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const profileData = await loadProfileSafelyRef.current?.(user.id);
       if (profileData) {
+        // Clean up old cookies and validate current user data
+        TermsCookieManager.validateAndCleanupTermsCookie(user.id);
+        
         // Update terms cookie if terms are accepted
         if (profileData.terms_accepted) {
           TermsCookieManager.setTermsAccepted(profileData.id);

@@ -16,7 +16,7 @@ import {
 } from '../utils/cookieManager';
 
 function UserProfile() {
-  const { user, loading: authLoading, session, profile: contextProfile } = useAuth();
+  const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -512,17 +512,16 @@ function UserProfile() {
     try {
       if (!user || !session) throw new Error('No user or session found');
       
-      // עדכון ישיר עם fetch
+      // עדכון ישיר עם fetch - רק השדות הניתנים לעריכה
       const profileData = {
-        email: user.email,
         first_name: formData.firstName,
         last_name: formData.lastName,
         phone_number: formData.phone,
         address: formData.address,
         city: formData.city,
         postal_code: formData.postalCode,
-        terms_accepted: formData.termsAccepted,
         marketing_consent: formData.marketingConsent,
+        // terms_accepted לא נכלל כי הוא לא ניתן לשינוי
       };
       
       const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
@@ -543,8 +542,33 @@ function UserProfile() {
       
       const updatedProfile = await updateResponse.json();
       
-      // עדכון הפרופיל המקומי
-      setLocalProfile(updatedProfile[0]);
+      // עדכון הפרופיל המקומי עם הנתונים המעודכנים
+      const newLocalProfile = {
+        ...localProfile,
+        ...updatedProfile[0]
+      };
+      setLocalProfile(newLocalProfile);
+      
+      // עדכון ה-formData עם הנתונים המעודכנים מיד
+      setFormData(prev => ({
+        ...prev,
+        firstName: newLocalProfile.first_name || '',
+        lastName: newLocalProfile.last_name || '',
+        phone: newLocalProfile.phone_number || '',
+        address: newLocalProfile.address || '',
+        city: newLocalProfile.city || '',
+        postalCode: newLocalProfile.postal_code || '',
+        marketingConsent: newLocalProfile.marketing_consent || false,
+        // termsAccepted נשאר כפי שהוא - לא ניתן לשינוי
+      }));
+      
+      // עדכון מיד של הפרופיל בקונטקסט
+      if (contextProfile) {
+        // עדכון הפרופיל בקונטקסט באמצעות loadProfile
+        setTimeout(() => {
+          loadProfile().catch(console.error);
+        }, 100);
+      }
       
       setIsEditing(false);
       // הצגת הודעת הצלחה

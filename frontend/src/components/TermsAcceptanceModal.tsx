@@ -1,30 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { TermsCookieManager } from '../utils/termsCookieManager';
 
 interface TermsAcceptanceModalProps {
   isOpen: boolean;
   userId: string;
-  marketingConsent?: boolean;
-  isNewUser?: boolean;
+  marketingConsent: boolean;
+  isNewUser: boolean;
   onAccept: () => void;
 }
 
 export const TermsAcceptanceModal = ({ 
   isOpen, 
-  userId, 
-  marketingConsent = false,
-  isNewUser = false,
+  userId,
+  marketingConsent,
+  isNewUser,
   onAccept 
 }: TermsAcceptanceModalProps) => {
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [shouldCloseModal, setShouldCloseModal] = useState(false);
-  const { loadProfile, profile } = useAuth();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTermsAccepted(false);
+      setError(null);
+      setShowSuccess(false);
+      setShowSuccessPopup(false);
+    }
+  }, [isOpen]);
+
+  // Auto-close success popup after 3 seconds
+  useEffect(() => {
+    if (showSuccessPopup) {
+      const timer = setTimeout(() => {
+        setShowSuccessPopup(false);
+        // Redirect to home page without calling onAccept again
+        window.location.href = '/';
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessPopup]);
 
   // Prevent scrolling with keyboard
   useEffect(() => {
@@ -54,17 +75,6 @@ export const TermsAcceptanceModal = ({
       document.removeEventListener('touchmove', preventTouch);
     };
   }, [isOpen]);
-
-  // Auto-close success popup after 5 seconds
-  useEffect(() => {
-    if (showSuccessPopup) {
-      const timer = setTimeout(() => {
-        setShowSuccessPopup(false);
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccessPopup]);
 
   const handleAcceptTerms = async () => {
     if (!termsAccepted) {
@@ -109,11 +119,7 @@ export const TermsAcceptanceModal = ({
       if (result.success) {
         console.log('Terms accepted successfully!');
         
-        // Show success state in button
-        setShowSuccess(true);
-        setError(null);
-        
-        // Set cookie to remember terms acceptance
+        // Set cookie immediately
         TermsCookieManager.setTermsAccepted(userId);
         console.log('TermsCookieManager: Cookie set for user:', userId);
         
@@ -121,31 +127,34 @@ export const TermsAcceptanceModal = ({
         const cookieData = TermsCookieManager.getTermsAccepted();
         console.log('TermsCookieManager: Cookie verification:', cookieData);
         
-        // Double-check that the cookie is working
-        if (!cookieData || !cookieData.accepted) {
-          console.error('TermsCookieManager: Cookie verification failed!');
+        // Show success message
+        setShowSuccess(true);
+        
+        // Update profile in Supabase directly to ensure immediate update
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            terms_accepted: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
+
+        if (updateError) {
+          console.error('Error updating profile directly:', updateError);
         } else {
-          console.log('TermsCookieManager: Cookie verification successful');
+          console.log('Profile updated directly in Supabase');
         }
         
-        // Wait for profile to update
-        try {
-          console.log('Updating profile...');
-          await loadProfile();
-          console.log('Profile updated successfully');
-          
-          // Show success popup within the modal
+        // Call onAccept immediately to trigger profile reload in TermsGuard
+        onAccept();
+        
+        // Show success popup after a short delay
+        setTimeout(() => {
           setShowSuccessPopup(true);
-
-    } catch (error) {
-          console.error('Failed to update profile:', error);
-          // Even if profile update fails, show success state
-          setShowSuccessPopup(true);
-        }
+        }, 1000);
       } else {
         throw new Error('שגיאה באישור התנאים');
       }
-
     } catch (error) {
       console.error('Error accepting terms:', error);
       setError(error instanceof Error ? error.message : 'אירעה שגיאה באישור התנאים. אנא נסה שוב.');
@@ -169,32 +178,30 @@ export const TermsAcceptanceModal = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-2">
-                {isNewUser ? 'ההרשמה בוצעה בהצלחה! 🎉' : 'התנאים אושרו בהצלחה! ✅'}
-              </h3>
-              <p className="text-white/90 text-sm">
-                {isNewUser ? 'ברוכה הבאה לסטודיו אביגיל לדאנס!' : 'אתה יכול להמשיך להשתמש באתר'}
-              </p>
+                          <h3 className="text-xl font-bold mb-2">
+              ההרשמה בוצעה בהצלחה! 🎉
+            </h3>
+            <p className="text-white/90 text-sm">
+              ברוכה הבאה לסטודיו אביגיל לדאנס!
+            </p>
             </div>
             
             {/* Content */}
             <div className="p-6 text-center">
               <p className="text-gray-700 mb-6">
-                {isNewUser 
-                  ? 'ההרשמה שלך הושלמה בהצלחה. כעת תוכלי לגשת לכל התכונות של האתר!'
-                  : 'תנאי השימוש אושרו בהצלחה. כעת תוכל להמשיך להשתמש באתר!'
-                }
+                ההרשמה שלך הושלמה בהצלחה. כעת תוכלי לגשת לכל התכונות של האתר!
               </p>
               
               {/* Close Button */}
               <button
                 onClick={() => {
-                  // Close modal and trigger re-render to check updated profile
+                  // Close modal and redirect to home page
                   onAccept();
+                  window.location.href = '/';
                 }}
                 className="w-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white py-3 rounded-xl font-semibold hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl cursor-pointer"
               >
-                מעולה! תודה
+                לדף הבית
               </button>
             </div>
           </div>
@@ -216,13 +223,10 @@ export const TermsAcceptanceModal = ({
         {/* Header */}
           <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-6 text-white text-center relative z-10">
             <h2 id="modal-title" className="text-2xl font-bold mb-2">
-              {isNewUser ? 'ברוכה הבאה לסטודיו!' : 'אישור תנאי השימוש'}
+              אישור תנאי השימוש
             </h2>
             <p id="modal-description" className="text-white/90">
-              {isNewUser 
-                ? 'כדי להשלים את ההרשמה, עליך לאשר את תנאי השימוש' 
-                : 'עליך לאשר את תנאי השימוש כדי להמשיך'
-              }
+              עליך לאשר את תנאי השימוש כדי להמשיך
             </p>
         </div>
 
@@ -318,7 +322,7 @@ export const TermsAcceptanceModal = ({
                     <span>הושלם בהצלחה!</span>
                   </div>
                 ) : (
-                  <span>אני מאשרת - השלימי הרשמה</span>
+                  <span>אני מאשרת - אישור תנאים</span>
                 )}
               </div>
           </button>
@@ -347,7 +351,7 @@ export const TermsAcceptanceModal = ({
                 <div className="flex items-center justify-center space-x-3">
                   <div className="text-center">
                     <p className="text-green-800 font-medium text-sm">
-                      {isNewUser ? 'ההרשמה בוצעה בהצלחה! 🎉' : 'התנאים אושרו בהצלחה! ✅'}
+                      התנאים אושרו בהצלחה! ✅
                     </p>
                     <p className="text-green-600 text-xs mt-1">
                       מעביר אותך לאתר...

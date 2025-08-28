@@ -159,4 +159,130 @@ export class TermsCookieManager {
       this.setTermsAccepted(userId);
     }
   }
+
+  /**
+   * Clean up old profile cache cookies and localStorage entries
+   * This removes duplicate profile data while preserving current user data
+   */
+  static cleanupOldProfileCache(currentUserId: string): void {
+    try {
+      // Get all cookies
+      const cookies = document.cookie.split(';');
+      
+      // Find and remove old profile cache cookies
+      cookies.forEach(cookie => {
+        const trimmedCookie = cookie.trim();
+        if (trimmedCookie.startsWith('profile_')) {
+          const cookieName = trimmedCookie.split('=')[0];
+          
+          // Don't remove current user's profile cache
+          if (!cookieName.includes(currentUserId)) {
+            // Remove old profile cookie
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            console.log(`TermsCookieManager: Removed old profile cookie: ${cookieName}`);
+          }
+        }
+      });
+
+      // Clean up localStorage profile cache
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('profile_') && !key.includes(currentUserId)) {
+          keysToRemove.push(key);
+        }
+      }
+
+      // Remove old profile localStorage entries
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`TermsCookieManager: Removed old profile localStorage: ${key}`);
+      });
+
+      console.log('TermsCookieManager: Profile cache cleanup completed');
+    } catch (error) {
+      console.error('TermsCookieManager: Error during profile cache cleanup:', error);
+    }
+  }
+
+  /**
+   * Validate and clean up terms cookie data
+   * This ensures cookie data is consistent with current user
+   */
+  static validateAndCleanupTermsCookie(currentUserId: string): void {
+    try {
+      const cookieData = this.getTermsAccepted();
+      
+      if (cookieData && cookieData.userId && cookieData.userId !== currentUserId) {
+        // Cookie belongs to different user, clear it
+        console.log('TermsCookieManager: Clearing terms cookie for different user');
+        this.clearTermsCookie();
+      }
+      
+      // Clean up old profile cache
+      this.cleanupOldProfileCache(currentUserId);
+    } catch (error) {
+      console.error('TermsCookieManager: Error during terms cookie validation:', error);
+    }
+  }
+
+  /**
+   * Get clean profile data without duplicates
+   * This returns only the current user's profile data
+   */
+  static getCleanProfileData(currentUserId: string): any {
+    try {
+      // Get current user's profile from localStorage
+      const profileKey = `profile_${currentUserId}`;
+      const profileData = localStorage.getItem(profileKey);
+      
+      if (profileData) {
+        return JSON.parse(profileData);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('TermsCookieManager: Error getting clean profile data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Emergency cleanup - removes all old cookies and localStorage entries
+   * Use this when you want to start fresh
+   */
+  static emergencyCleanup(): void {
+    try {
+      console.log('TermsCookieManager: Starting emergency cleanup...');
+      
+      // Clear all profile cookies
+      const cookies = document.cookie.split(';');
+      cookies.forEach(cookie => {
+        const trimmedCookie = cookie.trim();
+        if (trimmedCookie.startsWith('profile_') || trimmedCookie.startsWith('ladance_')) {
+          const cookieName = trimmedCookie.split('=')[0];
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+          console.log(`TermsCookieManager: Removed cookie: ${cookieName}`);
+        }
+      });
+
+      // Clear all profile localStorage entries
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('profile_') || key.startsWith('ladance_'))) {
+          keysToRemove.push(key);
+        }
+      }
+
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`TermsCookieManager: Removed localStorage: ${key}`);
+      });
+
+      console.log('TermsCookieManager: Emergency cleanup completed');
+    } catch (error) {
+      console.error('TermsCookieManager: Error during emergency cleanup:', error);
+    }
+  }
 }
