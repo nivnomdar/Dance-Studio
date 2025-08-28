@@ -218,11 +218,14 @@ export const TermsAcceptanceModal = ({
           
         {/* Header */}
           <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-6 text-white text-center relative z-10">
-            <h2 id="modal-title" className="text-2xl font-bold mb-2">
-              {showWelcomeBack ? 'ברוכה השבה! 🎉' : (!showSuccess ? 'אישור תנאי השימוש' : 'הרשמה הושלמה בהצלחה! 🎉')}
-            </h2>
-
-        </div>
+            <div className="flex justify-center items-center">
+              <img 
+                src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg"
+                alt="Avigail Dance Studio Logo"
+                className="h-16 w-auto -mt-6"
+              />
+            </div>
+          </div>
 
         {/* Content */}
         <div className="p-6">
@@ -346,7 +349,7 @@ export const TermsAcceptanceModal = ({
               </h3>
               
               <p className="text-gray-700 mb-8 animate-in fade-in duration-500 delay-200">
-                {showWelcomeBack ? 'כיף לראות אותך שוב! כעת תוכלי לגשת לכל התכונות של האתר.' : ' כעת תוכלי לגשת לכל התכונות של האתר!'}
+                {showWelcomeBack ? 'כיף לראות אותך שוב' : 'כעת תוכלי לגשת לכל התכונות של האתר!'}
               </p>
               
               {/* Go to Home Button */}
@@ -373,19 +376,6 @@ export const TermsAcceptanceModal = ({
               >
                 {showWelcomeBack ? 'המשיכי לדף הבית' : 'לדף הבית'}
               </button>
-              
-              {/* Close button for welcome back modal */}
-              {showWelcomeBack && (
-                <button
-                  onClick={() => {
-                    console.log('TermsAcceptanceModal: User clicked close button');
-                    onAccept();
-                  }}
-                  className="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition-colors duration-200 animate-in fade-in duration-500 delay-400"
-                >
-                  סגור
-                </button>
-              )}
             </div>
           )}
         </div>
