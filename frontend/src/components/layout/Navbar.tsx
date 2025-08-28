@@ -276,9 +276,9 @@ function Navbar() {
           <div className="flex-shrink-0 absolute left-1/2 transform -translate-x-1/2">
             <Link to="/" className="flex items-center">
               <img
-                src="/images/LOGOladance.png"
+                src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.png"
                 alt="Ladance Avigail"
-                className="h-17 sm:h-22 w-auto -mt-1 sm:mt-4 sm:mb-4"
+                className="h-30 sm:h-37 w-auto mt-1 sm:mt-4 sm:mb-1"
               />
             </Link>
           </div>
