@@ -2,7 +2,6 @@
 // This helps prevent the terms modal from showing repeatedly across browser sessions
 
 const TERMS_COOKIE_NAME = 'ladance_terms_accepted';
-const TERMS_STORAGE_KEY = 'ladance_terms_accepted_storage';
 const TERMS_COOKIE_EXPIRY_DAYS = 365; // 1 year
 
 export interface TermsCookieData {
@@ -13,151 +12,79 @@ export interface TermsCookieData {
 
 export class TermsCookieManager {
   /**
-   * Set terms acceptance cookie and localStorage backup
+   * Get cookie value by name
    */
-  static setTermsAccepted(userId?: string): void {
-    const cookieData: TermsCookieData = {
-      accepted: true,
-      timestamp: Date.now(),
-      userId
-    };
-
-    // Set cookie
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + TERMS_COOKIE_EXPIRY_DAYS);
-
-    const cookieValue = encodeURIComponent(JSON.stringify(cookieData));
-    const cookieString = `${TERMS_COOKIE_NAME}=${cookieValue}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
-
-    document.cookie = cookieString;
-    
-    // Set localStorage backup
-    try {
-      localStorage.setItem(TERMS_STORAGE_KEY, JSON.stringify(cookieData));
-    } catch (error) {
-      console.warn('TermsCookieManager: Could not set localStorage backup:', error);
-    }
-    
-    console.log('TermsCookieManager: Set terms accepted cookie for user:', userId);
-    console.log('TermsCookieManager: Cookie string:', cookieString);
-  }
-
-  /**
-   * Get terms acceptance status from cookie or localStorage backup
-   */
-  static getTermsAccepted(): TermsCookieData | null {
-    // Try cookie first
-    try {
-      const cookies = document.cookie.split(';');
-      const termsCookie = cookies.find(cookie => 
-        cookie.trim().startsWith(`${TERMS_COOKIE_NAME}=`)
-      );
-
-      if (termsCookie) {
-        const cookieValue = termsCookie.split('=')[1];
-        const decodedValue = decodeURIComponent(cookieValue);
-        const cookieData: TermsCookieData = JSON.parse(decodedValue);
-
-        // Validate cookie data
-        if (this.isValidTermsData(cookieData)) {
-          // Check if cookie is expired
-          if (!this.isExpired(cookieData)) {
-            return cookieData;
-          } else {
-            console.log('TermsCookieManager: Cookie expired, removing');
-            this.clearTermsCookie();
-          }
-        }
-      }
-    } catch (error) {
-      console.error('TermsCookieManager: Error reading terms cookie:', error);
-    }
-
-    // Try localStorage backup
-    try {
-      const storageData = localStorage.getItem(TERMS_STORAGE_KEY);
-      if (storageData) {
-        const parsedData: TermsCookieData = JSON.parse(storageData);
-        if (this.isValidTermsData(parsedData) && !this.isExpired(parsedData)) {
-          console.log('TermsCookieManager: Using localStorage backup');
-          return parsedData;
-        }
-      }
-    } catch (error) {
-      console.error('TermsCookieManager: Error reading localStorage backup:', error);
-    }
-
+  private static getCookie(name: string): string | null {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
     return null;
   }
 
   /**
-   * Check if terms data is valid
+   * Set terms acceptance cookie with proper expiration
    */
-  private static isValidTermsData(data: any): data is TermsCookieData {
-    return data && 
-           typeof data.accepted === 'boolean' && 
-           typeof data.timestamp === 'number' &&
-           data.timestamp > 0;
+  static setTermsAccepted(userId?: string): void {
+    // Calculate expiration date (1 year from now)
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + TERMS_COOKIE_EXPIRY_DAYS);
+    
+    // Get current domain for cookie
+    const domain = window.location.hostname === 'localhost' ? '' : `.${window.location.hostname}`;
+    
+    // Set cookie with proper expiration, domain, and path
+    const cookieString = `${TERMS_COOKIE_NAME}=true; path=/; expires=${expiryDate.toUTCString()}; SameSite=Strict${domain ? `; domain=${domain}` : ''}`;
+    document.cookie = cookieString;
+    
+    console.log('TermsCookieManager: Set terms accepted cookie for user:', userId);
+    console.log('TermsCookieManager: Cookie string:', cookieString);
+    console.log('TermsCookieManager: Cookie expires:', expiryDate.toUTCString());
+    
+    // Verify cookie was set
+    const verification = this.getCookie(TERMS_COOKIE_NAME);
+    console.log('TermsCookieManager: Cookie verification after setting:', verification);
   }
 
   /**
-   * Check if terms data is expired
+   * Get terms acceptance status from cookie
    */
-  private static isExpired(data: TermsCookieData): boolean {
-    const now = Date.now();
-    const dataAge = now - data.timestamp;
-    const maxAge = TERMS_COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert to milliseconds
-    return dataAge > maxAge;
+  static getTermsAccepted(): TermsCookieData | null {
+    const cookieValue = this.getCookie(TERMS_COOKIE_NAME);
+    
+    if (cookieValue === 'true') {
+      return {
+        accepted: true,
+        timestamp: Date.now(),
+        userId: undefined
+      };
+    }
+    
+    return null;
   }
 
   /**
    * Check if terms are accepted for a specific user
    */
   static isTermsAcceptedForUser(userId?: string): boolean {
-    const data = this.getTermsAccepted();
-    
-    if (!data || !data.accepted) {
-      return false;
-    }
-
-    // If no userId specified, just check if accepted
-    if (!userId) {
-      return data.accepted;
-    }
-
-    // If userId specified, check if it matches the data
-    return data.accepted && data.userId === userId;
+    const cookieValue = this.getCookie(TERMS_COOKIE_NAME);
+    return cookieValue === 'true';
   }
 
   /**
-   * Clear terms acceptance cookie and localStorage
+   * Clear terms acceptance cookie
    */
   static clearTermsCookie(): void {
-    // Clear cookie
-    const expiryDate = new Date(0); // Set to past date to expire immediately
-    const cookieString = `${TERMS_COOKIE_NAME}=; expires=${expiryDate.toUTCString()}; path=/`;
-    document.cookie = cookieString;
-    
-    // Clear localStorage
-    try {
-      localStorage.removeItem(TERMS_STORAGE_KEY);
-    } catch (error) {
-      console.warn('TermsCookieManager: Could not clear localStorage backup:', error);
-    }
-    
-    console.log('TermsCookieManager: Cleared terms cookie and localStorage');
+    // Clear cookie by setting it to expire immediately
+    document.cookie = `${TERMS_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+    console.log('TermsCookieManager: Cleared terms cookie');
   }
 
   /**
    * Update terms cookie when user changes
    */
   static updateTermsCookieForUser(userId: string): void {
-    const existingData = this.getTermsAccepted();
-    
-    if (existingData && existingData.accepted) {
-      // Update the cookie with the new userId
-      this.setTermsAccepted(userId);
-    }
+    // Simply set the cookie to true
+    this.setTermsAccepted(userId);
   }
 
   /**
@@ -211,14 +138,6 @@ export class TermsCookieManager {
    */
   static validateAndCleanupTermsCookie(currentUserId: string): void {
     try {
-      const cookieData = this.getTermsAccepted();
-      
-      if (cookieData && cookieData.userId && cookieData.userId !== currentUserId) {
-        // Cookie belongs to different user, clear it
-        console.log('TermsCookieManager: Clearing terms cookie for different user');
-        this.clearTermsCookie();
-      }
-      
       // Clean up old profile cache
       this.cleanupOldProfileCache(currentUserId);
     } catch (error) {
@@ -259,7 +178,7 @@ export class TermsCookieManager {
       const cookies = document.cookie.split(';');
       cookies.forEach(cookie => {
         const trimmedCookie = cookie.trim();
-        if (trimmedCookie.startsWith('profile_') || trimmedCookie.startsWith('ladance_')) {
+        if (trimmedCookie.startsWith('profile_')) {
           const cookieName = trimmedCookie.split('=')[0];
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
           console.log(`TermsCookieManager: Removed cookie: ${cookieName}`);
@@ -270,7 +189,7 @@ export class TermsCookieManager {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('profile_') || key.startsWith('ladance_'))) {
+        if (key && key.startsWith('profile_')) {
           keysToRemove.push(key);
         }
       }

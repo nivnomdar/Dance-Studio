@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { setCookie, getCookie, hasCookie } from '../../utils/cookieManager';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Cookie Consent Banner - באנר הסכמה לשימוש ב-Cookies
@@ -9,8 +10,11 @@ import { setCookie, getCookie, hasCookie } from '../../utils/cookieManager';
  * מאפשר גישה חופשית לאתר לפני מתן הסכמה
  * צבעים מותאמים לערכת הצבעים של האתר
  * נגישות מלאה לפי WCAG 2.1 AA ותקן ישראלי 5568
+ * 
+ * חשוב: הבאנר מופיע רק אחרי שהמשתמש אישר את תנאי השימוש
  */
 export const CookieConsentBanner: React.FC = () => {
+  const { profile, isAuthenticated } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -22,9 +26,36 @@ export const CookieConsentBanner: React.FC = () => {
   const learnMoreButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // בדוק אם המשתמש כבר הסכים
+    // הבאנר מופיע רק אם:
+    // 1. המשתמש מחובר
+    // 2. המשתמש אישר תנאי שימוש (terms_accepted = true)
+    // 3. המשתמש לא הסכים עדיין ל-cookies
+    
+    console.log('CookieConsentBanner: Checking banner visibility:', {
+      isAuthenticated,
+      hasProfile: !!profile,
+      profileTermsAccepted: profile?.terms_accepted,
+      currentCookieConsent: hasCookie('ladances-cookie-consent')
+    });
+    
+    if (!isAuthenticated || !profile) {
+      // לא מחובר או פרופיל לא נטען - לא להציג באנר
+      console.log('CookieConsentBanner: User not authenticated or no profile, not showing banner');
+      setShowBanner(false);
+      return;
+    }
+
+    if (profile.terms_accepted !== true) {
+      // המשתמש לא אישר תנאי שימוש - לא להציג באנר
+      console.log('CookieConsentBanner: User has not accepted terms yet, not showing banner');
+      setShowBanner(false);
+      return;
+    }
+
+    // המשתמש אישר תנאי שימוש - בדוק אם הסכים ל-cookies
     const cookieConsent = hasCookie('ladances-cookie-consent');
     if (!cookieConsent) {
+      console.log('CookieConsentBanner: User accepted terms but not cookies, showing banner');
       setShowBanner(true);
       // אנימציה כניסה חלקה
       setTimeout(() => {
@@ -35,9 +66,10 @@ export const CookieConsentBanner: React.FC = () => {
         }
       }, 100);
     } else {
+      console.log('CookieConsentBanner: User already consented to cookies, not showing banner');
       setAccepted(true);
     }
-  }, []);
+  }, [isAuthenticated, profile]);
 
   // Keyboard navigation support
   useEffect(() => {
@@ -77,8 +109,18 @@ export const CookieConsentBanner: React.FC = () => {
   }, [showBanner, accepted]);
 
   const handleAccept = () => {
+    console.log('CookieConsentBanner: User explicitly accepted cookies');
+    
     // שמירת הסכמה ב-Cookie עם תוקף של שנה
-    setCookie('ladances-cookie-consent', 'true', { expires: 365 });
+    // חשוב: רק אם המשתמש אישר תנאי שימוש קודם
+    if (profile && profile.terms_accepted === true) {
+      setCookie('ladances-cookie-consent', 'true', { expires: 365 });
+      console.log('CookieConsentBanner: Cookie consent saved for user:', profile.id);
+    } else {
+      console.error('CookieConsentBanner: Cannot save cookie consent - user has not accepted terms');
+      return;
+    }
+    
     setIsVisible(false);
     setTimeout(() => {
       setAccepted(true);
@@ -87,8 +129,18 @@ export const CookieConsentBanner: React.FC = () => {
   };
 
   const handleDecline = () => {
+    console.log('CookieConsentBanner: User declined cookies');
+    
     // שמירת אי-הסכמה ב-Cookie עם תוקף של שנה
-    setCookie('ladances-cookie-consent', 'false', { expires: 365 });
+    // חשוב: רק אם המשתמש אישר תנאי שימוש קודם
+    if (profile && profile.terms_accepted === true) {
+      setCookie('ladances-cookie-consent', 'false', { expires: 365 });
+      console.log('CookieConsentBanner: Cookie decline saved for user:', profile.id);
+    } else {
+      console.error('CookieConsentBanner: Cannot save cookie decline - user has not accepted terms');
+      return;
+    }
+    
     setIsVisible(false);
     setTimeout(() => {
       setAccepted(true);
@@ -103,6 +155,12 @@ export const CookieConsentBanner: React.FC = () => {
   };
 
   if (!showBanner || accepted) {
+    return null;
+  }
+
+  // Double-check: אם אין פרופיל או שהמשתמש לא אישר תנאים, לא להציג
+  if (!profile || profile.terms_accepted !== true) {
+    console.log('CookieConsentBanner: Safety check - not showing banner without proper terms acceptance');
     return null;
   }
 

@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Function refs to prevent re-renders
-  const loadProfileSafelyRef = useRef<((userId: string) => Promise<UserProfile | null>) | null>(null);
+  const loadProfileSafelyRef = useRef<((userId: string, forceRefresh?: boolean) => Promise<UserProfile | null>) | null>(null);
   const createProfileForUserRef = useRef<((safeUser: SafeUser) => Promise<UserProfile | null>) | null>(null);
   const updateProfileLoginTimeRef = useRef<((userId: string) => Promise<void>) | null>(null);
 
@@ -124,20 +124,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   createProfileForUserRef.current = createProfileForUser;
 
   // Profile loading function
-  const loadProfileSafely = useCallback(async (userId: string): Promise<UserProfile | null> => {
+  const loadProfileSafely = useCallback(async (userId: string, forceRefresh: boolean = false): Promise<UserProfile | null> => {
     if (!userId) {
       console.error('Cannot load profile: user ID is missing');
       return null;
     }
 
     try {
-      // Check cache first
+      // Check cache first (unless forcing refresh)
       const cacheKey = `profile_${userId}`;
-      const cachedProfile = getDataWithTimestamp<UserProfile>(cacheKey, 5 * 60 * 1000);
-      if (cachedProfile) {
-        return cachedProfile;
+      if (!forceRefresh) {
+        const cachedProfile = getDataWithTimestamp<UserProfile>(cacheKey, 5 * 60 * 1000);
+        if (cachedProfile) {
+          console.log('Using cached profile data');
+          return cachedProfile;
+        }
+      } else {
+        // Clear cache if forcing refresh
+        try {
+          localStorage.removeItem(cacheKey);
+          console.log('Cleared profile cache for forced refresh');
+        } catch (error) {
+          console.warn('Could not clear profile cache:', error);
+        }
       }
 
+      console.log('Loading fresh profile data from Supabase');
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
@@ -165,13 +177,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Cache the profile
       setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
+      console.log('Profile data cached:', profileData.terms_accepted);
 
       return profileData;
     } catch (error) {
       console.error('Error in loadProfileSafely:', error);
       return null;
     }
-  }, []);
+  }, [user]);
 
   // Store function in ref immediately
   loadProfileSafelyRef.current = loadProfileSafely;
@@ -216,8 +229,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updated_at: new Date().toISOString(),
       is_active: true,
       // Don't set hardcoded values for consent fields - they will be loaded from database
-      terms_accepted: false, // Will be updated when real profile loads
-      marketing_consent: false, // Will be updated when real profile loads
+      // Set to undefined instead of false to prevent wrong modal from showing
+      terms_accepted: undefined, // Will be updated when real profile loads
+      marketing_consent: undefined, // Will be updated when real profile loads
       last_login_at: new Date().toISOString(),
       language: 'he',
       has_used_trial_class: false,
@@ -257,17 +271,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Load or create profile in background
-        const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+        const profileData = await loadProfileSafelyRef.current?.(safeUser.id, false);
         if (profileData) {
           setProfile(profileData);
           
           // Clean up old cookies and validate current user data
           TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
           
-          // Update terms cookie if terms are accepted
-          if (profileData.terms_accepted) {
-            TermsCookieManager.setTermsAccepted(profileData.id);
-          }
+          // Don't auto-update terms cookie for existing users
+          // This allows the welcome back modal to stay open
+          // Cookie will be updated when user closes the modal
+          console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
           
           // Cache the profile
           const cacheKey = `profile_${safeUser.id}`;
@@ -305,15 +319,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (safeUser) {
         setAuthState(AuthState.AUTHENTICATED);
         // Load profile
-        const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+        const profileData = await loadProfileSafelyRef.current?.(safeUser.id, false);
         if (profileData) {
           // Clean up old cookies and validate current user data
           TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
           
-          // Update terms cookie if terms are accepted
-          if (profileData.terms_accepted) {
-            TermsCookieManager.setTermsAccepted(profileData.id);
-          }
+          // Don't auto-update terms cookie for existing users
+          // This allows the welcome back modal to stay open
+          // Cookie will be updated when user closes the modal
+          console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
         }
         setProfile(profileData || null);
       } else {
@@ -380,7 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Load profile function
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (forceRefresh: boolean = false) => {
     if (!user?.id) {
       console.error('Cannot load profile: no authenticated user');
       return;
@@ -388,15 +402,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setProfileLoading(true);
     try {
-      const profileData = await loadProfileSafelyRef.current?.(user.id);
+      const profileData = await loadProfileSafelyRef.current?.(user.id, forceRefresh);
       if (profileData) {
         // Clean up old cookies and validate current user data
         TermsCookieManager.validateAndCleanupTermsCookie(user.id);
         
-        // Update terms cookie if terms are accepted
-        if (profileData.terms_accepted) {
-          TermsCookieManager.setTermsAccepted(profileData.id);
-        }
+        // Don't auto-update terms cookie for existing users
+        // This allows the welcome back modal to stay open
+        // Cookie will be updated when user closes the modal
+        console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
       }
       setProfile(profileData || null);
     } catch (error) {

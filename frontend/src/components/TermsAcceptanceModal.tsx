@@ -7,6 +7,7 @@ interface TermsAcceptanceModalProps {
   userId: string;
   marketingConsent: boolean;
   isNewUser: boolean;
+  showWelcomeBack?: boolean; // New prop for existing users
   onAccept: () => void;
 }
 
@@ -15,13 +16,13 @@ export const TermsAcceptanceModal = ({
   userId,
   marketingConsent,
   isNewUser,
+  showWelcomeBack = false, // Default to false for backward compatibility
   onAccept 
 }: TermsAcceptanceModalProps) => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset state when modal opens
@@ -30,50 +31,53 @@ export const TermsAcceptanceModal = ({
       setTermsAccepted(false);
       setError(null);
       setShowSuccess(false);
-      setShowSuccessPopup(false);
     }
   }, [isOpen]);
 
-  // Auto-close success popup after 3 seconds
+  // For existing users, show welcome back message immediately
   useEffect(() => {
-    if (showSuccessPopup) {
+    if (isOpen && showWelcomeBack) {
+      setShowSuccess(true);
+      
+      // Add minimum display time for welcome back modal
+      // This ensures users can read the message
       const timer = setTimeout(() => {
-        setShowSuccessPopup(false);
-        // Redirect to home page without calling onAccept again
-        window.location.href = '/';
-      }, 3000);
+        // Allow modal to be closed after minimum time
+        console.log('TermsAcceptanceModal: Welcome back modal minimum display time completed');
+      }, 3000); // 3 seconds minimum
       
       return () => clearTimeout(timer);
     }
-  }, [showSuccessPopup]);
+  }, [isOpen, showWelcomeBack]);
 
-  // Prevent scrolling with keyboard
+  // No auto-close - let the user control when to go to home page
+  // This prevents duplicate success handling
+
+  // Only prevent scrolling within the modal, not the entire page
+  // This allows the background page to remain scrollable
   useEffect(() => {
-    const preventScroll = (e: KeyboardEvent) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
-        e.preventDefault();
-      }
-    };
-
-    const preventWheel = (e: WheelEvent) => {
-      e.preventDefault();
-    };
-
-    const preventTouch = (e: TouchEvent) => {
-      e.preventDefault();
-    };
-
     if (isOpen) {
-      document.addEventListener('keydown', preventScroll, { passive: false });
-      document.addEventListener('wheel', preventWheel, { passive: false });
-      document.addEventListener('touchmove', preventTouch, { passive: false });
-    }
+      // Only prevent keyboard navigation within the modal
+      const preventModalKeys = (e: KeyboardEvent) => {
+        // Allow Escape key to close modal
+        if (e.key === 'Escape') {
+          return;
+        }
+        // Only prevent navigation keys when modal is focused
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+          const target = e.target as HTMLElement;
+          if (target.closest('.modal-content')) {
+            e.preventDefault();
+          }
+        }
+      };
 
-    return () => {
-      document.removeEventListener('keydown', preventScroll);
-      document.removeEventListener('wheel', preventWheel);
-      document.removeEventListener('touchmove', preventTouch);
-    };
+      document.addEventListener('keydown', preventModalKeys, { passive: false });
+      
+      return () => {
+        document.removeEventListener('keydown', preventModalKeys);
+      };
+    }
   }, [isOpen]);
 
   const handleAcceptTerms = async () => {
@@ -119,16 +123,29 @@ export const TermsAcceptanceModal = ({
       if (result.success) {
         console.log('Terms accepted successfully!');
         
-        // Set cookie immediately
+        // Set client-side cookie immediately for immediate access
         TermsCookieManager.setTermsAccepted(userId);
-        console.log('TermsCookieManager: Cookie set for user:', userId);
+        console.log('TermsCookieManager: Client-side cookie set for user:', userId);
+        
+        // Note: Backend should also set httpOnly cookie for security
+        // The client-side cookie is for immediate UI updates
+        // 
+        // Backend should set:
+        // res.cookie("ladance_terms_accepted", "true", {
+        //   maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+        //   httpOnly: true,
+        //   secure: true,
+        //   sameSite: "strict",
+        //   path: "/"
+        // });
         
         // Verify cookie was set
         const cookieData = TermsCookieManager.getTermsAccepted();
         console.log('TermsCookieManager: Cookie verification:', cookieData);
         
-        // Show success message
+        // Show success message first
         setShowSuccess(true);
+        console.log('TermsAcceptanceModal: Success message set to true');
         
         // Update profile in Supabase directly to ensure immediate update
         const { error: updateError } = await supabase
@@ -143,15 +160,35 @@ export const TermsAcceptanceModal = ({
           console.error('Error updating profile directly:', updateError);
         } else {
           console.log('Profile updated directly in Supabase');
+          
+          // Clear any cached profile data to force fresh load
+          const cacheKey = `profile_${userId}`;
+          try {
+            localStorage.removeItem(cacheKey);
+            console.log('Cleared profile cache for immediate refresh');
+          } catch (error) {
+            console.warn('Could not clear profile cache:', error);
+          }
+          
+          // Also clear any profile cookies
+          try {
+            const cookies = document.cookie.split(';');
+            cookies.forEach(cookie => {
+              const trimmedCookie = cookie.trim();
+              if (trimmedCookie.startsWith('profile_')) {
+                const cookieName = trimmedCookie.split('=')[0];
+                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+                console.log(`Cleared profile cookie: ${cookieName}`);
+              }
+            });
+          } catch (error) {
+            console.warn('Could not clear profile cookies:', error);
+          }
         }
         
-        // Call onAccept immediately to trigger profile reload in TermsGuard
-        onAccept();
-        
-        // Show success popup after a short delay
-        setTimeout(() => {
-          setShowSuccessPopup(true);
-        }, 1000);
+        // Don't call onAccept here - let the user see the success message first
+        // onAccept will be called when they click the "Go to Home" button
+        console.log('TermsAcceptanceModal: Success flow completed, waiting for user to click home button');
       } else {
         throw new Error('שגיאה באישור התנאים');
       }
@@ -167,47 +204,6 @@ export const TermsAcceptanceModal = ({
 
   return (
     <>
-      {/* Success Popup - shown after modal closes */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-auto overflow-hidden border border-gray-200 animate-in zoom-in duration-300">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-                          <h3 className="text-xl font-bold mb-2">
-              ההרשמה בוצעה בהצלחה! 🎉
-            </h3>
-            <p className="text-white/90 text-sm">
-              ברוכה הבאה לסטודיו אביגיל לדאנס!
-            </p>
-            </div>
-            
-            {/* Content */}
-            <div className="p-6 text-center">
-              <p className="text-gray-700 mb-6">
-                ההרשמה שלך הושלמה בהצלחה. כעת תוכלי לגשת לכל התכונות של האתר!
-              </p>
-              
-              {/* Close Button */}
-              <button
-                onClick={() => {
-                  // Close modal and redirect to home page
-                  onAccept();
-                  window.location.href = '/';
-                }}
-                className="w-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white py-3 rounded-xl font-semibold hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl cursor-pointer"
-              >
-                לדף הבית
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Modal */}
       <div 
         className="fixed inset-0 flex items-center justify-center z-[60] p-4"
@@ -216,150 +212,182 @@ export const TermsAcceptanceModal = ({
         aria-labelledby="modal-title"
         aria-describedby="modal-description"
       >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-hidden border border-gray-200 relative focus:outline-none focus:ring-4 focus:ring-[#4B2E83]/20 max-h-[90vh]">
+        <div className="modal-content bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-y-auto border border-gray-200 relative focus:outline-none focus:ring-4 focus:ring-[#4B2E83]/20 max-h-[90vh]">
           {/* Enhanced shadow and border for better visibility */}
           <div className="absolute inset-0 rounded-2xl shadow-[0_20px_60px_-12px_rgba(0,0,0,0.25)] pointer-events-none"></div>
           
         {/* Header */}
           <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-6 text-white text-center relative z-10">
             <h2 id="modal-title" className="text-2xl font-bold mb-2">
-              אישור תנאי השימוש
+              {showWelcomeBack ? 'ברוכה השבה! 🎉' : (!showSuccess ? 'אישור תנאי השימוש' : 'הרשמה הושלמה בהצלחה! 🎉')}
             </h2>
-            <p id="modal-description" className="text-white/90">
-              עליך לאשר את תנאי השימוש כדי להמשיך
-            </p>
+
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <div className="mb-6">
-             
-              
-              {/* Styled Checkbox */}
-              <div className="flex items-start gap-4 mb-6">
-                <div className="relative flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    id="terms-accepted"
-                    name="terms-accepted"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="w-5 h-5 border-2 border-gray-300 rounded-md bg-white cursor-pointer transition-all duration-200 ease-in-out checked:bg-[#4B2E83] checked:border-[#4B2E83] hover:border-[#4B2E83] focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-opacity-50"
-                    aria-label="אני מאשרת ומסכימה לתנאי השימוש ומדיניות הפרטיות"
-                    aria-describedby="terms-description"
-                    aria-checked={termsAccepted}
-                    aria-required="true"
-                    role="checkbox"
-                    required
-                  />
-                  {termsAccepted && (
-                    <svg 
-                      className="absolute text-white pointer-events-none"
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                      style={{
-                        left: '50%',
-                        top: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '12px',
-                        height: '12px'
-                      }}
+          {!showSuccess ? (
+            <>
+              <div className="mb-6">
+                {/* Styled Checkbox */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="relative flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      id="terms-accepted"
+                      name="terms-accepted"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="w-5 h-5 border-2 border-gray-300 rounded-md bg-white cursor-pointer transition-all duration-200 ease-in-out checked:bg-[#4B2E83] checked:border-[#4B2E83] hover:border-[#4B2E83] focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-opacity-50"
+                      aria-label="אני מאשרת ומסכימה לתנאי השימוש ומדיניות הפרטיות"
+                      aria-describedby="terms-description"
+                      aria-checked={termsAccepted}
+                      aria-required="true"
+                      role="checkbox"
+                      required
+                    />
+                    {termsAccepted && (
+                      <svg 
+                        className="absolute text-white pointer-events-none"
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                        style={{
+                          left: '50%',
+                          top: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          width: '12px',
+                          height: '12px'
+                        }}
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={3} 
+                          d="M5 13l4 4L19 7" 
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <label htmlFor="terms-accepted" className="text-sm text-gray-700 leading-relaxed cursor-pointer select-none flex-1">
+                    <div className="space-y-2">
+                      <div className="font-semibold text-gray-900 text-base leading-relaxed">
+                        קראתי ואני מאשרת ומסכימה ל- 
+                    <a 
+                      href="/terms-of-service" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                            className="text-[#4B2E83] hover:text-[#3B1E73] font-medium underline decoration-2 underline-offset-2 transition-colors duration-200 inline-block"
                     >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={3} 
-                        d="M5 13l4 4L19 7" 
-                      />
-                    </svg>
+                      תנאי השימוש
+                    </a>
+                          {' '}ו-
+                    <a 
+                      href="/privacy-policy" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                            className="text-[#4B2E83] hover:text-[#3B1E73] font-medium underline decoration-2 underline-offset-2 transition-colors duration-200 inline-block"
+                    >
+                      מדיניות הפרטיות
+                    </a>
+                    {' '}של הסטודיו
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Accept Button */}
+              <button
+                onClick={handleAcceptTerms}
+                disabled={isLoading || !termsAccepted}
+                className="w-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white py-4 rounded-xl font-semibold hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:transform-none border-2 border-transparent hover:border-[#4B2E83]/20"
+                aria-describedby={error ? "error-message" : undefined}
+                aria-busy={isLoading}
+              >
+                <div className="transition-all duration-300 ease-in-out">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>מאשרת...</span>
+                    </div>
+                  ) : (
+                    <span>אני מאשרת - אישור תנאים</span>
                   )}
                 </div>
-                <label htmlFor="terms-accepted" className="text-sm text-gray-700 leading-relaxed cursor-pointer select-none flex-1">
-                  <div className="space-y-2">
-                    <div className="font-semibold text-gray-900 text-base leading-relaxed">
-                      קראתי ואני מאשרת ומסכימה ל- 
-                <a 
-                  href="/terms-of-service" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                        className="text-[#4B2E83] hover:text-[#3B1E73] font-medium underline decoration-2 underline-offset-2 transition-colors duration-200 inline-block"
-                >
-                  תנאי השימוש
-                </a>
-                      {' '}ו-
-                <a 
-                  href="/privacy-policy" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                        className="text-[#4B2E83] hover:text-[#3B1E73] font-medium underline decoration-2 underline-offset-2 transition-colors duration-200 inline-block"
-                >
-                  מדיניות הפרטיות
-                </a>
-                {' '}של הסטודיו
-                    </div>
-                  </div>
-                </label>
-            </div>
-          </div>
+              </button>
 
-          {/* Accept Button */}
-          <button
-            onClick={handleAcceptTerms}
-              disabled={isLoading || !termsAccepted}
-              className="w-full bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white py-4 rounded-xl font-semibold hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:transform-none border-2 border-transparent hover:border-[#4B2E83]/20"
-              aria-describedby={error ? "error-message" : undefined}
-              aria-busy={isLoading}
-            >
-              <div className="transition-all duration-300 ease-in-out">
-                {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>מאשרת...</span>
-                  </div>
-                ) : showSuccess ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <span>הושלם בהצלחה!</span>
-                  </div>
-                ) : (
-                  <span>אני מאשרת - אישור תנאים</span>
-                )}
+              {/* Error Message */}
+              {error && (
+                <div 
+                  className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg"
+                  role="alert"
+                  aria-live="assertive"
+                  aria-atomic="true"
+                  id="error-message"
+                >
+                  <p className="text-red-600 text-sm text-center">{error}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Success State - Show within modal */
+            <div className="text-center py-8">
+              {/* Success Icon */}
+              <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-          </button>
-
-          {/* Error Message */}
-          {error && (
-              <div 
-                className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg"
-                role="alert"
-                aria-live="assertive"
-                aria-atomic="true"
-                id="error-message"
+              
+              {/* Success Message */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 animate-in fade-in duration-500">
+                {showWelcomeBack ? 'התחברות מוצלחת! 🎉' : 'ההרשמה בוצעה בהצלחה! 🎉'}
+              </h3>
+              
+              <p className="text-gray-700 mb-8 animate-in fade-in duration-500 delay-200">
+                {showWelcomeBack ? 'כיף לראות אותך שוב! כעת תוכלי לגשת לכל התכונות של האתר.' : ' כעת תוכלי לגשת לכל התכונות של האתר!'}
+              </p>
+              
+              {/* Go to Home Button */}
+              <button
+                onClick={() => {
+                  console.log('TermsAcceptanceModal: User clicked go to home button');
+                  
+                  if (showWelcomeBack) {
+                    // For existing users, just close the modal
+                    onAccept();
+                  } else {
+                    // For new users, reload profile and redirect
+                    // First, reload the profile to ensure it's updated
+                    // This will trigger TermsGuard to re-evaluate and close the modal
+                    onAccept();
+                    
+                    // Then redirect to home page
+                    setTimeout(() => {
+                      window.location.href = '/';
+                    }, 100);
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white py-4 rounded-xl font-semibold hover:from-[#EC4899] hover:to-[#4B2E83] transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl cursor-pointer animate-in fade-in duration-500 delay-300"
               >
-              <p className="text-red-600 text-sm text-center">{error}</p>
+                {showWelcomeBack ? 'המשיכי לדף הבית' : 'לדף הבית'}
+              </button>
+              
+              {/* Close button for welcome back modal */}
+              {showWelcomeBack && (
+                <button
+                  onClick={() => {
+                    console.log('TermsAcceptanceModal: User clicked close button');
+                    onAccept();
+                  }}
+                  className="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition-colors duration-200 animate-in fade-in duration-500 delay-400"
+                >
+                  סגור
+                </button>
+              )}
             </div>
           )}
-
-            {/* Success Message */}
-            {showSuccess && (
-              <div 
-                className="mt-4 p-4 bg-green-50 border-2 border-green-200 rounded-lg animate-in fade-in duration-300"
-                role="alert"
-                aria-live="assertive"
-                aria-atomic="true"
-              >
-                <div className="flex items-center justify-center space-x-3">
-                  <div className="text-center">
-                    <p className="text-green-800 font-medium text-sm">
-                      התנאים אושרו בהצלחה! ✅
-                    </p>
-                    <p className="text-green-600 text-xs mt-1">
-                      מעביר אותך לאתר...
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
         </div>
       </div>
     </div>

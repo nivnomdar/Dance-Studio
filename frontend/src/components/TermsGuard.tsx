@@ -3,20 +3,151 @@ import { useAuth } from '../contexts/AuthContext';
 import { TermsAcceptanceModal } from './TermsAcceptanceModal';
 import { useLocation } from 'react-router-dom';
 import { TermsCookieManager } from '../utils/termsCookieManager';
+import { supabase } from '../lib/supabase';
 
 interface TermsGuardProps {
   children: React.ReactNode;
+}
+
+// Function to check terms status from backend in real-time
+async function checkTermsStatusFromBackend(): Promise<{ terms_accepted: boolean; marketing_consent: boolean } | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('TermsGuard: No session, cannot check backend');
+      return null;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/terms-status`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('TermsGuard: Backend terms status check failed:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('TermsGuard: Backend terms status:', data);
+    
+    return {
+      terms_accepted: data.terms_accepted,
+      marketing_consent: data.marketing_consent
+    };
+  } catch (error) {
+    console.error('TermsGuard: Error checking backend terms status:', error);
+    return null;
+  }
+}
+
+// Simple cookie reading function
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
+// Check if terms are accepted by checking both client-side and httpOnly cookies
+function isTermsAccepted(): boolean {
+  // Check client-side cookie first
+  const clientCookie = getCookie('ladance_terms_accepted');
+  console.log('TermsGuard: Cookie check - ladance_terms_accepted =', clientCookie);
+  
+  if (clientCookie === 'true') {
+    return true;
+  }
+  
+  // If no client-side cookie, check if we have a profile with terms_accepted = true
+  // This will be handled by the profile check below
+  return false;
+}
+
+// Debug function to show all cookies
+function debugCookies(): void {
+  console.log('TermsGuard: All cookies:', document.cookie);
+  console.log('TermsGuard: ladance_terms_accepted cookie:', getCookie('ladance_terms_accepted'));
 }
 
 export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
   const { profile, isAuthenticated, loading, profileLoading, loadProfile } = useAuth();
   const location = useLocation();
   const hasReloadedProfile = useRef(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [initialCookieCheck, setInitialCookieCheck] = useState<boolean | null>(null);
+  const [modalClosedByUser, setModalClosedByUser] = useState(false);
+  const [backendTermsStatus, setBackendTermsStatus] = useState<{ terms_accepted: boolean; marketing_consent: boolean } | null>(null);
+  const [isCheckingBackend, setIsCheckingBackend] = useState(false);
+  const backendCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBackendCheckRef = useRef<number>(0);
 
   // Allow access to terms and privacy policy pages
   const allowedPaths = ['/terms-of-service', '/privacy-policy'];
   const isAllowedPath = allowedPaths.includes(location.pathname);
+
+  // Check cookie only once during first render to prevent modal flash
+  useEffect(() => {
+    if (initialCookieCheck === null) {
+      const cookieValue = isTermsAccepted();
+      setInitialCookieCheck(cookieValue);
+      console.log('TermsGuard: Initial cookie check:', cookieValue);
+    }
+  }, [initialCookieCheck]);
+  
+  // Check backend terms status in real-time with debouncing
+  useEffect(() => {
+    if (isAuthenticated && profile && !isCheckingBackend) {
+      const now = Date.now();
+      const timeSinceLastCheck = now - lastBackendCheckRef.current;
+      
+      // Rate limiting: don't check more than once every 5 seconds
+      if (timeSinceLastCheck < 5000) {
+        console.log('TermsGuard: Rate limiting - skipping backend check, last check was', timeSinceLastCheck, 'ms ago');
+        return;
+      }
+      
+      // Clear any existing timeout
+      if (backendCheckTimeoutRef.current) {
+        clearTimeout(backendCheckTimeoutRef.current);
+      }
+      
+      // Debounce the check by 1 second
+      backendCheckTimeoutRef.current = setTimeout(async () => {
+        setIsCheckingBackend(true);
+        lastBackendCheckRef.current = Date.now();
+        console.log('TermsGuard: Checking backend terms status for user:', profile.id);
+        
+        const backendStatus = await checkTermsStatusFromBackend();
+        if (backendStatus) {
+          setBackendTermsStatus(backendStatus);
+          console.log('TermsGuard: Backend validation result:', backendStatus);
+          
+          // If backend says terms are not accepted, clear any local cookie
+          if (!backendStatus.terms_accepted) {
+            console.log('TermsGuard: Backend says terms not accepted, clearing local cookie');
+            TermsCookieManager.clearTermsCookie();
+            setInitialCookieCheck(false);
+          }
+        }
+        setIsCheckingBackend(false);
+      }, 1000);
+    }
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (backendCheckTimeoutRef.current) {
+        clearTimeout(backendCheckTimeoutRef.current);
+      }
+    };
+  }, [isAuthenticated, profile, isCheckingBackend]);
+  
+  // Debug cookies on first render
+  useEffect(() => {
+    debugCookies();
+  }, []);
 
   // Reload profile only once when component mounts, and only if we don't have a valid profile
   useEffect(() => {
@@ -27,105 +158,55 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
       // Emergency cleanup of old cookies on first load
       TermsCookieManager.emergencyCleanup();
       
-      loadProfile().catch(console.error);
+      loadProfile(true).catch(console.error);
     }
   }, [isAuthenticated, profileLoading, loadProfile, profile]);
 
   // Determine if we should show the terms modal
   useEffect(() => {
     if (!isAuthenticated || profileLoading || !profile) {
-      setShowTermsModal(false);
       return;
     }
 
-    // Check if terms are already accepted - ONLY check Supabase profile, not cookie
-    const termsAccepted = profile.terms_accepted === true;
-    
-    // If terms are already accepted, don't show modal
-    if (termsAccepted) {
-      console.log('TermsGuard: Terms already accepted, hiding modal');
-      setShowTermsModal(false);
-      return;
-    }
-    
     // Validate and cleanup cookies for current user
     TermsCookieManager.validateAndCleanupTermsCookie(profile.id);
     
-    // If profile says terms are not accepted, clear any existing cookie
-    if (profile.terms_accepted === false) {
+    // Only clear the terms cookie if profile says terms are not accepted AND no cookie exists
+    // This prevents clearing an existing valid cookie
+    if (profile && profile.terms_accepted === false && !initialCookieCheck) {
+      console.log('TermsGuard: Profile says terms not accepted and no cookie exists, clearing any stale cookie');
       TermsCookieManager.clearTermsCookie();
     }
 
-    // Show modal if:
-    // 1. Not on allowed path
-    // 2. Terms not accepted
-    // 3. Profile exists and has required fields
-    const shouldShow = !isAllowedPath && 
-                      !termsAccepted && 
-                      !!profile.id && 
-                      !!profile.email &&
-                      profile.terms_accepted !== undefined &&
-                      profile.terms_accepted !== null;
-
-    // Only update showTermsModal if it's different from current state
-    if (showTermsModal !== shouldShow) {
-      console.log('TermsGuard: Updating modal state from', showTermsModal, 'to', shouldShow);
-      setShowTermsModal(!!shouldShow);
-    }
-
-    // Debug cookie status
-    const cookieData = TermsCookieManager.getTermsAccepted();
-    console.log('TermsGuard: Cookie status:', {
-      cookieData,
-      cookieAccepted: TermsCookieManager.isTermsAcceptedForUser(profile.id),
-      profileTermsAccepted: profile.terms_accepted,
-      finalTermsAccepted: termsAccepted,
-      currentModalState: showTermsModal,
-      newModalState: shouldShow
-    });
-
+    // Log the current state for debugging
     console.log('TermsGuard Debug:', {
       loading,
       isAuthenticated,
       hasProfile: !!profile,
       profileTermsAccepted: profile?.terms_accepted,
-      cookieTermsAccepted: TermsCookieManager.isTermsAcceptedForUser(profile?.id),
-      shouldShowModal: shouldShow,
+      cookieTermsAccepted: initialCookieCheck,
       currentPath: location.pathname,
       isAllowedPath,
       profileLoading
     });
-  }, [isAuthenticated, profile, profileLoading, isAllowedPath, location.pathname, showTermsModal]);
+  }, [isAuthenticated, profile, profileLoading, isAllowedPath, location.pathname, initialCookieCheck]);
 
-  // Prevent body scrolling when terms modal is shown
+  // Monitor profile changes but don't auto-update cookie for existing users
+  // This allows the welcome back modal to stay open
   useEffect(() => {
-    if (showTermsModal) {
-      // Prevent scrolling
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
-    } else {
-      // Restore scrolling
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
+    if (profile && profile.terms_accepted === true && !initialCookieCheck) {
+      console.log('TermsGuard: Profile has terms_accepted=true, but not updating cookie yet');
+      console.log('TermsGuard: This allows the welcome back modal to stay open for existing users');
+      console.log('TermsGuard: Cookie will be updated when user closes the modal');
+      
+      // Don't update cookie automatically - let the user see the modal first
+      // Cookie will be updated when they close the modal
     }
+  }, [profile?.terms_accepted, initialCookieCheck, profile?.id]);
 
-    return () => {
-      // Cleanup: restore scrolling
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-    };
-  }, [showTermsModal]);
-
+  // No need to prevent body scrolling - let the modal handle its own scrolling
+  // This prevents the page from being frozen and changing its appearance
+  
   // If still loading or not authenticated, show children (normal app flow)
   if (loading || !isAuthenticated) {
     return <>{children}</>;
@@ -149,40 +230,88 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     return <>{children}</>;
   }
 
-  // If terms are already accepted, show the normal app - ONLY check Supabase profile
-  if (profile.terms_accepted === true) {
-    console.log('TermsGuard: Terms already accepted (profile), showing normal app');
+  // If terms are already accepted (either by cookie or profile), show success modal for existing users
+  // Priority: Backend validation > Local profile > Cookie
+  const termsAccepted = backendTermsStatus?.terms_accepted ?? profile?.terms_accepted ?? initialCookieCheck;
+  
+  if (termsAccepted === true) {
+    console.log('TermsGuard: Terms accepted - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted, 'Cookie:', initialCookieCheck);
+    
+    // Show success modal for existing users who just logged in
+    // Only if they haven't closed it yet
+    if (profile && !initialCookieCheck && !modalClosedByUser) {
+      console.log('TermsGuard: Existing user logged in, showing welcome back modal');
+      
+      return (
+        <>
+          {/* Show the actual website content normally */}
+          {children}
+
+          {/* Overlay with welcome back modal */}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] pointer-events-auto">
+            <TermsAcceptanceModal
+              isOpen={true}
+              userId={profile.id}
+              marketingConsent={backendTermsStatus?.marketing_consent ?? profile.marketing_consent ?? false}
+              isNewUser={false}
+              showWelcomeBack={true} // New prop to show welcome back message
+              onAccept={() => {
+                console.log('TermsGuard: Welcome back modal closed by user');
+                
+                // Mark that the user closed the modal
+                setModalClosedByUser(true);
+                
+                // Update the cookie when the welcome back modal is closed
+                // This prevents the modal from showing again
+                TermsCookieManager.setTermsAccepted(profile.id);
+                console.log('TermsGuard: Cookie updated for existing user:', profile.id);
+                console.log('TermsGuard: Modal will now close and user can access the site normally');
+                
+                // Just close the modal, no need to reload profile
+              }}
+            />
+          </div>
+        </>
+      );
+    }
+    
+    // Normal flow for users with existing cookies or who closed the modal
     return <>{children}</>;
   }
 
-  // If we should show the terms modal
-  if (showTermsModal) {
-    console.log('TermsGuard: Showing terms modal - forcing modal to stay open');
+  // If terms are explicitly not accepted, show the modal
+  // Priority: Backend validation > Local profile
+  const termsNotAccepted = backendTermsStatus?.terms_accepted === false || profile?.terms_accepted === false;
+  
+  if (profile && termsNotAccepted) {
+    console.log('TermsGuard: Terms not accepted - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted);
     
-    // Force the modal to stay open by preventing any state changes
-    // that might hide it
+    // If user is on allowed paths, show the content without modal
+    if (isAllowedPath) {
+      console.log('TermsGuard: User on allowed path, showing content without modal');
+      return <>{children}</>;
+    }
+    
     return (
       <>
-        {/* Show the actual website content but blurred and prevent scrolling */}
-        <div className="blur-[2px] pointer-events-none select-none transition-all duration-300 overflow-hidden">
-          {children}
-        </div>
+        {/* Show the actual website content normally - no blur, no pointer-events-none */}
+        {/* The modal overlay will handle the focus */}
+        {children}
 
         {/* Overlay with terms modal */}
-        <div className="fixed inset-0 flex items-center justify-center z-[60] pointer-events-auto overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] pointer-events-auto">
           <TermsAcceptanceModal
             isOpen={true}
             userId={profile.id}
-            marketingConsent={profile.marketing_consent}
+            marketingConsent={backendTermsStatus?.marketing_consent ?? profile.marketing_consent ?? false}
             isNewUser={false}
             onAccept={() => {
-              // The modal will close and TermsGuard will re-evaluate
-              console.log('TermsGuard: Modal accepted, profile should be updated');
+              // Don't reload profile automatically - let the user see the success message first
+              // The profile will be reloaded when they click the "Go to Home" button
+              console.log('TermsGuard: Modal accepted, waiting for user to click home button');
               
-              // Force a profile reload immediately to ensure we get the latest data
-              loadProfile().then(() => {
-                console.log('TermsGuard: Profile reloaded after terms acceptance');
-              }).catch(console.error);
+              // Note: Profile reload will happen when user clicks "Go to Home" button
+              // This prevents the modal from closing automatically
             }}
           />
         </div>
@@ -190,7 +319,54 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     );
   }
 
-  // If accessing allowed pages or any other case, show the normal app
-  console.log('TermsGuard: Normal flow - terms accepted or allowed path');
+  // If we reach here, it means profile.terms_accepted is undefined/null
+  // This happens with temporary profiles - wait for the real profile to load
+  // But also check if backend validation is complete
+  if (profile && profile.terms_accepted === undefined) {
+    // If backend validation is still pending, wait
+    if (isCheckingBackend) {
+      console.log('TermsGuard: Backend validation in progress, waiting...');
+      return <>{children}</>;
+    }
+    
+    // If backend validation is complete but profile is still undefined, wait for profile
+    if (backendTermsStatus === null) {
+      console.log('TermsGuard: Profile terms_accepted is undefined (temporary profile), waiting for real profile to load');
+      return <>{children}</>;
+    }
+    
+    // Backend validation is complete, use that data
+    console.log('TermsGuard: Using backend validation data for temporary profile');
+    if (backendTermsStatus.terms_accepted === true) {
+      // Terms accepted according to backend
+      return <>{children}</>;
+    } else {
+      // Terms not accepted according to backend - show modal
+      if (isAllowedPath) {
+        console.log('TermsGuard: User on allowed path, showing content without modal');
+        return <>{children}</>;
+      }
+      
+      return (
+        <>
+          {children}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] pointer-events-auto">
+            <TermsAcceptanceModal
+              isOpen={true}
+              userId={profile.id}
+              marketingConsent={backendTermsStatus.marketing_consent}
+              isNewUser={false}
+              onAccept={() => {
+                console.log('TermsGuard: Modal accepted, waiting for user to click home button');
+              }}
+            />
+          </div>
+        </>
+      );
+    }
+  }
+
+  // This should not happen, but just in case, show children
+  console.log('TermsGuard: Unexpected state, showing normal app');
   return <>{children}</>;
 };

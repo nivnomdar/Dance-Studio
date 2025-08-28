@@ -215,41 +215,51 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
 
           {/* Consent Fields */}
           <div className="space-y-4 sm:space-y-6 border-t border-[#4B2E83]/10 pt-4 sm:pt-6">
-            <h4 className="text-sm sm:text-base font-semibold text-[#4B2E83] mb-3 sm:mb-4">
+            <h4 className="text-sm sm:text-base font-semibold text-[#4B2E83] mb-3 sm:mb-4 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#4B2E83]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               הגדרות הסכמה
             </h4>
             
-            {/* Terms Accepted - Read Only */}
-            <div className="flex items-start space-x-3 space-x-reverse">
-              <input
-                type="checkbox"
-                id="termsAccepted"
-                name="termsAccepted"
-                checked={formData.termsAccepted}
-                disabled={true}
-                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded opacity-50 cursor-not-allowed"
-              />
-              <label htmlFor="termsAccepted" className="text-sm text-gray-700 leading-relaxed">
-                אני מסכימה לתנאי השימוש של הסטודיו
-                <span className="text-xs text-gray-500 block mt-1">(לא ניתן לשינוי - terms_accepted)</span>
-              </label>
-            </div>
-
-            {/* Marketing Consent - Editable */}
-            <div className="flex items-start space-x-3 space-x-reverse">
-              <input
-                type="checkbox"
-                id="marketingConsent"
-                name="marketingConsent"
-                checked={formData.marketingConsent}
-                onChange={onCheckboxChange}
-                disabled={!isEditing}
-                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50"
-              />
-              <label htmlFor="marketingConsent" className="text-sm text-gray-700 leading-relaxed">
-                אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
-                <span className="text-xs text-gray-500 block mt-1">(ניתן לשינוי - marketing_consent)</span>
-              </label>
+            <div className="bg-gradient-to-r from-[#4B2E83]/5 to-[#EC4899]/5 rounded-xl p-4 sm:p-5 border border-[#4B2E83]/10">
+              {/* Marketing Consent - Editable */}
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    id="marketingConsent"
+                    name="marketingConsent"
+                    checked={formData.marketingConsent}
+                    onChange={onCheckboxChange}
+                    disabled={!isEditing}
+                    className="w-4 h-4 text-[#EC4899] bg-white border-2 border-[#4B2E83]/30 rounded focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="marketingConsent" className="text-sm sm:text-base text-[#4B2E83] font-medium leading-relaxed cursor-pointer">
+                    אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
+                  </label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      formData.marketingConsent 
+                        ? 'bg-green-100 text-green-700 border-green-200' 
+                        : 'bg-gray-100 text-gray-600 border-gray-200'
+                    }`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      {formData.marketingConsent ? 'רשומה לעדכונים' : 'לא רשומה לעדכונים'}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      ניתן לשינוי
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

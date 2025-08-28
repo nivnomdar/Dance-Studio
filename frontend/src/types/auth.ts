@@ -35,7 +35,7 @@ export interface AuthContextType {
   loading: boolean;
   profile: UserProfile | null;
   profileLoading: boolean;
-  loadProfile: () => Promise<void>;
+  loadProfile: (forceRefresh?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -53,8 +53,8 @@ export interface UserProfile {
   avatar_url?: string;
   role: 'user' | 'admin';
   is_active: boolean;
-  terms_accepted: boolean;
-  marketing_consent: boolean;
+  terms_accepted: boolean | undefined; // Allow undefined for temporary profiles
+  marketing_consent: boolean | undefined; // Allow undefined for temporary profiles
   last_login_at?: string;
   language: string;
   created_at: string;
