@@ -162,7 +162,7 @@ router.get('/session-classes', async (req: Request, res: Response) => {
 // Get all sessions (admin only)
 router.get('/admin', admin, async (req: Request, res: Response) => {
   try {
-    logger.info('Admin sessions endpoint called by user:', req.user?.id);
+    logger.info('Admin sessions endpoint called by user:', req.user?.sub);
     
     const { data: sessions, error } = await supabase
       .from('schedule_sessions')
@@ -185,7 +185,7 @@ router.get('/admin', admin, async (req: Request, res: Response) => {
 // Get all session classes (admin only)
 router.get('/admin/session-classes', admin, async (req, res) => {
   try {
-    logger.info('Admin session-classes endpoint called by user:', req.user?.id);
+    logger.info('Admin session-classes endpoint called by user:', req.user?.sub);
     
     // קודם נקבל את כל ה-session_classes בלי join
     const { data: sessionClasses, error } = await supabase

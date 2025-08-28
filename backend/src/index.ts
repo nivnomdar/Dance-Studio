@@ -23,6 +23,15 @@ import contactRoutes from './routes/contact';
 
 const app = express();
 
+// Trust proxy for production environments (Render, Cloudflare, etc.)
+// This is required for express-rate-limit to work correctly with X-Forwarded-For headers
+const trustProxy = process.env.TRUST_PROXY ? parseInt(process.env.TRUST_PROXY) : 1;
+app.set('trust proxy', trustProxy);
+
+logger.info(`Trust proxy enabled: ${app.get('trust proxy')}`);
+logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+logger.info(`Port: ${config.port}`);
+
 // CORS configuration - MUST be before helmet
 const allowedOrigins = [
   'https://dancestudio-ecru.vercel.app', // הדומיין הקבוע
@@ -69,7 +78,10 @@ app.use(morgan('dev'));
 
 // Cookie and Session middleware
 app.use(cookieParser());
-app.use(session({
+
+// Use a more production-safe session configuration
+// In production, consider using Redis or database-based session store
+const sessionConfig: any = {
   name: 'ladances-session',
   secret: process.env.SESSION_SECRET || 'ladances-dance-studio-secret-key-change-in-production',
   resave: false,
@@ -81,7 +93,17 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000, // 24 שעות
     path: '/'
   }
-}));
+};
+
+// In production, use a more robust session store
+if (process.env.NODE_ENV === 'production') {
+  // For now, disable sessions in production to avoid MemoryStore issues
+  // TODO: Implement Redis or database session store
+  console.log('Production mode: Sessions disabled to avoid MemoryStore issues');
+} else {
+  // Development mode: use sessions
+  app.use(session(sessionConfig));
+}
 
 // Rate limiting
 app.use(rateLimit({

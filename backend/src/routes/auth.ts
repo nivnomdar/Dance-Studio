@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import rateLimit from 'express-rate-limit';
+import { auth } from '../middleware/auth';
 import { 
   setAuthCookie, 
   setSessionCookie, 
@@ -88,28 +89,20 @@ router.post('/signout', async (req: Request, res: Response, next: NextFunction) 
 });
 
 // Check terms acceptance status for user with rate limiting
-router.get('/terms-status', termsStatusLimiter, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get user from auth header (JWT token)
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError('No valid authorization token provided', 401);
-    }
-
-    const token = authHeader.substring(7);
+    // Get user from JWT payload (already verified by auth middleware)
+    const user = (req as any).user;
     
-    // Verify token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new AppError('Invalid or expired token', 401);
+    if (!user || !user.sub) {
+      throw new AppError('User not authenticated', 401);
     }
 
     // Get user's profile from database to check terms acceptance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('terms_accepted, marketing_consent, email')
-      .eq('id', user.id)
+      .eq('id', user.sub)
       .single();
 
     if (profileError) {
@@ -124,14 +117,14 @@ router.get('/terms-status', termsStatusLimiter, async (req: Request, res: Respon
     // Return terms status
     res.json({
       success: true,
-      userId: user.id,
+      userId: user.sub,
       email: profile.email,
       terms_accepted: profile.terms_accepted,
       marketing_consent: profile.marketing_consent,
       requires_terms_acceptance: !profile.terms_accepted
     });
 
-    logger.info(`Terms status checked for user ${user.id}: terms_accepted=${profile.terms_accepted}`);
+    logger.info(`Terms status checked for user ${user.sub}: terms_accepted=${profile.terms_accepted}`);
     
   } catch (error) {
     next(error);

@@ -9,7 +9,7 @@ const router = express.Router();
 // Get admin dashboard overview
 router.get('/overview', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin overview endpoint called by user:', req.user?.id);
+    logger.info('Admin overview endpoint called by user:', req.user?.sub);
     logger.info('Fetching admin dashboard overview');
     
     // Fetch all required data in parallel
@@ -153,7 +153,7 @@ router.get('/overview', admin, async (req: Request, res: Response, next: NextFun
 // Get all classes (admin)
 router.get('/classes', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin classes endpoint called by user:', req.user?.id);
+    logger.info('Admin classes endpoint called by user:', req.user?.sub);
     
     const { data: classes, error } = await supabase
       .from('classes')
@@ -175,7 +175,7 @@ router.get('/classes', admin, async (req: Request, res: Response, next: NextFunc
 // Get all registrations (admin)
 router.get('/registrations', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin registrations endpoint called by user:', req.user?.id);
+    logger.info('Admin registrations endpoint called by user:', req.user?.sub);
     
     const { data: registrations, error } = await supabase
       .from('registrations')
@@ -201,7 +201,7 @@ router.get('/registrations', admin, async (req: Request, res: Response, next: Ne
 // Get all sessions (admin)
 router.get('/sessions', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin sessions endpoint called by user:', req.user?.id);
+    logger.info('Admin sessions endpoint called by user:', req.user?.sub);
     
     const { data: sessions, error } = await supabase
       .from('schedule_sessions')
@@ -223,7 +223,7 @@ router.get('/sessions', admin, async (req: Request, res: Response, next: NextFun
 // Get admin calendar data
 router.get('/calendar', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin calendar endpoint called by user:', req.user?.id);
+    logger.info('Admin calendar endpoint called by user:', req.user?.sub);
     
     // Get all sessions with their classes
     const { data: sessionClasses, error: scError } = await supabase
@@ -348,7 +348,7 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
 // Get all orders (admin)
 router.get('/orders', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin orders endpoint called by user:', req.user?.id);
+    logger.info('Admin orders endpoint called by user:', req.user?.sub);
     // Fetch orders first (without attempting an embedded join to profiles)
     const { data: orders, error: ordersError } = await supabase
       .from('orders')
@@ -424,7 +424,7 @@ router.put('/contact/messages/:id/status', admin, async (req: Request, res: Resp
 
     const updatePayload: any = { status };
     if (status === 'replied') {
-      updatePayload.replied_by = req.user?.id || null;
+      updatePayload.replied_by = req.user?.sub || null;
       updatePayload.replied_at = new Date().toISOString();
     }
 

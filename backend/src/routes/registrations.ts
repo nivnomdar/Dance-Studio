@@ -34,7 +34,7 @@ router.get('/user/:userId/credits', auth, async (req: Request, res: Response, ne
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -42,7 +42,7 @@ router.get('/user/:userId/credits', auth, async (req: Request, res: Response, ne
     }
 
     // Only admin can check other users' credits, or user can check their own
-    if (profile.role !== 'admin' && req.user!.id !== userId) {
+    if (profile.role !== 'admin' && req.user!.sub !== userId) {
       throw new AppError('Access denied. Admin only or own credits.', 403);
     }
 
@@ -62,7 +62,7 @@ router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request,
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -70,7 +70,7 @@ router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request,
     }
 
     // Only admin can check other users' credits, or user can check their own
-    if (profile.role !== 'admin' && req.user!.id !== userId) {
+    if (profile.role !== 'admin' && req.user!.sub !== userId) {
       throw new AppError('Access denied. Admin only or own credits.', 403);
     }
 
@@ -91,7 +91,7 @@ router.post('/user/:userId/credits', auth, async (req: Request, res: Response, n
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -124,7 +124,7 @@ router.put('/user/:userId/credits/:creditId', auth, async (req: Request, res: Re
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -156,7 +156,7 @@ router.delete('/user/:userId/credits/:creditId', auth, async (req: Request, res:
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -181,7 +181,7 @@ router.get('/credits/statistics', auth, async (req: Request, res: Response, next
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -208,7 +208,7 @@ router.get('/user/:userId/credits/history', auth, async (req: Request, res: Resp
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -253,22 +253,22 @@ router.get('/class/:classId/credit-types', async (req: Request, res: Response, n
 // Get all registrations with class and user details (admin only)
 router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin registrations endpoint called by user:', req.user?.id);
+    logger.info('Admin registrations endpoint called by user:', req.user?.sub);
     
     // Check if user is admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
-      logger.error('User profile not found:', req.user?.id);
+      logger.error('User profile not found:', req.user?.sub);
       throw new AppError('User profile not found', 404);
     }
 
     if (profile.role !== 'admin') {
-      logger.error('Access denied for user:', req.user?.id, 'role:', profile.role);
+              logger.error('Access denied for user:', req.user?.sub, 'role:', profile.role);
       throw new AppError('Access denied. Admin only.', 403);
     }
 
@@ -305,7 +305,7 @@ router.get('/my', auth, async (req: Request, res: Response, next: NextFunction) 
         *,
         class:classes(id, name, price, duration, level, category)
       `)
-      .eq('user_id', req.user!.id)
+      .eq('user_id', req.user!.sub)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -328,7 +328,7 @@ router.get('/user/:userId', auth, async (req: Request, res: Response, next: Next
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -374,7 +374,7 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -392,7 +392,7 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
 
     // If not admin, only show own registrations
     if (profile.role !== 'admin') {
-      query = query.eq('user_id', req.user!.id);
+      query = query.eq('user_id', req.user!.sub);
     }
 
     const { data, error } = await query.single();
@@ -440,22 +440,22 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     logger.info('Raw request body:', req.body);
     logger.info('Extracted credit fields:', { used_credit, credit_type, user_id: bodyUserId });
 
-    // השתמש ב-user_id מה-body אם קיים, אחרת השתמש ב-req.user?.id
-    const user_id = bodyUserId || req.user?.id;
+    // השתמש ב-user_id מה-body אם קיים, אחרת השתמש ב-req.user?.sub
+    const user_id = bodyUserId || req.user?.sub;
 
     console.log('Extracted user_id from body:', bodyUserId);
-    console.log('Current user ID:', req.user?.id);
+    console.log('Current user ID:', req.user?.sub);
     console.log('Final user_id to use:', user_id);
 
     // הגנה: רק אדמין או המשתמש עצמו יכול ליצור הרשמה
     // אם user_id לא קיים, נאפשר רק לאדמין ליצור הרשמה
-    if (user_id && req.user?.id !== user_id) {
+    if (user_id && req.user?.sub !== user_id) {
       console.log('User is creating registration for different user, checking admin role...');
       // נבדוק אם המשתמש המחובר הוא אדמין
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', req.user?.id)
+        .eq('id', req.user?.sub)
         .single();
       
       console.log('Profile check result:', { profile, profileError });
@@ -471,7 +471,7 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', req.user?.id)
+        .eq('id', req.user?.sub)
         .single();
       
       console.log('Profile check result:', { profile, profileError });
@@ -912,7 +912,7 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -1074,7 +1074,7 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -1092,7 +1092,7 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
 
     // If not admin, only allow cancellation of own registrations
     if (profile.role !== 'admin') {
-      query = query.eq('user_id', req.user!.id);
+      query = query.eq('user_id', req.user!.sub);
     }
 
     const { data: registrationData, error: regError } = await query.single();
@@ -1177,7 +1177,7 @@ router.delete('/:id', auth, async (req: Request, res: Response, next: NextFuncti
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', req.user!.id)
+      .eq('id', req.user!.sub)
       .single();
 
     if (profileError || !profile) {
@@ -1191,7 +1191,7 @@ router.delete('/:id', auth, async (req: Request, res: Response, next: NextFuncti
 
     // If not admin, only allow deletion of own registrations
     if (profile.role !== 'admin') {
-      query = query.eq('user_id', req.user!.id);
+      query = query.eq('user_id', req.user!.sub);
     }
 
     const { error } = await query;

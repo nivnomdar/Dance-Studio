@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { AppError } from '../middleware/errorHandler';
 import { admin } from '../middleware/auth';
+import { auth } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import rateLimit from 'express-rate-limit';
 
@@ -24,20 +25,13 @@ const termsAcceptanceLimiter = rateLimit({
 });
 
 // Accept terms endpoint with rate limiting
-router.post('/accept-terms', termsAcceptanceLimiter, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/accept-terms', auth, termsAcceptanceLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError('No valid authorization header', 401);
-    }
-
-    const token = authHeader.substring(7);
+    // Get user from JWT payload (already verified by auth middleware)
+    const user = (req as any).user;
     
-    // Verify the token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new AppError('Invalid token', 401);
+    if (!user || !user.sub) {
+      throw new AppError('User not authenticated', 401);
     }
 
     // Update profile with terms_accepted = true
@@ -47,14 +41,14 @@ router.post('/accept-terms', termsAcceptanceLimiter, async (req: Request, res: R
         terms_accepted: true,
         updated_at: new Date().toISOString()
       })
-      .eq('id', user.id)
+      .eq('id', user.sub)
       .select()
       .single();
 
     if (error) throw new AppError(error.message, 400);
     if (!profile) throw new AppError('Profile not found', 404);
 
-    logger.info('User accepted terms:', { userId: user.id });
+    logger.info('User accepted terms:', { userId: user.sub });
     res.json({ 
       success: true, 
       message: 'Terms accepted successfully',
@@ -127,7 +121,7 @@ router.post('/update-marketing', async (req: Request, res: Response, next: NextF
 // Get all profiles (admin only)
 router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin profiles endpoint called by user:', req.user?.id);
+    logger.info('Admin profiles endpoint called by user:', req.user?.sub);
     
     const { search } = req.query;
     let query = supabase

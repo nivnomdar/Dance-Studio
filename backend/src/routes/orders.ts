@@ -19,7 +19,7 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
           product:products(name, main_image)
         )
       `)
-      .eq('user_id', req.user!.id)
+      .eq('user_id', req.user!.sub)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -57,7 +57,7 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
         )
       `)
       .eq('id', id)
-      .eq('user_id', req.user!.id)
+      .eq('user_id', req.user!.sub)
       .single();
 
     if (error) {
@@ -92,7 +92,7 @@ router.post('/', auth, async (req: Request, res: Response, next: NextFunction) =
       .from('orders')
       .insert([{
         ...req.body,
-        user_id: req.user!.id,
+        user_id: req.user!.sub,
         status: ORDER_STATUS.PENDING
       }])
       .select()

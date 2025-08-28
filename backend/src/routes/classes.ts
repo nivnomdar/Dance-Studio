@@ -189,7 +189,7 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
 // Get admin dashboard overview (admin only)
 router.get('/admin/overview', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin overview endpoint called by user:', req.user?.id);
+    logger.info('Admin overview endpoint called by user:', req.user?.sub);
     logger.info('Fetching admin dashboard overview');
     
     // Fetch all required data in parallel
@@ -544,11 +544,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // Get active classes for current user, excluding trials already used
 router.get('/for-user', auth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!req.user?.id) {
+    if (!req.user?.sub) {
       throw new AppError('Unauthorized', 401);
     }
 
-    const userId = req.user.id;
+    const userId = req.user.sub;
 
     const { data: usedTrials, error: usedTrialsError } = await supabase
       .from('user_trial_classes')
@@ -586,7 +586,7 @@ router.get('/for-user', auth, async (req: Request, res: Response, next: NextFunc
 // Get all classes (admin only)
 router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    logger.info('Admin classes endpoint called by user:', req.user?.id);
+    logger.info('Admin classes endpoint called by user:', req.user?.sub);
     
     const { data, error } = await supabase
       .from('classes')
