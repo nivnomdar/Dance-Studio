@@ -70,7 +70,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       }
     };
 
-    if (userId && session) {
+    if (userId && session?.access_token) {
       // בדיקה אם עברו פחות מ-60 שניות מהטעינה האחרונה (increased from 30)
       const now = Date.now();
       const timeSinceLastFetch = now - lastFetchTime;
@@ -86,7 +86,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
       setLastFetchTime(now);
       fetchRegistrations();
     }
-  }, [userId, session]);
+  }, [userId, session?.access_token, isFetching, lastFetchTime, registrations.length]);
 
   // פילטור הרשמות לפי תאריך
   const filteredRegistrations = registrations.filter(registration => {

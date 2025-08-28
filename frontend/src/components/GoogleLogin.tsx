@@ -115,25 +115,13 @@ export const GoogleLogin = () => {
 export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [termsAccepted, setTermsAccepted] = useState(false)
-  const [marketingConsent, setMarketingConsent] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
   const handleGoogleLogin = async () => {
-    // Check if terms are accepted
-    if (!termsAccepted) {
-      setError('עליך לאשר את תנאי השימוש כדי להמשיך')
-      return
-    }
-
     try {
       setIsLoading(true)
       setError(null)
-      
-      // Store consent values in localStorage for the auth callback
-      localStorage.setItem('pending_terms_accepted', 'true')
-      localStorage.setItem('pending_marketing_consent', marketingConsent.toString())
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -148,7 +136,7 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
       
       if (error) throw error
       
-      // The profile will be updated in the auth callback with the stored consent values
+      // The profile will be updated in the auth callback
       
     } catch (error) {
       console.error('Error logging in with Google:', error)
@@ -276,73 +264,20 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
 
         {/* Content */}
         <div className="p-4 sm:p-6">
-          {/* Terms Checkboxes */}
-          <div className="mb-4 space-y-3">
-            {/* Terms Accepted - Required */}
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="terms-accepted"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-1 cursor-pointer"
-                style={termsAccepted ? checkedStyles : checkboxStyles}
-                required
-                aria-required="true"
-                aria-describedby={`terms-required-note ${error && !termsAccepted ? 'google-login-error' : ''}`}
-                aria-invalid={error && !termsAccepted ? "true" : "false"}
-                aria-label="הסכמה לתנאי השימוש ומדיניות הפרטיות"
-              />
-              <label htmlFor="terms-accepted" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                אני מאשרת ומסכימה ל{' '}
-                <a 
-                  href="/terms-of-service" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[#4B2E83] hover:underline font-medium"
-                  aria-label="תנאי השימוש (נפתח בחלון חדש)"
-                >
-                  תנאי השימוש
-                </a>
-                {' '}ו{' '}
-                <a 
-                  href="/privacy-policy" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-[#4B2E83] hover:underline font-medium"
-                  aria-label="מדיניות הפרטיות (נפתח בחלון חדש)"
-                >
-                  מדיניות הפרטיות
-                </a>
-                {' '}של הסטודיו <span className="text-red-500" aria-label="שדה חובה">*</span>
-              </label>
-            </div>
-
-            {/* Marketing Consent - Optional */}
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="marketing-consent"
-                checked={marketingConsent}
-                onChange={(e) => setMarketingConsent(e.target.checked)}
-                className="mt-1 cursor-pointer"
-                style={marketingConsent ? checkedStyles : checkboxStyles}
-                aria-describedby="marketing-consent-desc"
-                aria-label="הסכמה לקבלת עדכונים ושיווק מהסטודיו"
-              />
-              <label htmlFor="marketing-consent" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                אני מסכים/ה לקבל עדכונים, מבצעים וחדשות מהסטודיו <span className="text-gray-500">(אופציונלי)</span>
-              </label>
-            </div>
+          {/* Marketing consent will be handled in the footer after login */}
+          <div className="mb-4">
+            <p className="text-gray-600 text-sm text-center">
+              לאחר ההתחברות תוכלי לבחור אם לקבל עדכונים מהסטודיו
+            </p>
           </div>
 
-          {/* Google Login Button */}
+          {/* Google Login Button - תמיד פעיל */}
           <button
             onClick={handleGoogleLogin}
-            disabled={isLoading || !termsAccepted}
+            disabled={isLoading}
             className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-200 text-gray-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl font-medium hover:bg-gray-50 hover:border-gray-300 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer group"
             aria-label={isLoading ? 'מתחברת עם Google...' : 'התחברי עם Google'}
-            aria-describedby={`${error ? 'google-login-error' : ''} ${!termsAccepted ? 'terms-required-note' : ''}`}
+            aria-describedby={error ? 'google-login-error' : ''}
             aria-live="polite"
           >
             {isLoading ? (
@@ -383,13 +318,10 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
             הודעת שגיאה בהתחברות עם Google
           </div>
 
-          {/* Note about required fields */}
-          <div className="mt-3 text-xs text-gray-500 text-center" id="terms-required-note">
-            <span className="text-red-500" aria-label="שדה חובה">*</span> שדה חובה
-          </div>
 
-          {/* Marketing consent description */}
-          <div className="mt-2 text-xs text-gray-500 text-center" id="marketing-consent-desc">
+
+          {/* Marketing consent info */}
+          <div className="mt-2 text-xs text-gray-500 text-center">
             הסכמה לשיווק היא רשות ואינה נדרשת להתחברות
           </div>
         </div>

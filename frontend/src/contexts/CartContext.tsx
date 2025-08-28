@@ -21,13 +21,24 @@ export const useCart = () => {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const { user } = useAuth();
+  const auth = useAuth();
+  const user = auth?.user;
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
   const isSavingRef = useRef<boolean>(false);
 
+  // If auth is not ready, show children without cart functionality
+  if (!auth) {
+    return <>{children}</>;
+  }
+
   // Load cart from Supabase user metadata on mount
   useEffect(() => {
+    // Don't load cart if auth is not ready
+    if (!auth) {
+      return;
+    }
+
     const loadCart = async () => {
       if (user) {
         // נסה לטעון מהמשתמש המחובר
@@ -60,10 +71,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     };
 
     loadCart();
-  }, [user]);
+  }, [user, auth]);
 
   // Save cart to Supabase user metadata with throttling and debouncing
   useEffect(() => {
+    // Don't save cart if auth is not ready
+    if (!auth) {
+      return;
+    }
+
     const saveCart = async () => {
       if (!user) {
         // שמירה זמנית ב-cookies
@@ -121,7 +137,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [cartItems, user]);
+  }, [cartItems, user, auth]);
 
   const clearCart = useCallback(() => {
     setCartItems([]);

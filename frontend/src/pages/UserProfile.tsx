@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +27,8 @@ function UserProfile() {
     address: '',
     city: '',
     postalCode: '',
+    termsAccepted: false,
+    marketingConsent: false,
   });
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
@@ -39,6 +41,10 @@ function UserProfile() {
   const [isFetchingCount, setIsFetchingCount] = useState(false);
   const [trialStatuses, setTrialStatuses] = useState<Array<{ id: string; name: string; used: boolean }>>([]);
   const navigate = useNavigate();
+  
+  // Refs to track loaded data
+  const dataLoadedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   // Move profile loading logic to useCallback to avoid setState during render
   const loadProfileData = useCallback(async () => {
@@ -82,6 +88,25 @@ function UserProfile() {
 
         // First, try to create the profile using upsert
         try {
+          // Check if profile already exists to avoid overwriting existing values
+          const existingProfileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=terms_accepted,marketing_consent`, {
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${session.access_token}`,
+            }
+          });
+
+          let existingTermsAccepted = false;
+          let existingMarketingConsent = false;
+
+          if (existingProfileResponse.ok) {
+            const existingProfileData = await existingProfileResponse.json();
+            if (existingProfileData.length > 0) {
+              existingTermsAccepted = existingProfileData[0].terms_accepted ?? false;
+              existingMarketingConsent = existingProfileData[0].marketing_consent ?? false;
+            }
+          }
+
           const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
@@ -99,8 +124,9 @@ function UserProfile() {
               avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
               created_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: false, // User must explicitly accept terms
-              marketing_consent: false, // User must explicitly consent to marketing
+              // Preserve existing values if they exist, otherwise use defaults
+              terms_accepted: existingTermsAccepted,
+              marketing_consent: existingMarketingConsent,
               last_login_at: new Date().toISOString(),
               language: 'he'
             })
@@ -132,6 +158,8 @@ function UserProfile() {
                 address: newProfile.address || '',
                 city: newProfile.city || '',
                 postalCode: newProfile.postal_code || '',
+                termsAccepted: newProfile.terms_accepted || false,
+                marketingConsent: newProfile.marketing_consent || false,
               });
               setIsLoadingProfile(false);
             }, 0);
@@ -166,6 +194,8 @@ function UserProfile() {
                     address: profileData.address || '',
                     city: profileData.city || '',
                     postalCode: profileData.postal_code || '',
+                    termsAccepted: profileData.terms_accepted || false,
+                    marketingConsent: profileData.marketing_consent || false,
                   });
                   setIsLoadingProfile(false);
                 }, 0);
@@ -199,6 +229,8 @@ function UserProfile() {
             address: profileData.address || '',
             city: profileData.city || '',
             postalCode: profileData.postal_code || '',
+            termsAccepted: profileData.terms_accepted || false,
+            marketingConsent: profileData.marketing_consent || false,
           });
           setIsLoadingProfile(false);
         }, 0);
@@ -256,6 +288,8 @@ function UserProfile() {
         address: tempProfile.address || '',
         city: tempProfile.city || '',
         postalCode: tempProfile.postal_code || '',
+        termsAccepted: tempProfile.terms_accepted || false,
+        marketingConsent: tempProfile.marketing_consent || false,
       });
       setIsLoadingProfile(false);
     }, 0);
@@ -376,15 +410,26 @@ function UserProfile() {
 
   // useEffect לטעינת ספירת השיעורים ויתרת מנויים
   useEffect(() => {
-    if (user && session && !authLoading) {
-      // Use setTimeout to avoid setState during render
-      setTimeout(() => {
-        fetchClassesCount();
-        fetchSubscriptionCredits();
-        fetchTrialStatus();
-      }, 0);
+    if (user?.id && session?.access_token && !authLoading) {
+      // Reset if user changed
+      if (currentUserIdRef.current !== user.id) {
+        dataLoadedRef.current = false;
+        currentUserIdRef.current = user.id;
+      }
+      
+      // Only load if not already loaded for this user
+      if (!dataLoadedRef.current) {
+        dataLoadedRef.current = true;
+        
+        // Use setTimeout to avoid setState during render
+        setTimeout(() => {
+          fetchClassesCount();
+          fetchSubscriptionCredits();
+          fetchTrialStatus();
+        }, 0);
+      }
     }
-  }, [user?.id, session, authLoading, fetchClassesCount, fetchSubscriptionCredits, fetchTrialStatus]);
+  }, [user?.id, session?.access_token, authLoading]);
 
   // Load if user has any trial usage records for status badge (UI only)
   useEffect(() => {
@@ -433,11 +478,31 @@ function UserProfile() {
   //   return () => window.removeEventListener('focus', handleFocus);
   // }, [user?.id, session, authLoading]);
 
+  // Callback to refresh data
+  const refreshData = useCallback(() => {
+    if (user?.id) {
+      dataLoadedRef.current = false;
+      setTimeout(() => {
+        fetchClassesCount();
+        fetchSubscriptionCredits();
+        fetchTrialStatus();
+      }, 0);
+    }
+  }, [user?.id]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
     }));
   };
 
@@ -456,6 +521,8 @@ function UserProfile() {
         address: formData.address,
         city: formData.city,
         postal_code: formData.postalCode,
+        terms_accepted: formData.termsAccepted,
+        marketing_consent: formData.marketingConsent,
       };
       
       const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
@@ -667,6 +734,7 @@ function UserProfile() {
               isEditing={isEditing}
               isLoading={isLoading}
               onInputChange={handleInputChange}
+              onCheckboxChange={handleCheckboxChange}
               onSubmit={handleSubmit}
               onToggleEdit={() => setIsEditing(!isEditing)}
               session={session}

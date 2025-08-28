@@ -7,55 +7,45 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001
 
 // Request queue system to prevent rate limiting
 class RequestQueue {
-  private queue: Array<() => Promise<any>> = [];
-  private processing = false;
-  private maxConcurrent = 3; // Maximum 3 concurrent requests
-  private activeRequests = 0;
+  private queue: Map<string, Promise<any>> = new Map();
 
-  async add<T>(requestFn: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push(async () => {
-        try {
-          this.activeRequests++;
-          const result = await requestFn();
-          resolve(result);
-        } catch (error) {
-          reject(error);
-        } finally {
-          this.activeRequests--;
-          this.processNext();
-        }
-      });
-      
-      if (!this.processing) {
-        this.processNext();
-      }
+  async enqueue<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
+    // If there's already a request with this key, return the existing promise
+    if (this.queue.has(key)) {
+      return this.queue.get(key)!;
+    }
+
+    // Create new request
+    const promise = requestFn().finally(() => {
+      // Remove from queue when done
+      this.queue.delete(key);
     });
+
+    // Store in queue
+    this.queue.set(key, promise);
+    return promise;
   }
 
-  private processNext() {
-    if (this.queue.length === 0 || this.activeRequests >= this.maxConcurrent) {
-      this.processing = false;
-      return;
-    }
-
-    this.processing = true;
-    const request = this.queue.shift();
-    if (request) {
-      request();
-    }
+  clear() {
+    this.queue.clear();
   }
 }
 
 const requestQueue = new RequestQueue();
 void requestQueue;
 
-// Simple fetch with retry
+// Simple fetch with retry and deduplication
 const fetchWithRetryAndQueue = async <T>(
   fetchFn: () => Promise<Response>,
   retries = 1,
-  delay = 1000
+  delay = 1000,
+  requestKey?: string
 ): Promise<T> => {
+  // If a request key is provided, use deduplication
+  if (requestKey) {
+    return requestQueue.enqueue(requestKey, () => fetchWithRetryAndQueue(fetchFn, retries, delay));
+  }
+
   let lastError: Error;
   
   for (let i = 0; i <= retries; i++) {
@@ -71,6 +61,7 @@ const fetchWithRetryAndQueue = async <T>(
       if (response.status === 429) {
         const retryAfter = response.headers.get('Retry-After');
         const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay * Math.pow(2, i);
+        console.warn(`Rate limited (429). Waiting ${waitTime}ms before retry ${i + 1}/${retries + 1}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
@@ -199,8 +190,11 @@ export const apiService = {
   // Shop API
   shop: {
     async getCategories(): Promise<any[]> {
-      return fetchWithRetryAndQueue<any[]>(() =>
-        fetch(`${API_BASE_URL}/shop/categories`)
+      return fetchWithRetryAndQueue<any[]>(
+        () => fetch(`${API_BASE_URL}/shop/categories`),
+        1,
+        1000,
+        'shop/categories'
       ).catch(error => {
         console.error('Shop API getCategories error:', error);
         return [];
@@ -219,8 +213,12 @@ export const apiService = {
 
     async getProducts(params?: { category_id?: string }): Promise<any[]> {
       const query = params?.category_id ? `?category_id=${encodeURIComponent(params.category_id)}` : '';
-      return fetchWithRetryAndQueue<any[]>(() =>
-        fetch(`${API_BASE_URL}/shop/products${query}`)
+      const requestKey = `shop/products${query}`;
+      return fetchWithRetryAndQueue<any[]>(
+        () => fetch(`${API_BASE_URL}/shop/products${query}`),
+        1,
+        1000,
+        requestKey
       ).catch(error => {
         console.error('Shop API getProducts error:', error);
         return [];

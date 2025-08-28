@@ -20,6 +20,8 @@ import ProductPage from './pages/ProductPage';
 import { PopupProvider } from './contexts/PopupContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { TermsGuard } from './components/TermsGuard';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import AdminDashboard from './admin/pages/dashboard/AdminDashboard';
 import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper';
 import CookieConsentBanner from './components/layout/CookieConsentBanner';
@@ -63,16 +65,20 @@ function AppContent() {
 function App() {
   // console.log('App component render at:', new Date().toISOString()); // Debug log
   return (
-    <AuthProvider>
-      <PopupProvider>
-        <CartProvider>
-          <Router>
-            <AppContent />
-            {/* <ThrottleMonitor isVisible={import.meta.env.DEV} /> */}
-          </Router>
-        </CartProvider>
-      </PopupProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <PopupProvider>
+            <CartProvider>
+              <TermsGuard>
+                <AppContent />
+                {/* <ThrottleMonitor isVisible={import.meta.env.DEV} /> */}
+              </TermsGuard>
+            </CartProvider>
+          </PopupProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

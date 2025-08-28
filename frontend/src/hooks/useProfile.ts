@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile } from '../types/auth';
+import { supabase } from '../lib/supabase';
 import { 
   setDataWithTimestamp, 
   getDataWithTimestamp, 
@@ -86,6 +87,13 @@ export function useProfile(): UseProfileReturn {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
+      // Check if profile already exists to avoid overwriting existing values
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('terms_accepted, marketing_consent')
+        .eq('id', user.id)
+        .maybeSingle();
+
       const newProfile = {
         id: user.id,
         email: user.email || '',
@@ -95,8 +103,9 @@ export function useProfile(): UseProfileReturn {
         avatar_url: user.user_metadata?.avatar_url || '',
         created_at: new Date().toISOString(),
         is_active: true,
-        terms_accepted: false, // User must explicitly accept terms
-        marketing_consent: false, // User must explicitly consent to marketing
+        // Preserve existing values if they exist, otherwise use defaults
+        terms_accepted: existingProfile?.terms_accepted ?? false,
+        marketing_consent: existingProfile?.marketing_consent ?? false,
         last_login_at: new Date().toISOString(),
         language: 'he',
         has_used_trial_class: false

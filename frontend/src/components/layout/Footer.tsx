@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaWaze } from 'react-icons/fa';
-// import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { MarketingConsentForm } from '../MarketingConsentForm';
 
 const Footer: React.FC = () => {
-  // console.log('Footer render at:', new Date().toISOString()); // Debug log
-  // const { profile } = useAuth();
+  const { profile } = useAuth();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState('');
   const [newsletterMessage, setNewsletterMessage] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
+  const navigate = useNavigate();
+
+  // Check if user is logged in and needs marketing consent form
+  const shouldShowMarketingForm = profile && !profile.marketing_consent;
+  const userEmail = profile?.email || '';
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // כאן תוכלי להוסיף לוגיקה לשליחת האימייל
-    setNewsletterMessage({ type: 'success', text: 'תודה! נרשמת בהצלחה לעדכונים שלי.' });
-    setEmail('');
     
-    // הסתרת ההודעה אחרי 3 שניות
-    setTimeout(() => {
-      setNewsletterMessage({ type: null, text: '' });
-    }, 3000);
+    if (!email.trim()) {
+      setNewsletterMessage({ type: 'error', text: 'אנא הזיני כתובת אימייל תקינה' });
+      return;
+    }
+
+    // העברת המשתמש לדף יצירת קשר עם האימייל שכבר מלא
+    navigate(`/contact?email=${encodeURIComponent(email.trim())}`);
+  };
+
+  const handleMarketingSuccess = () => {
+    // The profile will be updated via the AuthContext
+    // No need to force a re-render - the state will update automatically
+    // Just reset the email input
+    setEmail('');
   };
 
   return (
@@ -215,49 +227,45 @@ const Footer: React.FC = () => {
 
           {/* Newsletter */}
           <div className="lg:col-span-1">
-            <Link to="/contact" className="group">
-              <h4 className="text-lg font-semibold text-pink-400 mb-4 hover:text-pink-300 transition-colors duration-200 cursor-pointer flex items-center">
-                הישארי מעודכנת
-                <svg className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </h4>
-            </Link>
+            <h4 className="text-lg font-semibold text-pink-400 mb-4">
+              {shouldShowMarketingForm ? 'הישארי מעודכנת' : 'הישארי מעודכנת'}
+            </h4>
             <p className="text-gray-300 text-sm mb-4">
-              הירשמי לעדכונים על שיעורים חדשים, אירועים מיוחדים ומבצעים
+              {shouldShowMarketingForm 
+                ? 'הזיני את האימייל שלך כדי לקבל עדכונים, מבצעים וחדשות מהסטודיו'
+                : 'הזיני את האימייל שלך ונעבור לטופס יצירת קשר להשלמת הפרטים'
+              }
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="space-y-3">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="האימייל שלך"
-                required
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400"
-              />
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
-              >
-                הרשמה
-              </button>
-              
-              {/* הודעת הצלחה/שגיאה */}
-              {newsletterMessage.type && (
-                <div className={`p-3 rounded-md border-2 ${
-                  newsletterMessage.type === 'success' 
-                    ? 'bg-green-900/20 border-green-500/30 text-green-300' 
-                    : 'bg-red-900/20 border-red-500/30 text-red-300'
-                }`}>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${
-                      newsletterMessage.type === 'success' ? 'bg-green-400' : 'bg-red-400'
-                    }`}></div>
-                    <span className="text-sm font-medium">{newsletterMessage.text}</span>
+            {shouldShowMarketingForm ? (
+              <MarketingConsentForm userEmail={userEmail} onSuccess={handleMarketingSuccess} />
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="האימייל שלך"
+                  required
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
+                >
+                  המשך לטופס יצירת קשר
+                </button>
+                
+                {/* הודעת שגיאה */}
+                {newsletterMessage.type === 'error' && (
+                  <div className="p-3 rounded-md border-2 bg-red-900/20 border-red-500/30 text-red-300">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2 bg-red-400"></div>
+                      <span className="text-sm font-medium">{newsletterMessage.text}</span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </form>
+                )}
+              </form>
+            )}
           </div>
         </div>
       </div>

@@ -12,10 +12,13 @@ interface PersonalDetailsTabProps {
     address: string;
     city: string;
     postalCode: string;
+    termsAccepted: boolean;
+    marketingConsent: boolean;
   };
   isEditing: boolean;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onToggleEdit: () => void;
 }
@@ -27,6 +30,7 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
   isEditing,
   isLoading,
   onInputChange,
+  onCheckboxChange,
   onSubmit,
   onToggleEdit
 }) => {
@@ -206,6 +210,45 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
                 placeholder="הכניסי מיקוד"
                 className="w-full px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-[#4B2E83]/10 focus:border-[#EC4899] focus:ring-2 sm:focus:ring-4 focus:ring-[#EC4899]/10 outline-none transition-all duration-200 disabled:bg-gray-50 disabled:text-gray-500 text-right text-sm"
               />
+            </div>
+          </div>
+
+          {/* Consent Fields */}
+          <div className="space-y-4 sm:space-y-6 border-t border-[#4B2E83]/10 pt-4 sm:pt-6">
+            <h4 className="text-sm sm:text-base font-semibold text-[#4B2E83] mb-3 sm:mb-4">
+              הגדרות הסכמה
+            </h4>
+            
+            {/* Terms Accepted */}
+            <div className="flex items-start space-x-3 space-x-reverse">
+              <input
+                type="checkbox"
+                id="termsAccepted"
+                name="termsAccepted"
+                checked={formData.termsAccepted}
+                onChange={onCheckboxChange}
+                disabled={!isEditing}
+                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50"
+              />
+              <label htmlFor="termsAccepted" className="text-sm text-gray-700 leading-relaxed">
+                אני מסכימה לתנאי השימוש של הסטודיו
+              </label>
+            </div>
+
+            {/* Marketing Consent */}
+            <div className="flex items-start space-x-3 space-x-reverse">
+              <input
+                type="checkbox"
+                id="marketingConsent"
+                name="marketingConsent"
+                checked={formData.marketingConsent}
+                onChange={onCheckboxChange}
+                disabled={!isEditing}
+                className="mt-1 w-4 h-4 text-[#EC4899] bg-gray-100 border-gray-300 rounded focus:ring-[#EC4899] focus:ring-2 disabled:opacity-50"
+              />
+              <label htmlFor="marketingConsent" className="text-sm text-gray-700 leading-relaxed">
+                אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
+              </label>
             </div>
           </div>
 

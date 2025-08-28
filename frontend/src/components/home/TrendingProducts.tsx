@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
-import { apiService } from '../../lib/api';
+import { useProducts } from '../../hooks/useProducts';
 
 type ShopProduct = {
   id: string;
@@ -16,27 +16,12 @@ type ShopProduct = {
 };
 
 function TrendingProducts() {
-  const [products, setProducts] = useState<ShopProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { products, loading } = useProducts();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const data = await apiService.shop.getProducts();
-        if (!isMounted) return;
-        setProducts(Array.isArray(data) ? data : []);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => { isMounted = false; };
-  }, []);
 
   const trending = useMemo(() => {
     const items = (products || []).filter(p => p.is_active);
-    const flagged = items.filter((p: any) => !!p.trending);
+    const flagged = items.filter((p: ShopProduct) => !!(p as any).trending);
     return flagged.length ? flagged : [];
   }, [products]);
 

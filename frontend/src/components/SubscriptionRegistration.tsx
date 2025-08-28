@@ -222,10 +222,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
 
   // Load registrations
   useEffect(() => {
-    if (user && session) {
+    if (user?.id && session?.access_token) {
       loadRegistrations();
     }
-  }, [user, session]);
+  }, [user?.id, session?.access_token]);
 
   const loadRegistrations = async () => {
     try {
@@ -238,10 +238,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
 
   // Load subscription credits
   useEffect(() => {
-    if (user && session) {
+    if (user?.id && session?.access_token) {
       loadUserCredits();
     }
-  }, [user, session]);
+  }, [user?.id, session?.access_token]);
 
   const loadUserCredits = async () => {
     try {

@@ -187,4 +187,105 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+// Accept terms endpoint
+router.post('/accept-terms', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError('No valid authorization header', 401);
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Verify the token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new AppError('Invalid token', 401);
+    }
+
+    // Update profile with terms_accepted = true
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .update({ 
+        terms_accepted: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw new AppError(error.message, 400);
+    if (!profile) throw new AppError('Profile not found', 404);
+
+    logger.info('User accepted terms:', { userId: user.id });
+    res.json({ 
+      success: true, 
+      message: 'Terms accepted successfully',
+      profile 
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update marketing consent endpoint
+router.post('/update-marketing', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError('No valid authorization header', 401);
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Verify the token and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new AppError('Invalid token', 401);
+    }
+
+    const { email, marketing_consent } = req.body;
+    
+    if (typeof marketing_consent !== 'boolean') {
+      throw new AppError('marketing_consent must be a boolean', 400);
+    }
+
+    // Update profile with marketing consent and email
+    const updateData: any = { 
+      marketing_consent,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (email && typeof email === 'string') {
+      updateData.email = email;
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw new AppError(error.message, 400);
+    if (!profile) throw new AppError('Profile not found', 404);
+
+    logger.info('User updated marketing consent:', { 
+      userId: user.id, 
+      marketing_consent,
+      emailUpdated: !!email 
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Marketing consent updated successfully',
+      profile 
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router; 

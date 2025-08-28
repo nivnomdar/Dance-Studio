@@ -19,6 +19,7 @@ import {
   hasCookie, 
   clearAllCookies 
 } from '../utils/cookieManager';
+import { TermsCookieManager } from '../utils/termsCookieManager';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -64,6 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set flag to prevent other processes from creating profile
       setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
 
+      // Check if profile already exists to avoid overwriting existing values
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('terms_accepted, marketing_consent')
+        .eq('id', safeUser.id)
+        .maybeSingle();
+
       const avatarUrl = safeUser.user_metadata?.avatar_url || '';
       const profileData = {
         id: safeUser.id,
@@ -74,8 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar_url: avatarUrl,
         created_at: new Date().toISOString(),
         is_active: true,
-        terms_accepted: false, // User must explicitly accept terms
-        marketing_consent: false, // User must explicitly consent to marketing
+        // Preserve existing values if they exist, otherwise use defaults
+        terms_accepted: existingProfile?.terms_accepted ?? false,
+        marketing_consent: existingProfile?.marketing_consent ?? false,
         last_login_at: new Date().toISOString(),
         language: 'he'
       };
@@ -206,8 +215,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_active: true,
-      terms_accepted: false, // User must explicitly accept terms
-      marketing_consent: false, // User must explicitly consent to marketing
+      // Don't set hardcoded values for consent fields - they will be loaded from database
+      terms_accepted: false, // Will be updated when real profile loads
+      marketing_consent: false, // Will be updated when real profile loads
       last_login_at: new Date().toISOString(),
       language: 'he',
       has_used_trial_class: false,
@@ -250,6 +260,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
         if (profileData) {
           setProfile(profileData);
+          
+          // Update terms cookie if terms are accepted
+          if (profileData.terms_accepted) {
+            TermsCookieManager.setTermsAccepted(profileData.id);
+          }
+          
           // Cache the profile
           const cacheKey = `profile_${safeUser.id}`;
           setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
@@ -287,6 +303,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthState(AuthState.AUTHENTICATED);
         // Load profile
         const profileData = await loadProfileSafelyRef.current?.(safeUser.id);
+        if (profileData) {
+          // Update terms cookie if terms are accepted
+          if (profileData.terms_accepted) {
+            TermsCookieManager.setTermsAccepted(profileData.id);
+          }
+        }
         setProfile(profileData || null);
       } else {
         setAuthState(AuthState.UNAUTHENTICATED);
@@ -323,6 +345,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         });
         clearAllCookies();
+        
+        // Clear terms cookie
+        TermsCookieManager.clearTermsCookie();
       } catch (e) {
         console.error('Could not clear storage:', e);
       }
@@ -345,6 +370,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfileLoading(true);
     try {
       const profileData = await loadProfileSafelyRef.current?.(user.id);
+      if (profileData) {
+        // Update terms cookie if terms are accepted
+        if (profileData.terms_accepted) {
+          TermsCookieManager.setTermsAccepted(profileData.id);
+        }
+      }
       setProfile(profileData || null);
     } catch (error) {
       console.error('Error in loadProfile:', error);

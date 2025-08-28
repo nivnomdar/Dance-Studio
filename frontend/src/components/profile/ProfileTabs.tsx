@@ -17,10 +17,13 @@ interface ProfileTabsProps {
     address: string;
     city: string;
     postalCode: string;
+    termsAccepted: boolean;
+    marketingConsent: boolean;
   };
   isEditing: boolean;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onToggleEdit: () => void;
   session: any;
@@ -37,6 +40,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   isEditing,
   isLoading,
   onInputChange,
+  onCheckboxChange,
   onSubmit,
   onToggleEdit,
   session,
@@ -86,6 +90,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             isEditing={isEditing}
             isLoading={isLoading}
             onInputChange={onInputChange}
+            onCheckboxChange={onCheckboxChange}
             onSubmit={onSubmit}
             onToggleEdit={onToggleEdit}
           />

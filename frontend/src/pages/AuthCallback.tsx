@@ -77,35 +77,13 @@ export default function AuthCallback() {
         }
 
         if (data.session) {
-          // Set authenticated state and navigate immediately
+          // Session created successfully, redirect to home
+          // TermsGuard will handle showing the terms modal if needed
           if (!hasNavigated) {
             setIsAuthenticated(true);
             setHasNavigated(true);
             navigate('/', { replace: true });
           }
-          
-          // Get consent values from localStorage
-          const termsAccepted = localStorage.getItem('pending_terms_accepted') === 'true';
-          const marketingConsent = localStorage.getItem('pending_marketing_consent') === 'true';
-          
-          // Clear localStorage
-          localStorage.removeItem('pending_terms_accepted');
-          localStorage.removeItem('pending_marketing_consent');
-          
-          // Update profile in background (non-blocking) with actual consent values
-          supabase
-            .from('profiles')
-            .update({
-              terms_accepted: termsAccepted,
-              marketing_consent: marketingConsent,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', data.session.user.id)
-            .then(({ error }) => {
-              if (error) {
-                console.error('Error updating profile:', error);
-              }
-            });
         } else {
           console.error('No session returned from code exchange');
           setError('שגיאה בהתחברות. אנא נסה שוב.');

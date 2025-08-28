@@ -1,13 +1,23 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiService } from "../lib/api";
 import { ContactSuccessModal } from "../components/common";
 
 function ContactPage() {
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", subject: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for email parameter from URL and pre-fill the form
+  useEffect(() => {
+    const emailFromUrl = searchParams.get('email');
+    if (emailFromUrl) {
+      setForm(prev => ({ ...prev, email: emailFromUrl }));
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -187,28 +197,48 @@ function ContactPage() {
               <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">
                 פרטי התקשרות
               </h3>
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-4 sm:space-y-5">
                 {/* פרטי התקשרות */}
-                <div className="space-y-3 sm:space-y-4">
-                  <p className="flex items-start sm:items-center text-[#2B2B2B] text-sm sm:text-base">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#D8A7B1] mr-2 sm:mr-3 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="mr-2 break-words">רחוב יוסף לישנסקי 6, ראשון לציון</span>
-                  </p>
-                  <p className="flex items-center text-[#2B2B2B] text-sm sm:text-base">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-[#D8A7B1] mr-2 sm:mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <span className="mr-2">050-1234567</span>
-                  </p>
-                  <div className="flex items-center text-gray-600 mb-2">
-                    <svg className="w-5 h-5 mr-2 text-[#4B2E83]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span className="mr-2 break-all">info@ladances.com</span>
-                  </div>
+                <div className="space-y-4 sm:space-y-5">
+                                     {/* כתובת */}
+                   <div className="flex items-start space-x-4 space-x-reverse">
+                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                       </svg>
+                     </div>
+                     <div className="mr-2 flex-1 min-w-0">
+                       <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">כתובת</p>
+                       <p className="text-gray-600 text-sm break-words">רחוב יוסף לישנסקי 6, ראשון לציון</p>
+                     </div>
+                   </div>
+
+                   {/* טלפון */}
+                   <div className="flex items-start space-x-4 space-x-reverse">
+                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                       </svg>
+                     </div>
+                     <div className="mr-2 flex-1 min-w-0">
+                       <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">טלפון</p>
+                       <p className="text-gray-600 text-sm">050-1234567</p>
+                     </div>
+                   </div>
+
+                   {/* אימייל */}
+                   <div className="flex items-start space-x-4 space-x-reverse">
+                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                       </svg>
+                     </div>
+                     <div className="mr-2 flex-1 min-w-0">
+                       <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">אימייל</p>
+                       <p className="text-gray-600 text-sm break-all">info@ladances.com</p>
+                     </div>
+                   </div>
                 </div>
               </div>
             </div>

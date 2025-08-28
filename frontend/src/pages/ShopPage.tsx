@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Product } from '../types/product';
 import { useCart } from '../contexts/CartContext';
 import { usePopup } from '../contexts/PopupContext';
-import { apiService } from '../lib/api';
+import { useProducts } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 
 const ShopPage = () => {
   const navigate = useNavigate();
@@ -16,71 +17,60 @@ const ShopPage = () => {
   const [quantity, setQuantity] = useState<number>(1);
   const { addToCart } = useCart();
   const { showPopup } = usePopup();
-  const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const { products: apiProducts, loading: productsLoading } = useProducts();
+  const { categories: apiCategories, loading: categoriesLoading } = useCategories();
   const [page, setPage] = useState<number>(1);
   const pageSizeAll = 18;
   void error;
 
   const topLevelCategories = useMemo(() => {
-    const top = categories.filter(c => !c.parent_id);
+    const top = apiCategories.filter(c => !c.parent_id);
     // do not include the synthetic "all" button in the UI
     return top.map((c: any) => ({ id: c.id, name: c.name }));
-  }, [categories]);
+  }, [apiCategories]);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setIsLoading(true);
-        const [cats, prods] = await Promise.all([
-          apiService.shop.getCategories(),
-          apiService.shop.getProducts()
-        ]);
-        if (!mounted) return;
-        setCategories((cats || []).filter((c: any) => c.is_active !== false));
-        // Map backend products to UI-friendly shape
-        const mapped = (prods || []).map((p: any) => ({
-          ...p,
-          image: (() => {
-            const url = p.main_image || p.image || '';
-            const ts = p.updated_at || p.created_at;
-            if (!url) return url;
-            if (!ts) return url;
-            const ver = new Date(ts).getTime();
-            return `${url}${url.includes('?') ? '&' : '?'}v=${ver}`;
-          })(),
-          features: Array.isArray(p.features) ? p.features : [],
-          sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
-          colors: Array.isArray(p.colors) ? p.colors : undefined,
-          isNew: !!(p.trending ?? p.isNew),
-          isBestSeller: !!(p.recommended ?? p.isBestSeller)
-        }));
-        setProducts(mapped);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || 'שגיאה בטעינת החנות');
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    if (apiProducts && apiCategories) {
+      // Map backend products to UI-friendly shape
+      const mapped = (apiProducts || []).map((p: any) => ({
+        ...p,
+        image: (() => {
+          const url = p.main_image || p.image || '';
+          const ts = p.updated_at || p.created_at;
+          if (!url) return url;
+          if (!ts) return url;
+          const ver = new Date(ts).getTime();
+          return `${url}${url.includes('?') ? '&' : '?'}v=${ver}`;
+        })(),
+        features: Array.isArray(p.features) ? p.features : [],
+        sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
+        colors: Array.isArray(p.colors) ? p.colors : undefined,
+        isNew: !!(p.trending ?? p.isNew),
+        isBestSeller: !!(p.recommended ?? p.isBestSeller)
+      }));
+      setProducts(mapped);
+    }
+  }, [apiProducts, apiCategories]);
+
+  useEffect(() => {
+    setIsLoading(productsLoading || categoriesLoading);
+  }, [productsLoading, categoriesLoading]);
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === 'all') return products;
-    const selected = categories.find((c: any) => c.id === selectedCategory);
+    const selected = apiCategories.find((c: any) => c.id === selectedCategory);
     if (!selected) return products;
     const isParent = !selected.parent_id;
     if (isParent) {
-      const childIds = new Set(categories.filter((c: any) => c.parent_id === selectedCategory).map((c: any) => c.id));
+      const childIds = new Set(apiCategories.filter((c: any) => c.parent_id === selectedCategory).map((c: any) => c.id));
       return products.filter((p: any) => p.category_id === selectedCategory || childIds.has(p.category_id) || p.categories?.parent_id === selectedCategory);
     }
     // Subcategory: match by direct category_id or by joined alias id if present
     return products.filter((p: any) => p.category_id === selectedCategory || p.categories?.id === selectedCategory);
-  }, [products, selectedCategory, categories]);
+  }, [products, selectedCategory, apiCategories]);
 
   const isAll = selectedCategory === 'all';
   const totalPages = isAll ? Math.max(1, Math.ceil(products.length / pageSizeAll)) : 1;
@@ -91,8 +81,8 @@ const ShopPage = () => {
   }, [isAll, filteredProducts, products, page]);
 
   const selectedCategoryObj = useMemo(() => {
-    return categories.find((c: any) => c.id === selectedCategory) || null;
-  }, [categories, selectedCategory]);
+    return apiCategories.find((c: any) => c.id === selectedCategory) || null;
+  }, [apiCategories, selectedCategory]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const target = e.target as HTMLImageElement;
@@ -212,7 +202,7 @@ const ShopPage = () => {
         {/* Subcategories (always show for the selected parent) */}
         {activeParentId !== 'all' && (
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2" role="navigation" aria-label="תת־קטגוריות">
-            {categories.filter((c: any) => c.parent_id === activeParentId).map((sub: any) => (
+            {apiCategories.filter((c: any) => c.parent_id === activeParentId).map((sub: any) => (
               <button
                 key={sub.id}
                 onClick={() => { setSelectedCategory(sub.id); setPage(1); }}
