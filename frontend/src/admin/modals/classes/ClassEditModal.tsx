@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ResponsiveSelect from '../../../components/ui/ResponsiveSelect';
 import { translateCategory } from '../../../utils/categoryUtils';
 import { REGISTRATION_TYPE_OPTIONS } from '../../../utils/constants';
+import { getDefaultClassImage } from '../../../config/classImages';
+import ClassImagesSection from './ClassImagesSection';
+import type { ClassImagesSectionHandle } from './types';
 
 interface ClassEditModalProps {
   classData: any;
@@ -13,9 +16,17 @@ interface ClassEditModalProps {
 
 export default function ClassEditModal({ classData, isOpen, onClose, onSave, isLoading }: ClassEditModalProps) {
   const isNewClass = !classData.id;
+  const imagesRef = useRef<ClassImagesSectionHandle>(null);
   const [showCreditsSection, setShowCreditsSection] = useState(
     classData.group_credits > 0 || classData.private_credits > 0 || isNewClass
   );
+
+  
+  // State לניהול הודעות
+  const [showMessage, setShowMessage] = useState(false);
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageContent, setMessageContent] = useState('');
   
     const [formData, setFormData] = useState({
     name: classData.name || '',
@@ -28,7 +39,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     
     location: classData.location || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
     included: classData.included || (isNewClass ? 'חימום, לימוד טכניקות, תרגול צעדים וריקוד קצר.\nברכיות ספוג לברכיים' : ''),
-    image_url: classData.image_url || '/carousel/image4.png',
+    image_url: classData.image_url || getDefaultClassImage().url,
     video_url: classData.video_url || '',
     category: classData.category || '',
     color_scheme: classData.color_scheme || 'pink',
@@ -37,7 +48,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     group_credits: classData.group_credits || 0,
     private_credits: classData.private_credits || 0,
     is_active: classData.is_active !== undefined ? classData.is_active : true,
-    slug: classData.slug || ''
+    slug: classData.slug || '' // Preserve existing slug, don't default to empty string
   });
 
   // Check if credits section should be enabled based on registration type
@@ -53,7 +64,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     // For subscription, keep the user's choice or default to empty
   }, [formData.registration_type]);
 
-  useEffect(() => {
+    useEffect(() => {
     setFormData({
       name: classData.name || '',
       description: classData.description || '',
@@ -62,10 +73,10 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
       duration: classData.duration || 60,
       level: classData.level || 'מתחילות',
       age_group: classData.age_group || '18+',
-
+      
       location: classData.location || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
       included: classData.included || (isNewClass ? 'חימום, לימוד טכניקות, תרגול צעדים וריקוד קצר.\nברכיות ספוג לברכיים' : ''),
-      image_url: classData.image_url || '/carousel/image4.png',
+      image_url: classData.image_url || getDefaultClassImage().url,
       video_url: classData.video_url || '',
       category: classData.category || '',
       color_scheme: classData.color_scheme || 'pink',
@@ -74,9 +85,9 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
       group_credits: classData.group_credits || 0,
       private_credits: classData.private_credits || 0,
       is_active: classData.is_active !== undefined ? classData.is_active : true,
-      slug: classData.slug || ''
+      slug: classData.slug || '' // Preserve existing slug, don't default to empty string
     });
-  }, [classData, isNewClass]);
+  }, [classData, isNewClass, isOpen]);
 
   // Effect to handle credits section visibility based on registration type
   useEffect(() => {
@@ -85,7 +96,15 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
     }
   }, [creditsEnabled, showCreditsSection]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // פונקציה להצגת הודעות
+  const showMessagePopup = (type: 'success' | 'error', title: string, content: string) => {
+    setMessageType(type);
+    setMessageTitle(title);
+    setMessageContent(content);
+    setShowMessage(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // ולידציה: אם מערכת קרדיטים פעילה עבור מנוי, חייב לבחור סוג קרדיטים
@@ -94,8 +113,29 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
       return;
     }
     
-    onSave({ ...classData, ...formData });
+    try {
+      // העלאת תמונות ממתינות דרך קומפוננטת התמונות
+      await imagesRef.current?.uploadPendingImages();
+      // מחיקת תמונות שסומנו למחיקה (ב-Supabase) לפני שמירה
+      await imagesRef.current?.commitDeletions();
+      
+      // Prepare data for save, ensuring slug is handled properly
+      const dataToSave = { ...classData, ...formData };
+      
+      // If slug is empty and we have an existing slug, preserve it
+      if (!dataToSave.slug && classData.slug) {
+        dataToSave.slug = classData.slug;
+      }
+      
+      // שליחה לשמירה
+      onSave(dataToSave);
+      
+    } catch (error) {
+      console.error('שגיאה בשמירת השיעור:', error);
+      alert('אירעה שגיאה בשמירת השיעור. נסי שוב.');
+    }
   };
+
 
   if (!isOpen) return null;
 
@@ -636,45 +676,15 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
 
 
                 
-              {/* בחירת תמונות זמינות */}
-                <div>
-                <h4 className="text-sm font-medium text-[#4B2E83] mb-3">בחרי תמונה:</h4>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { id: 1, url: '/carousel/image1.png', name: '1' },
-                    { id: 2, url: '/carousel/image2.png', name: '2' },
-                    { id: 3, url: '/carousel/image3.png', name: '3' },
-                    { id: 4, url: '/carousel/image4.png', name: '4' },
-                    { id: 5, url: '/carousel/image5.png', name: '5' }
-                        ].map((image) => (
-                          <div
-                            key={image.id}
-                            onClick={() => setFormData({ ...formData, image_url: image.url })}
-                      className={`relative cursor-pointer rounded-lg border-2 transition-all aspect-square overflow-hidden ${
-                            formData.image_url === image.url
-                          ? 'border-[#EC4899] ring-2 ring-[#EC4899]/20'
-                          : 'border-gray-200 hover:border-[#EC4899]/40'
-                          }`}
-                        >
-                            <img
-                              src={image.url}
-                        alt={`תמונה ${image.name}`}
-                        className="w-full h-full object-cover"
-                              loading="lazy"
-                      />
-                          {formData.image_url === image.url && (
-                        <div className="absolute top-1 right-1 w-4 h-4 bg-[#EC4899] rounded-full flex items-center justify-center">
-                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs text-center py-1">
-                        {image.name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* תמונות (קומפוננטת משנה) */}
+              <div>
+                <ClassImagesSection
+                  ref={imagesRef}
+                  imageUrl={formData.image_url}
+                  onImageUrlChange={(url) => setFormData({ ...formData, image_url: url })}
+                  isOpen={isOpen}
+                  onShowMessage={showMessagePopup}
+                />
               </div>
             </div>
           </div>
@@ -734,6 +744,52 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
         </form>
         </div>
       </div>
+      
+      {/* Popup הודעות */}
+      {showMessage && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            {/* Header */}
+            <div className={`flex items-center gap-3 mb-4 ${
+              messageType === 'success' ? 'text-green-600' : 'text-red-600'
+            }`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                messageType === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                {messageType === 'success' ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <h3 className="text-lg font-bold">{messageTitle}</h3>
+            </div>
+            
+            {/* Content */}
+            <div className="mb-6">
+              <p className="text-gray-700 whitespace-pre-line">{messageContent}</p>
+            </div>
+            
+            {/* Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowMessage(false)}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 ${
+                  messageType === 'success'
+                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
+                }`}
+              >
+                הבנתי
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

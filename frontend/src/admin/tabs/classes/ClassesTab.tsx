@@ -117,11 +117,21 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
         : `${import.meta.env.VITE_API_BASE_URL}/classes/${updatedClass.id}`;
       const method = isNewClass ? 'POST' : 'PATCH';
 
-      // Filter out computed fields
+      // Filter out computed fields and handle slug properly
       const cleanData: any = {};
       ALLOWED_FIELDS.forEach(field => {
         if (updatedClass[field] !== undefined) {
-          cleanData[field] = updatedClass[field];
+          // Special handling for slug - preserve existing slug if not empty
+          if (field === 'slug') {
+            // Only include slug if it has a meaningful value
+            if (updatedClass.slug && updatedClass.slug.trim() !== '') {
+              cleanData[field] = updatedClass.slug.trim();
+            }
+            // For existing classes, if slug is empty, don't send it (preserve existing)
+            // For new classes, if slug is empty, don't send it (let backend handle)
+          } else {
+            cleanData[field] = updatedClass[field];
+          }
         }
       });
 

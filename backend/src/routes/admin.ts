@@ -1,8 +1,29 @@
 import express from 'express';
 import { Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { admin } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { supabase } from '../database';
+
+// Extend Request type to include file
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('רק קבצי תמונה מותרים'));
+    }
+  }
+});
 
 const router = express.Router();
 
@@ -443,6 +464,193 @@ router.put('/contact/messages/:id/status', admin, async (req: Request, res: Resp
     res.json(data);
   } catch (error) {
     next(error);
+  }
+});
+
+// Upload class image to Supabase storage (admin)
+router.post('/upload-class-image', admin, upload.single('file'), async (req: MulterRequest, res: Response, next: NextFunction) => {
+  try {
+    logger.info('Admin upload-class-image endpoint called by user:', req.user?.sub);
+    
+    // בדיקה שהבקשה מכילה קובץ
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'לא נשלח קובץ תמונה' 
+      });
+    }
+
+    const uploadedFile = req.file;
+    
+    // ולידציה נוספת של הקובץ
+    if (uploadedFile.size > 5 * 1024 * 1024) { // 5MB
+      return res.status(400).json({
+        success: false,
+        message: 'גודל הקובץ חייב להיות קטן מ-5MB'
+      });
+    }
+    
+    if (!uploadedFile.mimetype.startsWith('image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'רק קבצי תמונה מותרים'
+      });
+    }
+    
+    // יצירת שם קובץ - שימוש בשם המקורי
+    const fileExtension = uploadedFile.originalname.split('.').pop()?.toLowerCase() || 'png';
+    
+    // הסרת תווים מיוחדים מהשם המקורי
+    const originalName = uploadedFile.originalname
+      .replace(/\.[^/.]+$/, '') // הסרת סיומת
+      .replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '') // רק אותיות באנגלית, מספרים ועברית
+      .substring(0, 20); // הגבלה ל-20 תווים
+    
+    const fileName = `${originalName}.${fileExtension}`;
+    const filePath = `images/v1/${fileName}`;
+
+    // העלאה ל-Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('classes')
+      .upload(filePath, uploadedFile.buffer, {
+        contentType: uploadedFile.mimetype,
+        cacheControl: '3600',
+        upsert: true // החלפת קבצים קיימים בשם זהה (נדרש כי שומרים בשם המקורי)
+      });
+
+    if (error) {
+      logger.error('Error uploading to Supabase storage:', error);
+      
+      // טיפול בשגיאות ספציפיות
+      if (error.message.includes('already exists')) {
+        throw new Error('קובץ עם שם זה כבר קיים. אנא שנה את שם הקובץ ונסה שוב.');
+      }
+      
+      throw new Error(`שגיאה בהעלאה ל-Supabase: ${error.message}`);
+    }
+
+    // קבלת ה-URL הציבורי
+    const { data: urlData } = supabase.storage
+      .from('classes')
+      .getPublicUrl(filePath);
+
+    if (!urlData.publicUrl) {
+      throw new Error('לא ניתן לקבל URL ציבורי לתמונה');
+    }
+
+    logger.info('Image uploaded successfully to classes bucket:', {
+      fileName,
+      filePath,
+      publicUrl: urlData.publicUrl,
+      size: `${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB`,
+      mimeType: uploadedFile.mimetype,
+      uploadedBy: req.user?.sub,
+      bucket: 'classes',
+      folder: 'images/v1'
+    });
+
+    res.json({
+      success: true,
+      message: 'התמונה הועלתה בהצלחה ל-Supabase bucket: classes/images/v1',
+      imageUrl: urlData.publicUrl,
+      fileName: fileName,
+      filePath: filePath,
+      bucket: 'classes',
+      folder: 'images/v1'
+    });
+
+  } catch (error) {
+    logger.error('Error in upload-class-image:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'שגיאה לא ידועה בהעלאת התמונה'
+    });
+  }
+});
+
+// מחיקת תמונת שיעור
+router.delete('/delete-class-image', admin, async (req, res) => {
+  try {
+    logger.info('Admin delete-class-image endpoint called by user:', req.user?.sub);
+    
+    const { imageUrl } = req.body;
+    
+    if (!imageUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'לא נשלח URL התמונה למחיקה'
+      });
+    }
+
+    // בדיקה שהתמונה שייכת ל-bucket הנכון
+    if (!imageUrl.includes('classes/images/v1/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'URL התמונה אינו תקין - לא ניתן למחוק תמונות שלא מהתיקייה classes/images/v1'
+      });
+    }
+
+    // חילוץ שם הקובץ מה-URL
+    const urlParts = imageUrl.split('/');
+    const fileName = urlParts[urlParts.length - 1];
+    const filePath = `images/v1/${fileName}`;
+
+    // בדיקה שהתמונה לא בשימוש בשיעורים אחרים
+    const { data: classesUsingImage, error: checkError } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('image_url', imageUrl);
+
+    if (checkError) {
+      logger.error('Error checking if image is in use:', checkError);
+      return res.status(500).json({
+        success: false,
+        message: 'שגיאה בבדיקה אם התמונה בשימוש'
+      });
+    }
+
+    if (classesUsingImage && classesUsingImage.length > 0) {
+      const classNames = classesUsingImage.map(c => c.name).join(', ');
+      return res.status(400).json({
+        success: false,
+        message: `לא ניתן למחוק את התמונה - היא בשימוש בשיעורים: ${classNames}`,
+        classesInUse: classesUsingImage
+      });
+    }
+
+    // מחיקת הקובץ מ-Supabase Storage
+    const { error: deleteError } = await supabase.storage
+      .from('classes')
+      .remove([filePath]);
+
+    if (deleteError) {
+      logger.error('Error deleting from Supabase storage:', deleteError);
+      throw new Error(`שגיאה במחיקה מ-Supabase: ${deleteError.message}`);
+    }
+
+    logger.info('Image deleted successfully from classes bucket:', {
+      fileName,
+      filePath,
+      deletedBy: req.user?.sub,
+      bucket: 'classes',
+      folder: 'images/v1'
+    });
+
+    res.json({
+      success: true,
+      message: 'התמונה נמחקה בהצלחה מ-Supabase bucket: classes/images/v1',
+      fileName: fileName,
+      filePath: filePath,
+      bucket: 'classes',
+      folder: 'images/v1'
+    });
+
+  } catch (error) {
+    logger.error('Error in delete-class-image:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'שגיאה לא ידועה במחיקת התמונה'
+    });
   }
 });
 

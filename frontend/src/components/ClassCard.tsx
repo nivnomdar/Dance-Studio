@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Class } from '../types/class';
 import { getSimpleColorScheme } from '../utils/colorUtils';
+import { getDefaultClassImage } from '../config/classImages';
 
 interface ClassCardProps {
   classItem: Class;
@@ -36,7 +37,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ classItem, usedTrialClassIds }) =
       {/* Card Image (same size across sizes to match desktop) */}
       <div className="relative h-56 block">
         <img
-          src={classItem.image_url || '/carousel/image1.png'}
+          src={classItem.image_url || getDefaultClassImage().url}
           alt={classItem.name}
           className="w-full h-full object-cover rounded-t-2xl"
           loading="lazy"

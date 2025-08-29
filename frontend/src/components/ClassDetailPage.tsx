@@ -11,6 +11,7 @@ import RegistrationByAppointment from './RegistrationByAppointment';
 import SubscriptionRegistration from './SubscriptionRegistration';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getDefaultClassImage } from '../config/classImages';
 
 
 // Class Detail Skeleton Components
@@ -269,7 +270,7 @@ const ClassDetailPage = memo(function ClassDetailPage({ initialClass }: ClassDet
             {/* Hero Image */}
             <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl hidden lg:block">
               <img
-                src={classData.image_url || '/carousel/image1.png'}
+                src={classData.image_url || getDefaultClassImage().url}
                 alt={classData.name}
                 className="w-full h-full object-cover"
               />
