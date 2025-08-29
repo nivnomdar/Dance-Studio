@@ -71,21 +71,6 @@ const Footer: React.FC = () => {
                   אינסטגרם - Instagram
                 </div>
               </a>
-              <a 
-                href="https://www.facebook.com/alina.ladani.2025?locale=he_IL" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group relative p-2.5 rounded-full bg-[#1877F2] hover:bg-[#166FE5] transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-blue-500/25"
-                aria-label="עקבי אחרי בפייסבוק (נפתח בחלון חדש)"
-                title="פייסבוק"
-              >
-                <svg className="w-5 h-5 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                  פייסבוק - Facebook
-                </div>
-              </a>
               {/* TODO: החלף במספר וואטסאפ אמיתי */}
               <a 
                 href="https://wa.me/972501234567" 
@@ -213,15 +198,6 @@ const Footer: React.FC = () => {
                   info@ladances.com
                 </a>
               </div>
-              
-              <div className="flex items-center space-x-3 space-x-reverse">
-                <svg className="ml-2 w-4 h-4 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div>
-                  <p className="text-gray-300 text-sm">ראשון עד חמישי: 18:00, 19:00, 20:00</p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -275,7 +251,7 @@ const Footer: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-gray-400 text-sm">
-              © {currentYear} סטודיו אביגיל לדאנס לריקוד על עקבים. כל הזכויות שמורות.
+              © {currentYear} סטודיו Ladances. כל הזכויות שמורות.
             </div>
             
             <div className="flex items-center gap-1.5 text-sm">

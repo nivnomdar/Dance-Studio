@@ -44,7 +44,7 @@ function HeroSection() {
         {/* Subtitle - מיקום קבוע באמצע */}
         <div className="absolute bottom-120 left-1/2 transform -translate-x-1/2 text-center md:absolute md:top-110 lg:top-100 xl:top-95 2xl:top-85 md:left-1/2 md:transform-none">
           <p className="text-lg sm:text-xl lg:text-2xl text-white/90 font-hebrew-special drop-shadow-lg whitespace-nowrap">
-          סטודיו לריקוד על עקבים למתחילות ומתקדמות       
+          סטודיו לריקוד והעצמה נשית
           </p>
         </div>
         

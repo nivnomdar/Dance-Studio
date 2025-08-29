@@ -19,7 +19,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ classItem, usedTrialClassIds }) =
     <article
       className={`w-75 bg-white rounded-2xl shadow-xl h-full flex flex-col relative transition-all duration-300 ${
         hasUsedTrial ? 'lg:opacity-50 opacity-40 grayscale' : ''
-      }`}
+      } border ${colorScheme.borderColor || 'border-gray-200'}`}
       aria-labelledby={`class-title-${classItem.id}`}
       aria-describedby={`class-description-${classItem.id}`}
     >
@@ -31,6 +31,18 @@ const ClassCard: React.FC<ClassCardProps> = ({ classItem, usedTrialClassIds }) =
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.017 3.134a1 1 0 00.95.69h3.297c.969 0 1.371 1.24.588 1.81l-2.667 1.94a1 1 0 00-.364 1.118l1.017 3.135c.3.92-.755 1.688-1.54 1.118l-2.667-1.94a1 1 0 00-1.176 0l-2.667 1.94c-.784.57-1.838-.198-1.54-1.118l1.017-3.135a1 1 0 00-.364-1.118L2.097 8.56c-.783-.57-.38-1.81.588-1.81h3.297a1 1 0 00.95-.69l1.017-3.134z"/>
             </svg>
             <span className="text-[12px] sm:text-sm font-agrandir-grand font-semibold tracking-[0.04em]">ניסיון</span>
+          </div>
+        </div>
+      )}
+
+      {/* Used trial tag (top-left) */}
+      {isTrialClass && hasUsedTrial && (
+        <div className="pointer-events-none absolute top-2 left-2 z-20 select-none" aria-hidden="true">
+          <div className="flex items-center gap-1.5 rounded-full px-3.5 py-1 shadow-md ring-1 ring-white/40 bg-gray-600 text-white">
+            <svg className="w-3.5 h-3.5 opacity-90" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.778 7.778a1 1 0 01-1.414 0L3.293 10.96a1 1 0 111.414-1.414l3.111 3.111 7.071-7.071a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="text-[12px] sm:text-sm font-agrandir-grand font-semibold tracking-[0.04em]">נוצל</span>
           </div>
         </div>
       )}

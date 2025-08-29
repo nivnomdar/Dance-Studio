@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaInstagram, FaWhatsapp, FaFacebook } from 'react-icons/fa';
+import { FaInstagram, FaWhatsapp } from 'react-icons/fa';
 
 function AboutPage() {
   return (
@@ -82,14 +82,6 @@ function AboutPage() {
               className="w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
             >
               <FaInstagram className="w-7 h-7" />
-            </a>
-            <a
-              href="https://www.facebook.com/alina.ladani.2025?locale=he_IL"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-14 h-14 bg-[#1877F2] rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
-            >
-              <FaFacebook className="w-7 h-7" />
             </a>
             {/* WhatsApp Button */}
             <a 

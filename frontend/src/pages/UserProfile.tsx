@@ -326,7 +326,7 @@ function UserProfile() {
     if (!user?.id) return;
     try {
       const [{ data: trials, error: trialsErr }, { data: usedRows, error: usedErr }] = await Promise.all([
-        supabase.from('classes').select('id, name').eq('category', 'trial'),
+        supabase.from('classes').select('id, name').eq('category', 'trial').eq('is_active', true),
         supabase.from('user_trial_classes').select('class_id').eq('user_id', user.id)
       ]);
       if (trialsErr) throw trialsErr;

@@ -276,22 +276,6 @@ function ContactPage() {
                   <span className="text-xs text-gray-500">@avigailladani</span>
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 bg-[#EC4899] text-white text-xs rounded px-2 py-1 mt-2 transition-all duration-300 pointer-events-none shadow-lg">עקבי אחרי באינסטגרם</span>
                 </a>
-                <a 
-                  href="https://www.facebook.com/alina.ladani.2025?locale=he_IL" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center p-2 sm:p-3 rounded-lg group transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:rotate-2 relative"
-                  aria-label="עקבי אחרי בפייסבוק - Avigail Ladani"
-                >
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#1877F2] rounded-full flex items-center justify-center mb-1.5 sm:mb-2 group-hover:shadow-blue-300 group-hover:shadow-lg transition-all duration-300 ring-2 ring-[#1877F2]/30 group-hover:ring-4 group-hover:ring-[#1877F2]/50">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </div>
-                  <span className="text-[#4B2E83] font-medium group-hover:text-[#1877F2] transition-colors duration-300 text-xs sm:text-sm">פייסבוק</span>
-                  <span className="text-xs text-gray-500">Avigail Ladani</span>
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 bg-[#1877F2] text-white text-xs rounded px-2 py-1 mt-2 transition-all duration-300 pointer-events-none shadow-lg">עקבי אחרי בפייסבוק</span>
-                </a>
                 {/* TODO: החלף במספר וואטסאפ אמיתי */}
                 <a 
                   href="https://wa.me/972XXXXXXXXX"

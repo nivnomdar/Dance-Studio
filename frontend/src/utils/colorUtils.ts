@@ -206,27 +206,87 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
         color: 'from-pink-500 to-rose-500',
         textColor: 'text-pink-600',
         bgColor: 'bg-pink-500',
-        hoverColor: 'hover:bg-pink-600'
+        hoverColor: 'hover:bg-pink-600',
+        borderColor: 'border-pink-300'
       },
       purple: {
         color: 'from-purple-500 to-indigo-500',
         textColor: 'text-purple-600',
         bgColor: 'bg-purple-500',
-        hoverColor: 'hover:bg-purple-600'
+        hoverColor: 'hover:bg-purple-600',
+        borderColor: 'border-purple-300'
       },
       emerald: {
         color: 'from-emerald-500 to-teal-500',
         textColor: 'text-emerald-600',
         bgColor: 'bg-emerald-500',
-        hoverColor: 'hover:bg-emerald-600'
+        hoverColor: 'hover:bg-emerald-600',
+        borderColor: 'border-emerald-300'
       },
       blue: {
         color: 'from-blue-500 to-cyan-500',
         textColor: 'text-blue-600',
         bgColor: 'bg-blue-500',
-        hoverColor: 'hover:bg-blue-600'
+        hoverColor: 'hover:bg-blue-600',
+        borderColor: 'border-blue-300'
+      },
+      red: {
+        color: 'from-red-500 to-pink-500',
+        textColor: 'text-red-600',
+        bgColor: 'bg-red-500',
+        hoverColor: 'hover:bg-red-600',
+        borderColor: 'border-red-300'
+      },
+      orange: {
+        color: 'from-orange-500 to-red-500',
+        textColor: 'text-orange-600',
+        bgColor: 'bg-orange-500',
+        hoverColor: 'hover:bg-orange-600',
+        borderColor: 'border-orange-300'
+      },
+      amber: {
+        color: 'from-amber-500 to-orange-500',
+        textColor: 'text-amber-600',
+        bgColor: 'bg-amber-500',
+        hoverColor: 'hover:bg-amber-600',
+        borderColor: 'border-amber-300'
+      },
+      yellow: {
+        color: 'from-yellow-500 to-orange-500',
+        textColor: 'text-yellow-600',
+        bgColor: 'bg-yellow-500',
+        hoverColor: 'hover:bg-yellow-600',
+        borderColor: 'border-yellow-300'
+      },
+      teal: {
+        color: 'from-teal-500 to-cyan-500',
+        textColor: 'text-teal-600',
+        bgColor: 'bg-teal-500',
+        hoverColor: 'hover:bg-teal-600',
+        borderColor: 'border-teal-300'
+      },
+      indigo: {
+        color: 'from-indigo-500 to-purple-500',
+        textColor: 'text-indigo-600',
+        bgColor: 'bg-indigo-500',
+        hoverColor: 'hover:bg-indigo-600',
+        borderColor: 'border-indigo-300'
+      },
+      rose: {
+        color: 'from-rose-500 to-pink-500',
+        textColor: 'text-rose-600',
+        bgColor: 'bg-rose-500',
+        hoverColor: 'hover:bg-rose-600',
+        borderColor: 'border-rose-300'
+      },
+      slate: {
+        color: 'from-slate-500 to-gray-500',
+        textColor: 'text-slate-600',
+        bgColor: 'bg-slate-500',
+        hoverColor: 'hover:bg-slate-600',
+        borderColor: 'border-slate-300'
       }
-    };
+    } as const;
     
     return schemes[classItem.color_scheme as keyof typeof schemes] || schemes.pink;
   }
@@ -240,7 +300,8 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
       color: 'from-pink-500 to-rose-500',
       textColor: 'text-pink-600',
       bgColor: 'bg-pink-500',
-      hoverColor: 'hover:bg-pink-600'
+      hoverColor: 'hover:bg-pink-600',
+      borderColor: 'border-pink-300'
     };
   }
   if (name.includes('בודד') || cat.includes('single')) {
@@ -248,7 +309,8 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
       color: 'from-purple-500 to-indigo-500',
       textColor: 'text-purple-600',
       bgColor: 'bg-purple-500',
-      hoverColor: 'hover:bg-purple-600'
+      hoverColor: 'hover:bg-purple-600',
+      borderColor: 'border-purple-300'
     };
   }
   if (name.includes('אישי') || cat.includes('private')) {
@@ -256,7 +318,8 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
       color: 'from-emerald-500 to-teal-500',
       textColor: 'text-emerald-600',
       bgColor: 'bg-emerald-500',
-      hoverColor: 'hover:bg-emerald-600'
+      hoverColor: 'hover:bg-emerald-600',
+      borderColor: 'border-emerald-300'
     };
   }
   if (name.includes('מנוי') || name.includes('חודשי') || cat.includes('subscription')) {
@@ -264,7 +327,8 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
       color: 'from-blue-500 to-cyan-500',
       textColor: 'text-blue-600',
       bgColor: 'bg-blue-500',
-      hoverColor: 'hover:bg-blue-600'
+      hoverColor: 'hover:bg-blue-600',
+      borderColor: 'border-blue-300'
     };
   }
   
@@ -273,7 +337,8 @@ export const getSimpleColorScheme = (classItem: { color_scheme?: AvailableColorS
     color: 'from-gray-500 to-gray-600',
     textColor: 'text-gray-600',
     bgColor: 'bg-gray-500',
-    hoverColor: 'hover:bg-gray-600'
+    hoverColor: 'hover:bg-gray-600',
+    borderColor: 'border-gray-300'
   };
 }; 
 
