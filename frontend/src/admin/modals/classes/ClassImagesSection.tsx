@@ -10,11 +10,7 @@ interface ClassImagesSectionProps {
   onShowMessage?: (type: 'success' | 'error', title: string, content: string) => void;
 }
 
-export interface ClassImagesSectionHandle {
-  uploadPendingImages: () => Promise<void>;
-  deleteImage: (imageUrl: string) => Promise<void>;
-  commitDeletions: () => Promise<void>;
-}
+ 
 
 const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSectionProps>(
   ({ imageUrl, onImageUrlChange, isOpen, onShowMessage }, ref) => {
@@ -98,13 +94,6 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
 
         // ניקוי רשימת התמונות הממתינות לאחר ההעלאה
         setNewImages([]);
-      },
-      deleteImage: async (imageUrl: string) => {
-        const updatedUploadedImages = uploadedImages.filter(img => img.url !== imageUrl);
-        setUploadedImages(updatedUploadedImages);
-        if (onShowMessage) {
-          onShowMessage('success', 'התמונה נמחקה', `התמונה "${imageUrl}" נמחקה בהצלחה.`);
-        }
       },
       commitDeletions: async () => {
         if (imagesToDelete.length === 0) return;
