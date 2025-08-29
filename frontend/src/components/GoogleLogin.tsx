@@ -249,7 +249,7 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
           {/* Logo */}
           <div className="relative z-10 mb-4 sm:mb-6">
             <img 
-              src="/images/LOGOladance.png" 
+              src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" 
               alt="לוגו סטודיו אביגיל לדאנס" 
               className="h-17 sm:h-22 w-auto mx-auto drop-shadow-lg"
             />

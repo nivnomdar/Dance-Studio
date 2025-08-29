@@ -7,6 +7,83 @@ html {
   direction: rtl;
 }
 
+/* ===== FOCUS INDICATOR - נגישות מקצועית ואיכותית ===== */
+/* עיצוב מותאם למותג - צבעים לבנים עדינים עם שקיפות */
+*:focus-visible {
+  outline: none !important;
+  box-shadow: 
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(255, 255, 255, 0.3),
+    0 0 8px rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* עיצוב מיוחד לכפתורים עם רקע צבעוני */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: none !important;
+  box-shadow: 
+    0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 0 4px rgba(255, 255, 255, 0.4),
+    0 0 12px rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  transform: scale(1.02) !important;
+}
+
+/* עיצוב מיוחד לשדות קלט */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+  box-shadow: 
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(255, 255, 255, 0.25) !important;
+  border-radius: 6px !important;
+}
+
+/* עיצוב מיוחד לקישורים */
+a:focus-visible {
+  outline: none !important;
+  box-shadow: 
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(255, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+/* הסתרת focus רק במצב עכבר (שיפור UX) */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* אנימציה עדינה ל-focus */
+*:focus-visible {
+  animation: focusPulse 0.3s ease-out !important;
+}
+
+@keyframes focusPulse {
+  0% {
+    box-shadow: 
+      0 0 0 2px rgba(255, 255, 255, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.3),
+      0 0 8px rgba(255, 255, 255, 0.2) !important;
+  }
+  50% {
+    box-shadow: 
+      0 0 0 2px rgba(255, 255, 255, 1),
+      0 0 0 4px rgba(255, 255, 255, 0.5),
+      0 0 12px rgba(255, 255, 255, 0.4) !important;
+  }
+  100% {
+    box-shadow: 
+      0 0 0 2px rgba(255, 255, 255, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.3),
+      0 0 8px rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
 /* שינוי צבע הנקודות */
 .swiper-pagination-bullet {
   background-color: white !important; /* צבע ברירת מחדל לנקודות */

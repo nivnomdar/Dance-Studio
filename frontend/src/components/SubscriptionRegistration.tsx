@@ -881,7 +881,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
               {/* Logo */}
               <div className="relative z-10 mb-2 sm:mb-3 md:mb-4 lg:mb-2 xl:mb-1">
                 <img 
-                  src="/images/LOGOladance.png" 
+                  src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" 
                   alt="Ladance Avigail" 
                   className="h-10 sm:h-12 md:h-14 lg:h-12 xl:h-10 w-auto mx-auto drop-shadow-lg"
                   loading="eager"

@@ -278,7 +278,7 @@ function Navbar() {
               <img
                 src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg"
                 alt="Ladance Avigail"
-                className="h-20 w-auto -mt-8 mb-1 sm:h-20 sm:-mt-8 sm:mb-1 md:h-26 md:-mt-8 md:mb-1 lg:h-30 lg:-mt-9 lg:mb-1 xl:h-30 xl:-mt-9 xl:mb-1 2xl:h-30 2xl:-mt-9 2xl:mb-1"
+                className="h-20 w-auto -mt-8 mb-1 sm:h-20 sm:-mt-8 sm:mb-1 md:h-26 md:-mt-8 md:mb-1 lg:h-30 lg:-mt-9 lg:mb-1 xl:h-30 xl:-mt-9 xl:mb-1 2xl:h-30 2xl:-mt-8.5 2xl:mb-1"
                 onError={(e) => {
                   // Fallback to local image if Supabase image fails to load
                   const target = e.target as HTMLImageElement;

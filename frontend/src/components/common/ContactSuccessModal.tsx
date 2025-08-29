@@ -73,7 +73,7 @@ export const ContactSuccessModal = ({ isOpen, onClose }: ContactSuccessModalProp
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-4 sm:p-6 text-white text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" aria-hidden="true"></div>
           <div className="relative z-10 mb-4 sm:mb-6">
-            <img src="/images/LOGOladance.png" alt="Ladance Avigail" className="h-17 sm:h-22 w-auto mx-auto drop-shadow-lg" />
+            <img src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" alt="Ladance Avigail" className="h-17 sm:h-22 w-auto mx-auto drop-shadow-lg" />
           </div>
           <div className="relative z-10">
             <h2 id="contact-success-title" className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 font-agrandir-grand">תודה!</h2>

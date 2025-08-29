@@ -4,7 +4,7 @@ function SecondaryNavbar() {
   // console.log('SecondaryNavbar render at:', new Date().toISOString()); // Debug log
   return (
     <nav className="hidden md:block fixed top-12 left-0 right-0 bg-gradient-to-r from-[#4B2E83] to-[#EC4899] shadow-lg z-40" role="navigation" aria-label="ניווט משני">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mt-3 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-center items-center h-10">
           <div className="flex items-center space-x-8" role="menubar">
             <Link

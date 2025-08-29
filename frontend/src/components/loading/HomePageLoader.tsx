@@ -38,7 +38,7 @@ const HomePageLoader = () => {
         <div className="mb-8">
           <div className="w-24 h-24 mx-auto mb-6 animate-pulse" aria-hidden="true">
             <img 
-              src="/images/LOGOladance.png" 
+              src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" 
               alt="סטודיו אביגיל" 
               className="w-full h-full object-contain"
             />

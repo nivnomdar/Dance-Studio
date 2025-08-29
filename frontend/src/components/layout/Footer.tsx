@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
             <h4 className="text-lg font-semibold text-pink-400 ">סטודיו</h4>
             <div className="flex items-center mb-4">
               <img 
-                src="/images/LOGOladance.png" 
+                src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" 
                 alt="סטודיו לריקוד של אביגיל" 
                 className="h-16 w-auto ml-3"
               />
@@ -228,7 +228,7 @@ const Footer: React.FC = () => {
           {/* Newsletter */}
           <div className="lg:col-span-1">
             <h4 className="text-lg font-semibold text-pink-400 mb-4">
-              {shouldShowMarketingForm ? 'הישארי מעודכנת' : 'הישארי מעודכנת'}
+              {shouldShowMarketingForm ? 'הישארי מעודכנת' : 'צרי קשר'}
             </h4>
             <p className="text-gray-300 text-sm mb-4">
               {shouldShowMarketingForm 
@@ -252,7 +252,7 @@ const Footer: React.FC = () => {
                   type="submit"
                   className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
                 >
-                  המשך לטופס יצירת קשר
+                  המשיכי לטופס יצירת קשר
                 </button>
                 
                 {/* הודעת שגיאה */}

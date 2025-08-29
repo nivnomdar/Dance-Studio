@@ -34,7 +34,7 @@ export default function ContactDetailsModal({ isOpen, onClose, message }: Contac
         <div className="bg-gradient-to-r from-[#4B2E83] to-[#EC4899] p-4 sm:p-6 text-white text-center relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
           <div className="relative z-10 mb-4 sm:mb-6">
-            <img src="/images/LOGOladance.png" alt="Ladance Avigail" className="h-17 sm:h-22 w-auto mx-auto drop-shadow-lg" />
+            <img src="https://login.ladances.com/storage/v1/object/public/homePage/navbar/ladances-LOGO.svg" alt="Ladance Avigail" className="h-17 sm:h-22 w-auto mx-auto drop-shadow-lg" />
           </div>
           <div className="relative z-10">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 font-agrandir-grand">פרטי פנייה</h2>
