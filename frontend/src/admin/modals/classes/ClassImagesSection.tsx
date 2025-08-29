@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useState, forwardRef } from 'react';
 import { CLASS_IMAGES, getDefaultClassImage, type ClassImage } from '../../../config/classImages';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { ClassImagesSectionHandle } from './types';
+import { supabase } from '../../../lib/supabase';
 
 interface ClassImagesSectionProps {
   imageUrl: string;
@@ -33,18 +34,25 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
     useEffect(() => {
       let isMounted = true;
       const verifyImages = async () => {
-        const checks = await Promise.all(
-          CLASS_IMAGES.map(async (img) => {
+        try {
+          const { data, error } = await supabase
+            .storage
+            .from('classes')
+            .list('images/v1', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } });
+          if (error) throw error;
+          const existingNames = new Set<string>((data || []).map((f: any) => (f?.name || '').toLowerCase()));
+          const filtered = CLASS_IMAGES.filter((img) => {
             try {
-              const res = await fetch(`${img.url}?_=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
-              return res.ok ? img : null;
+              const fileName = img.url.split('/').pop()?.toLowerCase() || '';
+              return existingNames.has(fileName);
             } catch {
-              return null;
+              return false;
             }
-          })
-        );
-        if (isMounted) {
-          setAvailableClassImages(checks.filter((x): x is ClassImage => Boolean(x)));
+          });
+          if (isMounted) setAvailableClassImages(filtered);
+        } catch {
+          // Fallback: if listing fails, keep original list to avoid empty UI
+          if (isMounted) setAvailableClassImages(CLASS_IMAGES);
         }
       };
       verifyImages();

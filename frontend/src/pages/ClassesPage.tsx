@@ -463,8 +463,7 @@ function ClassesPage() {
             #classes-carousel .shadow-xl { box-shadow: none !important; border: 1px solid #E5E7EB !important; }
             /* Ensure arrows are visible and sized nicely on small screens */
             @media (max-width: 767px) {
-              .swiper-button-next, .swiper-button-prev { display: block !important; }
-              .swiper-button-next:after, .swiper-button-prev:after { font-size: 18px !important; }
+              .swiper-button-next, .swiper-button-prev { display: none !important; }
             }
             /* Symmetric arrow positioning around centered card on small screens */
             @media (max-width: 639px) {
@@ -477,6 +476,9 @@ function ClassesPage() {
               /* Swap sides so visual left/right match arrows on mobile */
               #classes-carousel .swiper-button-prev { left: calc(50% + var(--card-w) / 2 + 20px) !important; }
               #classes-carousel .swiper-button-next { left: calc(50% - var(--card-w) / 2 - 20px) !important; }
+              /* Mobile peeks: set slide widths to show edges */
+              #classes-carousel .swiper { overflow: visible !important; }
+              #classes-carousel .swiper-slide { width: 56vw !important; }
             }
             @media (min-width: 640px) and (max-width: 1023px) {
               #classes-carousel { --card-w: 420px; }
@@ -491,7 +493,7 @@ function ClassesPage() {
             }
           `}</style>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="relative overflow-hidden pb-15">
+            <div className="relative overflow-visible md:overflow-hidden pb-15">
                {showSwipeHint && classes.length > 3 && (
                  <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center md:hidden pointer-events-none">
                    <div className="backdrop-blur-sm bg-black/50 text-white text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
@@ -507,50 +509,151 @@ function ClassesPage() {
                  </div>
                )}
               {classes.length > 3 ? (
-                <Swiper
-                  modules={[Navigation]}
-                  spaceBetween={20}
-                  slidesPerView={1}
-                  centeredSlides={true}
-                  centeredSlidesBounds={true}
-                  loop={classes.length > 2}
-                  navigation
-                  breakpoints={{
-                    640: { slidesPerView: 1, spaceBetween: 20 },
-                    768: { slidesPerView: 1, spaceBetween: 24 },
-                    1024: { slidesPerView: 3, spaceBetween: 30 },
-                  }}
-                  className="rounded-lg overflow-visible w-full mx-auto"
-                >
-                  {classes.map((classItem) => (
-                    <SwiperSlide key={classItem.id}>
-                      {({ isActive }) => (
-                        <div
-                          className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] lg:max-w-none px-4 ${
-                            isActive ? 'scale-[1.04]' : 'scale-[0.95]'
-                          }`}
-                          style={{ transformOrigin: 'center center' }}
-                        >
-                          <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
-                        </div>
-                      )}
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
-                  {classes.slice(0, 3).map((classItem, index) => (
-                    <div
-                      key={classItem.id}
-                      className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] lg:max-w-none px-4 ${
-                        index === 1 ? 'lg:scale-[1.04]' : 'lg:scale-[0.95]'
-                      }`}
-                      style={{ transformOrigin: 'center center' }}
+                <>
+                  {/* Mobile-only Swiper with loop and peeking slides */}
+                  <div className="sm:hidden">
+                    <Swiper
+                      modules={[Navigation]}
+                      spaceBetween={16}
+                      slidesPerView={'auto'}
+                      centeredSlides={true}
+                      centeredSlidesBounds={true}
+                      loop={classes.length > 1}
+                      watchSlidesProgress
+                      virtualTranslate={false}
+                      onSwiper={(swiper) => {
+                        const mid = Math.floor(classes.length / 2);
+                        // Use slideToLoop to respect looped indexes
+                        swiper.slideToLoop(Math.min(Math.max(mid, 0), classes.length - 1), 0);
+                      }}
+                      className="rounded-lg overflow-visible w-full mx-auto"
                     >
-                      <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
-                    </div>
-                  ))}
-                </div>
+                      {classes.map((classItem) => (
+                        <SwiperSlide key={classItem.id}>
+                          {({ isActive }) => (
+                            <div className={`transition-transform duration-300 flex justify-center py-4 ${isActive ? 'scale-[1.08]' : 'scale-[0.94]'}`}
+                              style={{ transformOrigin: 'center center' }}
+                            >
+                              <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                            </div>
+                          )}
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  </div>
+                  {/* Tablet/Desktop: keep Swiper as-is */}
+                  <div className="hidden sm:block">
+                    <Swiper
+                      modules={[Navigation]}
+                      spaceBetween={20}
+                      slidesPerView={1}
+                      centeredSlides={true}
+                      centeredSlidesBounds={true}
+                      loop={classes.length > 2}
+                      navigation
+                      breakpoints={{
+                        640: { slidesPerView: 1, spaceBetween: 20 },
+                        768: { slidesPerView: 1, spaceBetween: 24 },
+                        1024: { slidesPerView: 3, spaceBetween: 30 },
+                      }}
+                      className="rounded-lg overflow-visible w-full mx-auto"
+                    >
+                      {classes.map((classItem) => (
+                        <SwiperSlide key={classItem.id}>
+                          {({ isActive }) => (
+                            <div
+                              className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] lg:max-w-none px-4 ${
+                                isActive ? 'scale-[1.04]' : 'scale-[0.95]'
+                              }`}
+                              style={{ transformOrigin: 'center center' }}
+                            >
+                              <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                            </div>
+                          )}
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Mobile-only Swiper for up to 3 classes with loop and peeking slides */}
+                  <div className="sm:hidden">
+                    <Swiper
+                      modules={[Navigation]}
+                      spaceBetween={16}
+                      slidesPerView={'auto'}
+                      centeredSlides={true}
+                      centeredSlidesBounds={true}
+                      loop={classes.length > 1}
+                      watchSlidesProgress
+                      virtualTranslate={false}
+                      onSwiper={(swiper) => {
+                        const n = Math.min(classes.length, 3);
+                        const mid = Math.floor(n / 2);
+                        swiper.slideToLoop(Math.min(Math.max(mid, 0), n - 1), 0);
+                      }}
+                      className="rounded-lg overflow-visible w-full mx-auto"
+                    >
+                      {classes.slice(0, 3).map((classItem) => (
+                        <SwiperSlide key={classItem.id}>
+                          {({ isActive }) => (
+                            <div className={`transition-transform duration-300 flex justify-center py-4 ${isActive ? 'scale-[1.08]' : 'scale-[0.94]'}`}
+                              style={{ transformOrigin: 'center center' }}
+                            >
+                              <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                            </div>
+                          )}
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  </div>
+                  {/* Tablet-only keep Swiper; Desktop keep grid */}
+                  <div className="hidden sm:block lg:hidden">
+                    <Swiper
+                      modules={[Navigation]}
+                      spaceBetween={20}
+                      slidesPerView={1}
+                      centeredSlides={true}
+                      centeredSlidesBounds={true}
+                      loop={classes.length > 1}
+                      navigation
+                      breakpoints={{
+                        640: { slidesPerView: 1, spaceBetween: 20 },
+                        768: { slidesPerView: 1, spaceBetween: 24 },
+                      }}
+                      className="rounded-lg overflow-visible w-full mx-auto"
+                    >
+                      {classes.slice(0, 3).map((classItem) => (
+                        <SwiperSlide key={classItem.id}>
+                          {({ isActive }) => (
+                            <div
+                              className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] px-4 ${
+                                isActive ? 'scale-[1.04]' : 'scale-[0.95]'
+                              }`}
+                              style={{ transformOrigin: 'center center' }}
+                            >
+                              <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                            </div>
+                          )}
+                        </SwiperSlide>
+                      ))}
+                    </Swiper>
+                  </div>
+                  <div className="hidden lg:grid lg:grid-cols-3 gap-0">
+                    {classes.slice(0, 3).map((classItem, index) => (
+                      <div
+                        key={classItem.id}
+                        className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] lg:max-w-none px-4 ${
+                          index === 1 ? 'lg:scale-[1.04]' : 'lg:scale-[0.95]'
+                        }`}
+                        style={{ transformOrigin: 'center center' }}
+                      >
+                        <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
