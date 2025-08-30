@@ -157,7 +157,7 @@ const AccessibilityStatement: React.FC = () => {
                       aria-label="פירוט מלא על מצב נגישות פיזית"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                       לפרטים מלאים על מצב נגישות פיזית
                     </Link>
@@ -197,11 +197,13 @@ const AccessibilityStatement: React.FC = () => {
                     className="inline-flex items-center gap-2 text-[#4B2E83] hover:text-[#EC4899] font-medium underline decoration-2 underline-offset-2 transition-all duration-200"
                     aria-label="פירוט מלא על מצב נגישות לנכים"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+
                     לפרטים מלאים על מצב נגישות לנכים
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </Link>
+                  
                 </div>
               </div>
             </div>

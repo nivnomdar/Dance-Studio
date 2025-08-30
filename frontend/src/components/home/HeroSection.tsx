@@ -35,21 +35,15 @@ function HeroSection() {
       {/* Content */}
       <div className="relative z-10 h-full text-white px-8 sm:px-6 lg:px-8">
         {/* Main Heading - מיקום קבוע למעלה */}
-        <div className="absolute bottom-126 left-1/2 transform -translate-x-1/2 text-center md:absolute md:top-50 lg:top-42 xl:top-15 2xl:top-22 md:right-10 md:left-auto md:transform-none">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-agrandir-grand drop-shadow-lg">
-            <span className="block md:hidden">Ladances</span>
-          </h1>
-        </div>
+       
         
         {/* Subtitle - מיקום קבוע באמצע */}
         <div className="absolute bottom-120 left-1/2 transform -translate-x-1/2 text-center md:absolute md:top-110 lg:top-100 xl:top-95 2xl:top-85 md:left-1/2 md:transform-none">
-          <p className="text-lg sm:text-xl lg:text-2xl text-white/90 font-hebrew-special drop-shadow-lg whitespace-nowrap">
-          סטודיו לריקוד והעצמה נשית
-          </p>
+    
         </div>
         
         {/* Buttons - מיקום קבוע למטה */}
-        <div className="absolute bottom-16 top-6 left-1/2 transform -translate-x-1/2 flex flex-row items-center justify-center gap-3 sm:gap-4 md:absolute md:bottom-20 md:top-auto lg:bottom-32 xl:bottom-44 2xl:bottom-52 md:left-1/2 md:transform-none">
+        <div className="absolute bottom-60 left-1/2 transform -translate-x-1/2 flex flex-row items-center justify-center gap-3 sm:gap-4 md:absolute md:bottom-50 md:top-auto lg:bottom-50 xl:bottom-65 2xl:bottom-70 md:left-1/2 md:transform-none">
           <Link
             to="/classes"
             className="group w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] hover:from-[#4B2E83]/90 hover:to-[#EC4899]/90 text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-semibold transition-all duration-200 flex items-center justify-center hover:shadow-lg hover:shadow-pink-500/20 transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300 whitespace-nowrap"
@@ -76,7 +70,9 @@ function HeroSection() {
               אינסטגרם - Instagram
             </div>
           </a>
+          
         </div>
+       
       </div>
     </section>
   );

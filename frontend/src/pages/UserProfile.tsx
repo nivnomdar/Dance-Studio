@@ -479,16 +479,16 @@ function UserProfile() {
   // }, [user?.id, session, authLoading]);
 
   // Callback to refresh data
-  const refreshData = useCallback(() => {
-    if (user?.id) {
-      dataLoadedRef.current = false;
-      setTimeout(() => {
-        fetchClassesCount();
-        fetchSubscriptionCredits();
-        fetchTrialStatus();
-      }, 0);
-    }
-  }, [user?.id]);
+  // const refreshData = useCallback(() => {
+  //   if (user?.id) {
+  //     dataLoadedRef.current = false;
+  //     setTimeout(() => {
+  //       fetchClassesCount();
+  //       fetchSubscriptionCredits();
+  //       fetchTrialStatus();
+  //     }, 0);
+  //   }
+  // }, [user?.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -734,14 +734,19 @@ function UserProfile() {
                   </div>
 
                   {/* Credits Status */}
-                  <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
+                  <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-[#4B2E83]/10">
                     <div className="text-center">
-                      <span className="text-sm font-semibold text-[#4B2E83]">שיעורי מנוי</span>
-                      <div className="mt-1 inline-flex items-baseline gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-[#4B2E83]/10">
-                        <span className="text-xl sm:text-2xl font-extrabold text-[#4B2E83]">{creditsTotals['group'] || 0}</span>
-                        <span className="text-[11px] sm:text-xs text-[#4B2E83]/70">זמין/ים</span>
-
+                      <span className="text-sm font-semibold text-[#4B2E83]">יתרת שיעורים</span>
+                      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-2">
+                        <div className="inline-flex items-baseline gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-[#EC4899]/10 shadow-sm">
+                          <span className="text-lg sm:text-xl font-extrabold text-[#EC4899]">{creditsTotals['group'] || 0}</span>
+                          <span className="text-[11px] sm:text-xs text-gray-600">שיעורי מנוי</span>
+                        </div>
+                        {/* ניתן להוסיף סוגי שיעורים נוספים כמו זום, סדנה וכו' */}
                       </div>
+                      {creditsTotals.group === 0 && (
+                        <p className="mt-3 text-xs text-gray-500">אין לך שיעורי מנוי זמינים. לרכישת מנוי, לחצי <Link to="/pricing" className="text-[#EC4899] font-medium hover:underline">כאן</Link>.</p>
+                      )}
                     </div>
                   </div>
                 </div>
