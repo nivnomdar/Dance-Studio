@@ -60,21 +60,48 @@ function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16" lang="he" dir="rtl">
+    <motion.div 
+      className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16" 
+      lang="he" 
+      dir="rtl"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
+          <motion.h1 
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+          >
            צרי קשר
-          </h1>
+          </motion.h1>
           <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto" aria-hidden="true"></div>
-          <p className="mt-4 sm:mt-6 text-sm sm:text-base lg:text-lg text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular px-2">
+          <motion.p 
+            className="mt-4 sm:mt-6 text-sm sm:text-base lg:text-lg text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular px-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+          >
           אשמח לשמוע ממך! השאירי פרטים ואחזור אליך בהקדם💜
-          </p>
+          </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+        >
           {/* Contact Form */}
-          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg flex flex-col justify-center">
+          <motion.div 
+            className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg flex flex-col justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+          >
             <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit} aria-label="טופס יצירת קשר">
               {error && (
                 <div className="p-3 sm:p-4 rounded-md bg-red-50 text-red-700 text-sm sm:text-base" role="alert" id="contact-form-error" aria-live="polite">
@@ -205,7 +232,7 @@ function ContactPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
                 aria-label={isSubmitting ? 'שולח הודעה...' : 'שלחי הודעה'}
                 aria-describedby="submit-help"
               >
@@ -213,59 +240,89 @@ function ContactPage() {
               </button>
               <div id="submit-help" className="sr-only">לחצי על הכפתור כדי לשלוח את ההודעה</div>
             </form>
-          </div>
+          </motion.div>
 
           {/* Contact Information */}
-          <div className="space-y-6 sm:space-y-8">
-            <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
-              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">
+          <motion.div 
+            className="space-y-6 sm:space-y-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
+          >
+            <motion.div 
+              className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
+            >
+              <motion.h3 
+                className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.7, ease: "easeOut" }}
+              >
                 פרטי התקשרות
-              </h3>
+              </motion.h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                   {/* פרטי התקשרות */}
                    <div className="space-y-4 sm:space-y-5">
                                      {/* כתובת */}
-                   <div className="flex items-start space-x-4 space-x-reverse">
+                   <motion.div 
+                     className="flex items-start space-x-4 space-x-reverse"
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.6, delay: 0.8, ease: "easeOut" }}
+                   >
                      <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                        </svg>
                      </div>
-                     <div className="mr-2 flex-1 min-w-full">
+                     <div className="mr-2 flex-1">
                        <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">כתובת</p>
                        <p className="text-gray-600 text-sm break-words">רחוב יוסף לישנסקי 6, ראשון לציון</p>
                      </div>
-                   </div>
+                   </motion.div>
 
                    {/* טלפון */}
-                   <div className="flex items-start space-x-4 space-x-reverse">
+                   <motion.div 
+                     className="flex items-start space-x-4 space-x-reverse"
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.6, delay: 0.9, ease: "easeOut" }}
+                   >
                      <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                        </svg>
                      </div>
-                     <div className="mr-2 flex-1 min-w-0">
+                     <div className="mr-2 flex-1">
                        <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">טלפון</p>
                        <p className="text-gray-600 text-sm">050-1234567</p>
                      </div>
-                   </div>
+                   </motion.div>
 
                    {/* אימייל */}
-                   <div className="flex items-start space-x-4 space-x-reverse">
+                   <motion.div 
+                     className="flex items-start space-x-4 space-x-reverse"
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.6, delay: 1.0, ease: "easeOut" }}
+                   >
                      <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                        </svg>
                      </div>
-                     <div className="mr-2 flex-1 min-w-0">
+                     <div className="mr-2 flex-1">
                        <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">אימייל</p>
                        <p className="text-gray-600 text-sm break-all">info@ladances.com</p>
                      </div>
-                   </div>
+                   </motion.div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             <div className="flex flex-wrap gap-3 sm:gap-4 justify-center mt-6 sm:mt-8 lg:mt-12">
               <motion.a 
@@ -276,7 +333,7 @@ function ContactPage() {
                 aria-label="עקבי אחרי באינסטגרם - @avigailladani"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                transition={{ duration: 0.5, delay: 1.1 }} // Adjusted delay for stagger
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-1.5 sm:mb-2 mr-2 group-hover:shadow-pink-300 group-hover:shadow-lg transition-all duration-300 ring-2 ring-[#EC4899]/30 group-hover:ring-4 group-hover:ring-[#EC4899]/50">
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -296,7 +353,7 @@ function ContactPage() {
                 aria-label="שלחי הודעה בוואטסאפ - צרי קשר ישיר"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.5, delay: 1.2 }} // Adjusted delay for stagger
               >
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#25D366] rounded-full flex items-center justify-center mb-1.5 sm:mb-2 mr-2 group-hover:shadow-green-300 group-hover:shadow-lg transition-all duration-300 ring-2 ring-[#25D366]/30 group-hover:ring-4 group-hover:ring-[#25D366]/50">
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -308,11 +365,11 @@ function ContactPage() {
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full opacity-0 group-hover:opacity-100 bg-[#25D366] text-white text-xs rounded px-2 py-1 mt-2 transition-all duration-300 pointer-events-none shadow-lg">שלחי הודעה בוואטסאפ</span>
               </motion.a>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
       <ContactSuccessModal isOpen={showSuccess} onClose={() => setShowSuccess(false)} />
-    </div>
+    </motion.div>
   );
 }
 
