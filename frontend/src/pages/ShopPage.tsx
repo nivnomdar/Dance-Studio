@@ -22,15 +22,32 @@ const ShopPage = () => {
   const [error, setError] = useState<string | null>(null);
   const { products: apiProducts, loading: productsLoading } = useProducts();
   const { categories: apiCategories, loading: categoriesLoading } = useCategories();
+  // Configurable threshold: minimum active top-level categories to show the parent category bar
+  const MIN_TOP_CATEGORIES = 3;
   const [page, setPage] = useState<number>(1);
   const pageSizeAll = 18;
   void error;
 
   const topLevelCategories = useMemo(() => {
-    const top = apiCategories.filter(c => !c.parent_id);
-    // do not include the synthetic "all" button in the UI
+    const top = apiCategories.filter((c: any) => !c.parent_id && (c.is_active === undefined || c.is_active === true));
     return top.map((c: any) => ({ id: c.id, name: c.name }));
   }, [apiCategories]);
+
+  const shouldShowTopCategories = useMemo(() => topLevelCategories.length >= MIN_TOP_CATEGORIES, [topLevelCategories.length]);
+
+  const allActiveSubcategories = useMemo(() => {
+    return apiCategories.filter((c: any) => c.parent_id && (c.is_active === undefined || c.is_active === true));
+  }, [apiCategories]);
+
+  // Subcategory ids that actually have products
+  const productSubcategoryIds = useMemo(() => {
+    const ids = new Set<string>();
+    (products || []).forEach((p: any) => {
+      const sid = (p.category_id || p.categories?.id) as string | undefined;
+      if (sid) ids.add(sid);
+    });
+    return ids;
+  }, [products]);
 
   useEffect(() => {
     if (apiProducts && apiCategories) {
@@ -141,16 +158,7 @@ const ShopPage = () => {
     <div className="min-h-screen bg-gray-50 py-6 sm:py-8 lg:py-12">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Accessible Hero Header */}
-        <header className="relative mb-6 sm:mb-8 lg:mb-10 rounded-2xl overflow-hidden">
-          <img
-            src="https://login.ladances.com/storage/v1/object/public/ShopPage/v1/shopheader.png"
-            alt=""
-            aria-hidden="true"
-            className="w-full h-44 sm:h-60 lg:h-80 object-cover"
-            loading="eager"
-            decoding="async"
-          />
-        </header>
+       
 
         {/* Heading block (separate from image for clarity and accessibility) */}
         <div className="text-center mb-8 sm:mb-12">
@@ -159,50 +167,60 @@ const ShopPage = () => {
           </h1>
           <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto mb-6 sm:mb-8"></div>
           <p id="shop-subtitle" className="text-base sm:text-lg lg:text-xl text-gray-600 px-4">
-            מוצרים מקצועיים לריקוד — נעליים, בגדים ואביזרים מותאמים אישית
+            נעלי עקב ואבזרים לריקוד
           </p>
         </div>
 
         {/* Categories */}
-        <div className="relative mb-6 sm:mb-8 px-2" role="navigation" aria-label="סינון לפי קטגוריה">
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
-            {topLevelCategories.map(category => (
+        <style>{`
+          .flame-svg { filter: drop-shadow(0 0 4px rgba(236,72,153,.5)); }
+        `}</style>
+        
+        
+        {shouldShowTopCategories && (
+          <div className="relative mb-6 sm:mb-8 px-2" role="navigation" aria-label="סינון לפי קטגוריה">
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
+              {topLevelCategories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => {
+                    setActiveParentId(category.id);
+                    setSelectedCategory(category.id);
+                    setPage(1);
+                  }}
+                  aria-pressed={activeParentId === category.id}
+                  className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
+                    activeParentId === category.id
+                      ? 'bg-[#4B2E83] text-white shadow-lg'
+                      : 'bg-white text-gray-700 border border-[#EC4899]/20 hover:bg-[#4B2E83]/10 hover:border-[#EC4899]/40'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+            {(activeParentId !== 'all' || selectedCategory !== 'all') && (
               <button
-                key={category.id}
-                onClick={() => {
-                  setActiveParentId(category.id);
-                  setSelectedCategory(category.id);
-                  setPage(1);
-                }}
-                aria-pressed={activeParentId === category.id}
-                className={`px-3 sm:px-4 lg:px-6 py-2 rounded-full text-sm sm:text-base lg:text-lg font-medium transition-all duration-300 ${
-                  activeParentId === category.id
-                    ? 'bg-[#4B2E83] text-white shadow-lg'
-                    : 'bg-white text-gray-700 border border-[#EC4899]/20 hover:bg-[#4B2E83]/10 hover:border-[#EC4899]/40'
-                }`}
+                onClick={() => { setActiveParentId('all'); setSelectedCategory('all'); setPage(1); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-[#4B2E83]/30 text-[#4B2E83] bg-white hover:bg-[#4B2E83]/5 shadow-sm"
+                aria-label="נקה בחירת קטגוריה"
+                title="נקה בחירה"
               >
-                {category.name}
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-            ))}
+            )}
           </div>
-          {(activeParentId !== 'all' || selectedCategory !== 'all') && (
-            <button
-              onClick={() => { setActiveParentId('all'); setSelectedCategory('all'); setPage(1); }}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-[#4B2E83]/30 text-[#4B2E83] bg-white hover:bg-[#4B2E83]/5 shadow-sm"
-              aria-label="נקה בחירת קטגוריה"
-              title="נקה בחירה"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
+        )}
 
-        {/* Subcategories (always show for the selected parent) */}
-        {activeParentId !== 'all' && (
+        {/* Subcategories */}
+        {(!shouldShowTopCategories || activeParentId !== 'all') && (
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2" role="navigation" aria-label="תת־קטגוריות">
-            {apiCategories.filter((c: any) => c.parent_id === activeParentId).map((sub: any) => (
+            {(shouldShowTopCategories
+              ? apiCategories.filter((c: any) => c.parent_id === activeParentId && (c.is_active === undefined || c.is_active === true) && productSubcategoryIds.has(c.id))
+              : allActiveSubcategories.filter((c: any) => productSubcategoryIds.has(c.id))
+            ).map((sub: any) => (
               <button
                 key={sub.id}
                 onClick={() => { setSelectedCategory(sub.id); setPage(1); }}
@@ -216,6 +234,15 @@ const ShopPage = () => {
                 {sub.name}
               </button>
             ))}
+            {!shouldShowTopCategories && selectedCategory !== 'all' && (
+              <button
+                onClick={() => { setSelectedCategory('all'); setPage(1); }}
+                className="ml-2 px-3 py-2 rounded-full text-xs sm:text-sm border border-[#4B2E83]/30 text-[#4B2E83] bg-white hover:bg-[#4B2E83]/5 shadow-sm"
+                aria-label="נקה בחירת תת־קטגוריה"
+              >
+                נקה
+              </button>
+            )}
           </div>
         )}
 
@@ -253,9 +280,20 @@ const ShopPage = () => {
                   onError={handleImageError}
                 />
                 {product.isNew && (
-                  <span className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-[#EC4899] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
-                    מוצר חם
-                  </span>
+                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex items-center justify-center w-20 h-20 sm:w-9 sm:h-9" aria-hidden="true" title="מוצר חם">
+                    <svg className="flame-svg w-16 h-16 sm:w-10 sm:h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#EC4899"/>
+                          <stop offset="60%" stopColor="#F59E0B"/>
+                          <stop offset="100%" stopColor="#FDBA74"/>
+                        </linearGradient>
+                      </defs>
+                      <path d="M12 2c2 3 5 4.5 5 8.5 0 3.59-2.91 6.5-6.5 6.5S4 14.09 4 10.5c0-1.7.66-3.25 1.76-4.41C7.12 4.67 8.3 3.94 9 3c-.2 1.6.4 2.6 1.5 3.5C11.7 5.6 12 4 12 2z" fill="url(#flameGrad)"/>
+                      <path d="M10.5 9.8c1.1.9 1.5 2 .8 3.2-.6 1-1.9 1.5-3 1-1-.5-1.6-1.8-1.2-2.9.3-.9 1-1.6 1.9-2 .1.8.6 1.2 1.5 1.7z" fill="#FFF3E0" opacity=".8"/>
+                    </svg>
+                    <span className="sr-only">מוצר חם</span>
+                  </div>
                 )}
                 {product.isBestSeller && (
                   <span className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-[#4B2E83] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
@@ -274,9 +312,9 @@ const ShopPage = () => {
                   <span className="text-xl sm:text-2xl font-bold text-[#EC4899]">₪{product.price}</span>
                   <button
                     onClick={() => handleQuickView(product)}
-                    className="w-full sm:w-auto bg-[#EC4899] text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-[#EC4899]/80 transition-colors duration-300 text-sm sm:text-base"
+                    className="w-full sm:w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-[#EC4899]/80 transition-colors duration-300 text-sm sm:text-base"
                   >
-                    צפה במוצר
+                    הצג
                   </button>
                 </div>
               </div>

@@ -37,7 +37,7 @@ function SecondaryNavbar() {
               role="menuitem"
               aria-label="עבור לעמוד יצירת קשר"
             >
-              צור קשר
+              צרי קשר
             </Link>
            
     
