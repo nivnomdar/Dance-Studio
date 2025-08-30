@@ -10,6 +10,7 @@ function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contactTermsAccepted, setContactTermsAccepted] = useState(false);
 
   // Check for email parameter from URL and pre-fill the form
   useEffect(() => {
@@ -28,9 +29,9 @@ function ContactPage() {
     e.preventDefault();
     if (isSubmitting) return;
     
-    // Validate all required fields
-    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.subject.trim() || !form.message.trim()) {
-      setError("כל השדות הם שדות חובה. אנא מלאי את כל הפרטים");
+    // Validate all required fields including the new checkbox
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.subject.trim() || !form.message.trim() || !contactTermsAccepted) {
+      setError("כל השדות הם שדות חובה, ויש לאשר את התקנון. אנא מלאי את כל הפרטים");
       return;
     }
     
@@ -43,11 +44,14 @@ function ContactPage() {
         email: form.email.trim(),
         phone: form.phone.trim(),
         subject: form.subject.trim(),
-        message: form.message.trim()
+        message: form.message.trim(),
+        contact_terms_accepted: true,
+        contact_terms_accepted_at: new Date().toISOString()
       };
       await apiService.contact.submitMessage(payload);
       setShowSuccess(true);
       setForm({ name: "", email: "", phone: "", message: "", subject: "" });
+      setContactTermsAccepted(false); // Reset checkbox state
     } catch (err: any) {
       setError(err?.message || "אירעה שגיאה בשליחת ההודעה");
     } finally {
@@ -70,8 +74,8 @@ function ContactPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Contact Form */}
-          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg">
-            <form className="space-y-3 sm:space-y-4 pb-2" onSubmit={handleSubmit} aria-label="טופס יצירת קשר">
+          <div className="bg-white p-4 sm:p-6 lg:p-8 rounded-lg shadow-lg flex flex-col justify-center">
+            <form className="space-y-3 sm:space-y-4" onSubmit={handleSubmit} aria-label="טופס יצירת קשר">
               {error && (
                 <div className="p-3 sm:p-4 rounded-md bg-red-50 text-red-700 text-sm sm:text-base" role="alert" id="contact-form-error" aria-live="polite">
                   {error}
@@ -154,7 +158,7 @@ function ContactPage() {
                     aria-describedby={error ? 'contact-form-error' : 'subject-help'}
                     aria-invalid={error ? 'true' : 'false'}
                   />
-                  <div id="subject-help" className="sr-only">הזיני נושא ההודעה</div>
+                  <div id="subject-help" className="sr-only">הזיני נושא הה הודעה</div>
                 </div>
               </div>
 
@@ -178,14 +182,34 @@ function ContactPage() {
                 <div id="message-help" className="sr-only">הזיני את תוכן ההודעה שלך</div>
               </div>
 
+              {/* Terms and Conditions Checkbox */}
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="contactTermsAccepted"
+                  name="contactTermsAccepted"
+                  checked={contactTermsAccepted}
+                  onChange={(e) => setContactTermsAccepted(e.target.checked)}
+                  required
+                  className="h-4 w-4 text-[#EC4899] focus:ring-[#EC4899] border-gray-300 rounded mt-1 sm:mt-1.5"
+                  aria-required="true"
+                  aria-describedby={error ? 'contact-form-error' : 'terms-help'}
+                  aria-invalid={error ? 'true' : 'false'}
+                />
+                <label htmlFor="contactTermsAccepted" className="mr-2 block text-xs sm:text-sm text-[#2B2B2B] cursor-pointer">
+                  אני מאשרת את <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300">התקנון</a> ואת <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300">מדיניות הפרטיות</a> <span className="text-red-500" aria-label="שדה חובה">*</span>
+                </label>
+                <div id="terms-help" className="sr-only">אנא אשר/י את התקנון ומדיניות הפרטיות כדי להמשיך</div>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
-                aria-label={isSubmitting ? 'שולח הודעה...' : 'שלח הודעה'}
+                className="w-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                aria-label={isSubmitting ? 'שולח הודעה...' : 'שלחי הודעה'}
                 aria-describedby="submit-help"
               >
-                {isSubmitting ? 'שולח...' : 'שלח הודעה'}
+                {isSubmitting ? 'שולח...' : 'שלחי הודעה'}
               </button>
               <div id="submit-help" className="sr-only">לחצי על הכפתור כדי לשלוח את ההודעה</div>
             </form>
@@ -199,16 +223,16 @@ function ContactPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                   {/* פרטי התקשרות */}
-                  <div className="space-y-4 sm:space-y-5">
+                   <div className="space-y-4 sm:space-y-5">
                                      {/* כתובת */}
                    <div className="flex items-start space-x-4 space-x-reverse">
-                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                     <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                        </svg>
                      </div>
-                     <div className="mr-2 flex-1 min-w-0">
+                     <div className="mr-2 flex-1 min-w-full">
                        <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">כתובת</p>
                        <p className="text-gray-600 text-sm break-words">רחוב יוסף לישנסקי 6, ראשון לציון</p>
                      </div>
@@ -216,7 +240,7 @@ function ContactPage() {
 
                    {/* טלפון */}
                    <div className="flex items-start space-x-4 space-x-reverse">
-                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                     <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                        </svg>
@@ -229,7 +253,7 @@ function ContactPage() {
 
                    {/* אימייל */}
                    <div className="flex items-start space-x-4 space-x-reverse">
-                     <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#EC4899] to-[#D8A7B1] rounded-full flex items-center justify-center shadow-md">
+                     <div className="flex-shrink-0 w-10 h-10 bg-[#4B2E83] rounded-full flex items-center justify-center shadow-lg ring-2 ring-[#4B2E83]/30">
                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                        </svg>

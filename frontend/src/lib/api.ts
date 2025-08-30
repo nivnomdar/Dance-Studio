@@ -553,7 +553,17 @@ export const apiService = {
 
   // Contact API
   contact: {
-    async submitMessage(payload: { name: string; email: string; phone?: string; subject?: string; message: string }): Promise<{ message: string; id: string }>{
+    async submitMessage(
+      payload: {
+        name: string;
+        email: string;
+        phone?: string;
+        subject?: string;
+        message: string;
+        contact_terms_accepted: boolean;
+        contact_terms_accepted_at: string;
+      }
+    ): Promise<{ message: string; id: string }> {
       const headers: HeadersInit = {
         'Content-Type': 'application/json'
       };

@@ -9,10 +9,10 @@ const router = express.Router();
 // Public endpoint to submit a contact message (no auth required)
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { name, email, phone, subject, message } = req.body || {};
+    const { name, email, phone, subject, message, contact_terms_accepted, contact_terms_accepted_at } = req.body || {};
 
-    if (!name || !email || !message) {
-      throw new AppError('Missing required fields: name, email, and message are required', 400);
+    if (!name || !email || !message || !contact_terms_accepted || !contact_terms_accepted_at) {
+      throw new AppError('Missing required fields: name, email, message, contact_terms_accepted, and contact_terms_accepted_at are required', 400);
     }
 
     // Basic email format check
@@ -47,7 +47,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       user_id,
       source_ip,
       user_agent,
-      referrer
+      referrer,
+      contact_terms_accepted,
+      contact_terms_accepted_at
     };
 
     const { data, error } = await supabase
@@ -58,11 +60,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     if (error) {
       logger.error('Failed to insert contact message', error);
-      throw new AppError('Failed to submit message', 500);
+      throw new Error('Failed to submit contact message');
     }
 
-    logger.info('Contact message submitted', { id: data?.id });
-    res.status(201).json({ message: 'Message submitted successfully', id: data?.id });
+    res.status(201).json({ message: 'Contact message submitted successfully', id: data.id });
   } catch (error) {
     next(error);
   }
