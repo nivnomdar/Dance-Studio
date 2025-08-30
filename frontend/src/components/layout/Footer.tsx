@@ -216,8 +216,12 @@ const Footer: React.FC = () => {
               <MarketingConsentForm userEmail={userEmail} onSuccess={handleMarketingSuccess} />
             ) : (
               <form onSubmit={handleNewsletterSubmit} className="space-y-3">
+                <label htmlFor="footer-newsletter-email" className="sr-only">האימייל שלך</label>
                 <input
                   type="email"
+                  id="footer-newsletter-email"
+                  name="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="האימייל שלך"

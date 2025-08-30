@@ -385,16 +385,7 @@ function ClassesPage() {
       <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
-              שיעורים
-            </h1>
-            <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto mb-6 sm:mb-8"></div>
-            <p className="text-base sm:text-lg lg:text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed px-4">
-              בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
-              הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
-            </p>
-          </div>
+      
 
           {/* Skeleton Loading */}
           <ClassesSkeletonGrid />
@@ -442,14 +433,34 @@ function ClassesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
-            שיעורים
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#4B2E83] to-[#EC4899] mb-4 sm:mb-6 font-agrandir-grand flex items-center justify-center gap-2 sm:gap-3">
+            <span>בחרי שיעור</span>
+            <span id="classes-scroll-arrow" className="relative h-7 sm:h-8 w-6 sm:w-7 flex items-start" aria-hidden="true">
+              <span className="arrow-chev absolute inset-x-0 top-0 flex justify-center">
+                <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 20 20" fill="none">
+                  <defs>
+                    <linearGradient id="classesArrowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#4B2E83" />
+                      <stop offset="100%" stopColor="#EC4899" />
+                    </linearGradient>
+                  </defs>
+                  <path fill="url(#classesArrowGrad)" fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </span>
           </h1>
-          <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto mb-6 sm:mb-8"></div>
-          <p className="text-base sm:text-lg lg:text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed px-4">
-            בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
-            הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
-          </p>
+          
+          <style>{`
+            @keyframes arrowDown {
+              0% { transform: translateY(0); }
+              50% { transform: translateY(10px); }
+              100% { transform: translateY(0); }
+            }
+            #classes-scroll-arrow .arrow-chev {
+              animation: arrowDown .7s cubic-bezier(.22,.61,.36,1) infinite;
+            }
+          `}</style>
+          
         </div>
 
         
