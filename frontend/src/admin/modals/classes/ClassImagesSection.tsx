@@ -324,7 +324,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
                     e.stopPropagation();
                     openDeleteModal(image.url, image.name, 'predefined');
                   }}
-                  className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none"
+                  className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none sm:group-hover:opacity-100 sm:pointer-events-auto"
                   title={`מחיקת התמונה "${image.name}"`}
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -419,7 +419,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
                       e.stopPropagation();
                       openDeleteModal(uploadedImage.url, uploadedImage.file.name, 'uploaded');
                     }}
-                    className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none"
+                    className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none sm:group-hover:opacity-100 sm:pointer-events-auto"
                     title={`מחיקת התמונה "${uploadedImage.file.name}"`}
                   >
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -448,8 +448,11 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
               </div>
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#4B2E83]/80 via-[#4B2E83]/40 to-transparent text-white text-xs text-center py-2 px-1">
-              <div className="font-medium">הוסיפי תמונה</div>
-              <div className="text-[10px] opacity-80">לחצי להוספה</div>
+              <div className="font-medium">
+                <span className="hidden sm:inline">הוסיפי תמונה</span>
+                <span className="sm:hidden">הוספת תמונה</span>
+              </div>
+              <div className="text-[10px] opacity-80 hidden sm:block">לחצי להוספה</div>
             </div>
             <div className="absolute inset-0 bg-gradient-to-br from-[#4B2E83]/0 to-[#EC4899]/0 group-hover:from-[#4B2E83]/10 group-hover:to-[#EC4899]/10 transition-all duration-300"></div>
           </div>

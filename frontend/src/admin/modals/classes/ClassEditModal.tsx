@@ -18,7 +18,7 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
   const isNewClass = !classData.id;
   const imagesRef = useRef<ClassImagesSectionHandle>(null);
   const [showCreditsSection, setShowCreditsSection] = useState(
-    classData.group_credits > 0 || classData.private_credits > 0 || isNewClass
+    !isNewClass && (classData.group_credits > 0 || classData.private_credits > 0)
   );
 
   
@@ -360,7 +360,8 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                 מערכת קרדיטים
                 {!creditsEnabled && (
                   <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
-                    זמין רק למנוי
+                    <span className="hidden sm:inline">זמין רק למנוי</span>
+                    <span className="sm:hidden">למנוי בלבד</span>
                   </span>
                 )}
               </h3>
@@ -548,7 +549,16 @@ export default function ClassEditModal({ classData, isOpen, onClose, onSave, isL
                   <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                 </svg>
                 <p className="text-sm">מערכת הקרדיטים מושבתת</p>
-                <p className="text-xs mt-1">לחצי על "הפעל" כדי להגדיר קרדיטים לשיעור זה</p>
+                <p className="text-xs mt-1">
+                  {isNewClass
+                    ? 'הפעילי פיצ\'ר זה כדי להגדיר קרדיטים לשיעור החדש'
+                    : 'לחצי על "הפעל" כדי להגדיר קרדיטים לשיעור זה'}
+                </p>
+                
+              <p className="text-xs text-gray-500 mb-2 sm:mb-4">
+                <span className="hidden sm:inline">מערכת הקרדיטים זמינה ורלוונטית רק כאשר "סוג הרשמה" מוגדר כ"מנוי".</span>
+                <span className="sm:hidden">מערכת הקרדיטים תלויה ב"סוג הרשמה" (מנוי).</span>
+              </p>
               </div>
             )}
           </div>
