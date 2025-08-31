@@ -7,7 +7,7 @@ import {
   SafeUser, 
   SafeSession, 
   AuthState,
-  AuthEvent 
+  AuthEvent
 } from '../types/auth';
 import {
   createSafeSession,
@@ -17,7 +17,8 @@ import {
   setDataWithTimestamp, 
   getDataWithTimestamp, 
   hasCookie, 
-  clearAllCookies 
+  clearAllCookies,
+  frontendCookieManager
 } from '../utils/cookieManager';
 import { TermsCookieManager } from '../utils/termsCookieManager';
 
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [, setAuthState] = useState<AuthState>(AuthState.LOADING);
+  const [isNewUserRegistered, setIsNewUserRegistered] = useState(false);
   
   // Refs for rate limiting and timeouts
   const lastProfileUpdateRef = useRef<number>(0);
@@ -107,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (newProfile) {
         const cacheKey = `profile_${safeUser.id}`;
         setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000); // 5 דקות
+        setIsNewUserRegistered(true); // Mark as new user registered
       }
 
       return newProfile;
@@ -116,7 +119,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Always remove the flag
       const creatingKey = `creating_profile_${safeUser.id}`;
-      clearAllCookies(); // זה ימחק את כל ה-cookies כולל הדגל
+      // Replaced clearAllCookies() with targeted removal to prevent deleting other cookies
+      frontendCookieManager.removeCookie(creatingKey);
     }
   }, []);
 
@@ -350,6 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setSession(null);
         setAuthState(AuthState.UNAUTHENTICATED);
+        setIsNewUserRegistered(false);
       }, 0);
       
       // Clear timeouts
@@ -446,6 +451,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setAuthState(AuthState.UNAUTHENTICATED);
               setProfile(null);
               setProfileLoading(false);
+              setIsNewUserRegistered(false);
             }, 0);
             // Clear timeouts
             if (profileUpdateTimeoutRef.current) {
@@ -505,7 +511,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loadProfile,
       signOut,
       isAuthenticated,
-      isAdmin
+      isAdmin,
+      isNewUserRegistered
     };
   }, [
     user,
@@ -516,7 +523,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadProfile,
     signOut,
     isAuthenticated,
-    isAdmin
+    isAdmin,
+    isNewUserRegistered
   ]);
 
   return (

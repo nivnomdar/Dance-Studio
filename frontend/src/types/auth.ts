@@ -39,6 +39,7 @@ export interface AuthContextType {
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isNewUserRegistered: boolean;
 }
 
 export interface UserProfile {
