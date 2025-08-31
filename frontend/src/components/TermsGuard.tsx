@@ -74,7 +74,7 @@ function debugCookies(): void {
 }
 
 export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
-  const { profile, isAuthenticated, loading, profileLoading, loadProfile, isNewUserRegistered } = useAuth();
+  const { profile, isAuthenticated, loading, profileLoading, loadProfile } = useAuth();
   const location = useLocation();
   const hasReloadedProfile = useRef(false);
   const [initialCookieCheck, setInitialCookieCheck] = useState<boolean | null>(null);
@@ -238,8 +238,8 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     console.log('TermsGuard: Terms accepted - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted, 'Cookie:', initialCookieCheck);
     
     // Show success modal for existing users who just logged in
-    // Only if they haven't closed it yet and it's not a new user registration
-    if (profile && !initialCookieCheck && !modalClosedByUser && !isNewUserRegistered) {
+    // Only if they haven't closed it yet
+    if (profile && !initialCookieCheck && !modalClosedByUser) {
       console.log('TermsGuard: Existing user logged in, showing welcome back modal');
       
       return (
@@ -279,18 +279,12 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     return <>{children}</>;
   }
 
-  // Determine if terms are not accepted for *this* user
-  const termsNotAcceptedForUser = (
-    profile && profile.terms_accepted === false
-  ) || (
-    isNewUserRegistered && profile && profile.terms_accepted === undefined
-  ) || (
-    !isAuthenticated && !profile && !initialCookieCheck // Guest user without cookie
-  );
-
-  // If terms are explicitly not accepted, or it's a new user with undefined terms_accepted, show the modal
-  if (profile && termsNotAcceptedForUser) {
-    console.log('TermsGuard: Terms not accepted or new user - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted, 'Is new user registered:', isNewUserRegistered);
+  // If terms are explicitly not accepted, show the modal
+  // Priority: Backend validation > Local profile
+  const termsNotAccepted = backendTermsStatus?.terms_accepted === false || profile?.terms_accepted === false;
+  
+  if (profile && termsNotAccepted) {
+    console.log('TermsGuard: Terms not accepted - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted);
     
     // If user is on allowed paths, show the content without modal
     if (isAllowedPath) {
@@ -310,7 +304,7 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
             isOpen={true}
             userId={profile.id}
             marketingConsent={backendTermsStatus?.marketing_consent ?? profile.marketing_consent ?? false}
-            isNewUser={isNewUserRegistered && profile.terms_accepted === undefined}
+            isNewUser={false}
             onAccept={() => {
               // Don't reload profile automatically - let the user see the success message first
               // The profile will be reloaded when they click the "Go to Home" button

@@ -19,13 +19,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
-  },
-  global: {
-    headers: {
-      // Use the API key as the authorization header for admin-level access
-      // The user wants to use admin authorization rather than the service key.
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`
-    }
   }
 });
 
