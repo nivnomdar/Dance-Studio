@@ -19,14 +19,28 @@ const ShopPage = () => {
   const { showPopup } = usePopup();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const { products: apiProducts, loading: productsLoading } = useProducts();
   const { categories: apiCategories, loading: categoriesLoading } = useCategories();
   // Configurable threshold: minimum active top-level categories to show the parent category bar
   const MIN_TOP_CATEGORIES = 3;
   const [page, setPage] = useState<number>(1);
   const pageSizeAll = 18;
-  void error;
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+  
+  const fadeInUp = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] } }
+  };
 
   const topLevelCategories = useMemo(() => {
     const top = apiCategories.filter((c: any) => !c.parent_id && (c.is_active === undefined || c.is_active === true));
@@ -155,13 +169,18 @@ const ShopPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 sm:py-8 lg:py-12">
+    <motion.div
+      className="min-h-screen bg-gray-50 py-6 sm:py-8 lg:py-12"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         {/* Accessible Hero Header */}
        
 
         {/* Heading block (separate from image for clarity and accessibility) */}
-        <div className="text-center mb-8 sm:mb-12">
+        <motion.div variants={fadeInUp} className="text-center mb-8 sm:mb-12">
           <h1 id="shop-heading" className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
             חנות
           </h1>
@@ -169,7 +188,7 @@ const ShopPage = () => {
           <p id="shop-subtitle" className="text-base sm:text-lg lg:text-xl text-gray-600 px-4">
             נעלי עקב ואבזרים לריקוד
           </p>
-        </div>
+        </motion.div>
 
         {/* Categories */}
         <style>{`
@@ -178,7 +197,7 @@ const ShopPage = () => {
         
         
         {shouldShowTopCategories && (
-          <div className="relative mb-6 sm:mb-8 px-2" role="navigation" aria-label="סינון לפי קטגוריה">
+          <motion.div variants={fadeInUp} className="relative mb-6 sm:mb-8 px-2" role="navigation" aria-label="סינון לפי קטגוריה">
             <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
               {topLevelCategories.map(category => (
                 <button
@@ -211,12 +230,12 @@ const ShopPage = () => {
                 </svg>
               </button>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Subcategories */}
         {(!shouldShowTopCategories || activeParentId !== 'all') && (
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2" role="navigation" aria-label="תת־קטגוריות">
+          <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-2" role="navigation" aria-label="תת־קטגוריות">
             {(shouldShowTopCategories
               ? apiCategories.filter((c: any) => c.parent_id === activeParentId && (c.is_active === undefined || c.is_active === true) && productSubcategoryIds.has(c.id))
               : allActiveSubcategories.filter((c: any) => productSubcategoryIds.has(c.id))
@@ -243,11 +262,11 @@ const ShopPage = () => {
                 נקה
               </button>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        <motion.div variants={fadeInUp} className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {visibleProducts.length === 0 && !isLoading && (
             <div className="col-span-full">
               <div className="bg-white rounded-2xl p-8 text-center border border-[#EC4899]/10">
@@ -320,11 +339,11 @@ const ShopPage = () => {
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Pagination for 'all' only */}
         {isAll && totalPages > 1 && (
-          <nav className="mt-6 flex items-center justify-center gap-2" aria-label="דיפדוף מוצרים">
+          <motion.nav variants={fadeInUp} className="mt-6 flex items-center justify-center gap-2" aria-label="דיפדוף מוצרים">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
@@ -344,7 +363,7 @@ const ShopPage = () => {
             >
               הבא
             </button>
-          </nav>
+          </motion.nav>
         )}
 
         {/* Quick View Modal */}
@@ -485,7 +504,7 @@ const ShopPage = () => {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

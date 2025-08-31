@@ -14,6 +14,7 @@ import {
   getDataWithTimestamp, 
   hasCookie 
 } from '../utils/cookieManager';
+import { motion } from 'framer-motion';
 
 function UserProfile() {
   const { user, loading: authLoading, session, profile: contextProfile, loadProfile } = useAuth();
@@ -45,6 +46,22 @@ function UserProfile() {
   // Refs to track loaded data
   const dataLoadedRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+  
+  const fadeInUp = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] } }
+  };
 
   // Move profile loading logic to useCallback to avoid setState during render
   const loadProfileData = useCallback(async () => {
@@ -614,21 +631,26 @@ function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12">
+    <motion.div
+      className="min-h-screen bg-gradient-to-br from-[#FFF5F9] via-[#FDF9F6] to-[#FFF5F9] pt-16 sm:pt-20 lg:pt-24 pb-8 sm:pb-12"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Section */}
-        <div className="text-center mb-8 sm:mb-12">
+        <motion.div variants={fadeInUp} className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">
             הפרופיל שלי
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-[#4B2E83]/70 max-w-2xl mx-auto px-2">
             כאן תוכלי לנהל את הפרטים האישיים שלך ולעדכן את המידע שלך במערכת
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Profile Card */}
-          <div className="lg:col-span-1">
+          <motion.div variants={fadeInUp} className="lg:col-span-1">
             <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden border border-[#EC4899]/10">
               {/* Profile Header */}
               <div className="bg-gradient-to-r from-[#EC4899] to-[#4B2E83] px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 text-center relative">
@@ -752,10 +774,10 @@ function UserProfile() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Tabs Section */}
-          <div className="lg:col-span-2">
+          <motion.div variants={fadeInUp} className="lg:col-span-2">
             <ProfileTabs
               user={user}
               localProfile={localProfile}
@@ -770,7 +792,7 @@ function UserProfile() {
               onClassesCountUpdate={fetchClassesCount}
               onCreditsUpdate={fetchSubscriptionCredits}
             />
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -791,7 +813,7 @@ function UserProfile() {
         title="שגיאה"
         message={errorMessage}
       />
-    </div>
+    </motion.div>
   );
 }
 

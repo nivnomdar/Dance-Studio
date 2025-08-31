@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useState, forwardRef } from 'react';
-import { CLASS_IMAGES, getDefaultClassImage, type ClassImage } from '../../../config/classImages';
+import { getDefaultClassImage, type ClassImage } from '../../../config/classImages';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { ClassImagesSectionHandle } from './types';
 import { supabase } from '../../../lib/supabase';
@@ -15,6 +15,7 @@ interface ClassImagesSectionProps {
 
 const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSectionProps>(
   ({ imageUrl, onImageUrlChange, isOpen, onShowMessage }, ref) => {
+    // console.log("ClassImagesSection component RENDERING."); // Removed log
     const { session } = useAuth();
 
     // תמונות שנבחרו מקומית אך טרם הועלו
@@ -33,31 +34,48 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
     const [availableClassImages, setAvailableClassImages] = useState<ClassImage[]>([]);
     useEffect(() => {
       let isMounted = true;
-      const verifyImages = async () => {
+      const fetchImagesFromSupabase = async () => {
         try {
-          const { data, error } = await supabase
-            .storage
-            .from('classes')
-            .list('images/v1', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } });
-          if (error) throw error;
-          const existingNames = new Set<string>((data || []).map((f: any) => (f?.name || '').toLowerCase()));
-          const filtered = CLASS_IMAGES.filter((img) => {
-            try {
-              const fileName = img.url.split('/').pop()?.toLowerCase() || '';
-              return existingNames.has(fileName);
-            } catch {
-              return false;
+          const { data, error } = await supabase.storage
+            .from('classes') // Assuming 'classes' is the correct bucket name
+            .list('images/v1', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } }); // Corrected path
+
+          if (error) {
+            throw error;
+          }
+          
+          const images: ClassImage[] = (data || []).map((file: any) => {
+            const publicUrl = supabase.storage.from('classes').getPublicUrl(`images/v1/${file.name}`).data.publicUrl; // Corrected bucket and path
+            return {
+              id: file.name, // Use file.name (including extension) as id for uniqueness
+              name: file.name.split('.')[0], // Extract name without extension
+              url: publicUrl,
+              description: file.name.split('.')[0], // Use name without extension as description
+              category: 'custom' // All uploaded images are custom
             }
           });
-          if (isMounted) setAvailableClassImages(filtered);
-        } catch {
-          // Fallback: if listing fails, keep original list to avoid empty UI
-          if (isMounted) setAvailableClassImages(CLASS_IMAGES);
+    
+          if (isMounted) setAvailableClassImages(images);
+        } catch (err) {
+          console.error('Error fetching images from Supabase:', err);
+          if (onShowMessage) {
+            onShowMessage('error', 'שגיאה בטעינת תמונות', `לא ניתן לטעון תמונות מ-Supabase: ${err instanceof Error ? err.message : 'שגיאה לא ידועה'}`);
+          }
+          if (isMounted) setAvailableClassImages([]); // Clear if error
         }
       };
-      verifyImages();
+      fetchImagesFromSupabase();
       return () => { isMounted = false; };
-    }, []);
+    }, []); // Removed [onShowMessage] dependency for debugging
+
+    // Effect to update parent's imageUrl when a new image is added
+    useEffect(() => {
+      if (newImages.length > 0) {
+        const lastImageIndex = newImages.length - 1;
+        const imagePlaceholderUrl = `new-image-${lastImageIndex}`;
+        onImageUrlChange(imagePlaceholderUrl);
+      }
+    }, [newImages, onImageUrlChange]); // Depend on newImages and onImageUrlChange
 
     // ניקוי תמונות כשסוגרים/פותחים את המודל מחדש
     useEffect(() => {
@@ -225,12 +243,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
           return;
         }
 
-        setNewImages(prev => {
-          const newList = [...prev, file];
-          const imagePlaceholderUrl = `new-image-${newList.length - 1}`;
-          onImageUrlChange(imagePlaceholderUrl);
-          return newList;
-        });
+        setNewImages(prev => [...prev, file]); // Update newImages state
       };
 
       fileInput.click();
@@ -301,7 +314,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
               )}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent text-white text-xs text-center py-2 px-1">
                 <div className="font-medium">{image.name}</div>
-                <div className="text-[10px] opacity-80">{image.category === 'cool' ? 'צבעים קרים' : 'צבעים חמים'}</div>
+                {/* Removed category display as it's no longer relevant for dynamic images */}
               </div>
               {/* כפתור מחיקה - רק אם התמונה לא נבחרה כרגע */}
               {imageUrl !== image.url && !isImageMarkedForDeletion(image.url) && (
@@ -311,7 +324,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
                     e.stopPropagation();
                     openDeleteModal(image.url, image.name, 'predefined');
                   }}
-                  className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                  className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none"
                   title={`מחיקת התמונה "${image.name}"`}
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -406,7 +419,7 @@ const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSecti
                       e.stopPropagation();
                       openDeleteModal(uploadedImage.url, uploadedImage.file.name, 'uploaded');
                     }}
-                    className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 pointer-events-none"
                     title={`מחיקת התמונה "${uploadedImage.file.name}"`}
                   >
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

@@ -17,10 +17,31 @@ const CartPage = () => {
     return calculateSubtotal() + calculateShipping();
   };
 
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+  
+  const fadeInUp = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] } }
+  };
+
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 sm:py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.div 
+        className="min-h-screen bg-gray-50 py-8 sm:py-12"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={fadeInUp} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="mb-6 sm:mb-8">
               <svg className="mx-auto h-16 w-16 sm:h-24 sm:w-24 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,23 +59,28 @@ const CartPage = () => {
               המשך בקניות
             </Link>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 sm:py-12">
+    <motion.div
+      className="min-h-screen bg-gray-50 py-8 sm:py-12"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        <motion.div variants={fadeInUp} className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4B2E83] mb-2 font-agrandir-grand">סל קניות</h1>
           <p className="text-sm sm:text-base text-gray-600">בדקי את המוצרים שלך והמשיכי לרכישה</p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Cart Items */}
-          <div className="lg:col-span-2">
+          <motion.div variants={fadeInUp} className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-sm">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">מוצרים בסל ({cartItems.length})</h2>
@@ -180,10 +206,10 @@ const CartPage = () => {
                 </AnimatePresence>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
+          <motion.div variants={fadeInUp} className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm sticky top-4">
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">סיכום הזמנה</h2>
@@ -232,10 +258,10 @@ const CartPage = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -63,7 +63,6 @@ function AppContent() {
 }
 
 function App() {
-  // console.log('App component render at:', new Date().toISOString()); // Debug log
   return (
     <ErrorBoundary>
       <Router>
