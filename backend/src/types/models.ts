@@ -40,6 +40,9 @@ export interface Registration {
   session_class_id?: string;
   created_at: string;
   updated_at: string;
+  registration_terms_accepted: boolean;
+  health_declaration_accepted: boolean;
+  age_confirmation_accepted: boolean;
 }
 
 export interface RegistrationWithDetails extends Registration {
@@ -82,6 +85,9 @@ export interface CreateRegistrationRequest {
   // Enhanced fields
   payment_method?: 'cash' | 'credit' | 'online' | 'credit_usage';
   session_selection?: 'custom' | 'scheduled';
+  registration_terms_accepted: boolean;
+  health_declaration_accepted: boolean;
+  age_confirmation_accepted: boolean;
 }
 
 export interface UpdateRegistrationRequest extends Partial<CreateRegistrationRequest> {

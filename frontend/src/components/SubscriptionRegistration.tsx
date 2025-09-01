@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaClock, FaCalendarAlt, FaSignInAlt, FaCheckCircle, FaExclamationTriangle, FaSpinner } from 'react-icons/fa';
 import { registrationsService } from '../lib/registrations';
 import { Class } from '../types/class';
@@ -44,6 +44,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [savedRegistrationData, setSavedRegistrationData] = useState<{ date: string; time: string } | null>(null);
+  const [healthDeclarationAccepted, setHealthDeclarationAccepted] = useState(false);
+  const [generalTermsAccepted, setGeneralTermsAccepted] = useState(false);
+  const [ageConfirmationAccepted, setAgeConfirmationAccepted] = useState(false); // New state
+  const [showFullHealthTerms, setShowFullHealthTerms] = useState(false);
 
   // Cache for dates, times, spots
   const [datesCache, setDatesCache] = useState<{ [classId: string]: string[] }>({});
@@ -281,6 +285,27 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       showPopup({ type: 'error', message: 'אנא מלאי את כל השדות הנדרשים' });
       return;
     }
+    
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length !== 10) {
+      showPopup({ type: 'error', message: 'מספר הטלפון חייב להכיל 10 ספרות' }); // Updated message
+      return;
+    }
+
+    if (!generalTermsAccepted) {
+      showPopup({ type: 'error', message: 'עליך לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך בהרשמה.' });
+      return;
+    }
+
+    if (!healthDeclarationAccepted) {
+      showPopup({ type: 'error', message: 'עליך לאשר את הצהרת הבריאות כדי להמשיך בהרשמה.' }); // Updated message
+      return;
+    }
+
+    if (!ageConfirmationAccepted) {
+      showPopup({ type: 'error', message: 'עליך לאשר שגילך הוא 18 ומעלה כדי להמשיך בהרשמה.' }); // New validation
+      return;
+    }
 
     // Format time for backend (handle cases with "עד" - until)
     const timeForBackend = selectedTime.includes('עד') ? 
@@ -346,7 +371,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
         notes: '',
         used_credit: getAvailableCredits() > 0, // Only true if user has credits
         credit_type: getAvailableCredits() > 0 ? creditGroup : undefined, // Only set if using credits
-        purchase_price: classData.price // Store the actual price paid
+        purchase_price: classData.price, // Store the actual price paid
+        registration_terms_accepted: generalTermsAccepted,
+        health_declaration_accepted: healthDeclarationAccepted,
+        age_confirmation_accepted: ageConfirmationAccepted // New field
       };
 
       await registrationsService.createRegistration(registrationData, session?.access_token);
@@ -434,7 +462,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       {user ? (
         <>
                       <h2 className={`text-3xl font-bold ${colors.textColor} mb-6 font-agrandir-grand`}>
-              {hasCredits ? 'קביעת שיעור' : 'הרשמה למנוי חודשי'}
+              {hasCredits ? 'הרשמה לשיעור' : 'הרשמה למנוי חודשי'}
       </h2>
 
           {/* Credits Display - Only show if user has credits */}
@@ -724,11 +752,12 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                   className={`w-full px-4 py-3 border-2 border-gray-200 rounded-xl ${colors.focusRing} ${colors.focusBorder} transition-all duration-200 bg-white hover:border-gray-300 focus:border-${colors.textColor.replace('text-', '')} focus:shadow-lg text-right`}
                   dir="rtl"
                   pattern="[0-9\-\(\)\s]+"
-                  minLength={8}
+                  minLength={10} // Updated minLength to 10
+                  maxLength={10} // Added maxLength to 10 for consistency
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1 font-agrandir-regular">
-                  מספר טלפון עם לפחות 8 ספרות
+                  מספר טלפון חייב להכיל 10 ספרות
                 </p>
               </div>
 
@@ -765,17 +794,87 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
               </div>
             )}
 
+            {/* General Terms Checkbox */}
+            <div className="mt-6">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={generalTermsAccepted}
+                  onChange={(e) => setGeneralTermsAccepted(e.target.checked)}
+                  required
+                  className="form-checkbox h-5 w-5 text-[#EC4899] rounded border-gray-300 focus:ring-[#EC4899]"
+                />
+                <span className="text-sm font-medium text-gray-700 text-right mr-2 leading-relaxed">
+                  קראתי ואני מאשרת ומסכימה ל- <Link to="/terms-of-service" className="text-[#EC4899] hover:underline" target="_blank">תנאי השימוש</Link> ו- <Link to="/privacy-policy" className="text-[#EC4899] hover:underline" target="_blank">מדיניות הפרטיות</Link> של הסטודיו.
+                </span>
+              </label>
+            </div>
+
+            {/* Health Declaration and Age 18+ Checkbox */}
+            <div className="mt-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={healthDeclarationAccepted}
+                  onChange={(e) => setHealthDeclarationAccepted(e.target.checked)}
+                  required
+                  className="form-checkbox h-5 w-5 text-[#EC4899] rounded border-gray-300 focus:ring-[#EC4899]"
+                />
+                <span className="text-sm font-medium text-gray-700 text-right mr-2 leading-relaxed">
+                  {showFullHealthTerms ? (
+                    <>
+                      אני מצהירה כי מצבי הבריאותי תקין. ההשתתפות בשיעור מתקיימת על אחריות המשתתפת בלבד. בכניסה לשיעורים את מצהירה כי מצבך הבריאותי מאפשר השתתפות בפעילות גופנית, וכי אין מניעה רפואית לכך. במקרה של ספק או מגבלה רפואית האחריות לפנות לייעוץ רפואי היא עלייך בלבד. בהרשמה לשיעורים אני מאשרת כי גילי הוא 18.
+                      <button
+                        type="button"
+                        onClick={() => setShowFullHealthTerms(false)}
+                        className="text-[#EC4899] hover:underline mr-1 font-bold"
+                      >
+                        קראי פחות
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      אני מצהירה כי מצבי הבריאותי תקין.
+                      <button
+                        type="button"
+                        onClick={() => setShowFullHealthTerms(true)}
+                        className="text-[#EC4899] hover:underline mr-1 font-bold"
+                      >
+                        קראי עוד
+                      </button>
+                    </>
+                  )}
+                </span>
+              </label>
+            </div>
+
+            {/* Age Confirmation Checkbox - New Field */}
+            <div className="mt-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ageConfirmationAccepted}
+                  onChange={(e) => setAgeConfirmationAccepted(e.target.checked)}
+                  required
+                  className="form-checkbox h-5 w-5 text-[#EC4899] rounded border-gray-300 focus:ring-[#EC4899]"
+                />
+                <span className="text-sm font-medium text-gray-700 text-right mr-2 leading-relaxed">
+                  בהרשמה לשיעורים אני מאשרת כי גילי הוא 18.
+                </span>
+              </label>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || isSubmitting || (() => {
+              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || formData.phone.replace(/\D/g, '').length !== 10 || isSubmitting || !generalTermsAccepted || !healthDeclarationAccepted || !ageConfirmationAccepted || (() => {
                 const spotsKey = classData.id + '_' + selectedDate;
                 const spotsData = spotsCache[spotsKey] || {};
                 const spotsInfo = spotsData[selectedTime];
                 return spotsInfo?.available === 0;
               })()}
-              className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl ${
-                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && !isSubmitting && (() => {
+              className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl mt-6 ${
+                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && ageConfirmationAccepted && !isSubmitting && (() => {
                   const spotsKey = classData.id + '_' + selectedDate;
                   const spotsData = spotsCache[spotsKey] || {};
                   const spotsInfo = spotsData[selectedTime];
@@ -890,8 +989,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
               
               {/* Success Icon */}
               <div className="relative z-10 mb-2 sm:mb-3 md:mb-2 lg:mb-1">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-12 lg:h-12 xl:w-10 xl:h-10 bg-white/20 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-6 lg:h-6 xl:w-5 xl:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-12 lg:h-12 xl:w-10 xl:h-10 bg-green-500/20 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-6 lg:h-6 xl:w-5 xl:h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>

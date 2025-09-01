@@ -162,7 +162,7 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     }
   }, [isAuthenticated, profileLoading, loadProfile, profile]);
 
-  // Determine if we should show the terms modal
+  // Determine if we should show the terms modal and synchronize cookie with profile status
   useEffect(() => {
     if (!isAuthenticated || profileLoading || !profile) {
       return;
@@ -170,12 +170,21 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
 
     // Validate and cleanup cookies for current user
     TermsCookieManager.validateAndCleanupTermsCookie(profile.id);
+
+    // If profile says terms are accepted but cookie is not set, set the cookie.
+    // This ensures consistency and prevents the "Cookie: false" issue.
+    if (profile.terms_accepted === true && initialCookieCheck === false) {
+      console.log('TermsGuard: Profile terms accepted, but cookie not set. Setting cookie.');
+      TermsCookieManager.setTermsAccepted(profile.id);
+      setInitialCookieCheck(true); // Update local state to reflect the cookie change
+    }
     
     // Only clear the terms cookie if profile says terms are not accepted AND no cookie exists
     // This prevents clearing an existing valid cookie
     if (profile && profile.terms_accepted === false && !initialCookieCheck) {
       console.log('TermsGuard: Profile says terms not accepted and no cookie exists, clearing any stale cookie');
       TermsCookieManager.clearTermsCookie();
+      setInitialCookieCheck(false);
     }
 
     // Log the current state for debugging
@@ -190,19 +199,6 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
       profileLoading
     });
   }, [isAuthenticated, profile, profileLoading, isAllowedPath, location.pathname, initialCookieCheck]);
-
-  // Monitor profile changes but don't auto-update cookie for existing users
-  // This allows the welcome back modal to stay open
-  useEffect(() => {
-    if (profile && profile.terms_accepted === true && !initialCookieCheck) {
-      console.log('TermsGuard: Profile has terms_accepted=true, but not updating cookie yet');
-      console.log('TermsGuard: This allows the welcome back modal to stay open for existing users');
-      console.log('TermsGuard: Cookie will be updated when user closes the modal');
-      
-      // Don't update cookie automatically - let the user see the modal first
-      // Cookie will be updated when they close the modal
-    }
-  }, [profile?.terms_accepted, initialCookieCheck, profile?.id]);
 
   // No need to prevent body scrolling - let the modal handle its own scrolling
   // This prevents the page from being frozen and changing its appearance
@@ -238,7 +234,7 @@ export const TermsGuard: React.FC<TermsGuardProps> = ({ children }) => {
     console.log('TermsGuard: Terms accepted - Backend:', backendTermsStatus?.terms_accepted, 'Profile:', profile?.terms_accepted, 'Cookie:', initialCookieCheck);
     
     // Show success modal for existing users who just logged in
-    // Only if they haven't closed it yet
+    // Only if they haven't closed it yet and the cookie was just set in this session
     if (profile && !initialCookieCheck && !modalClosedByUser) {
       console.log('TermsGuard: Existing user logged in, showing welcome back modal');
       

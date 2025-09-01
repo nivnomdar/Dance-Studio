@@ -317,13 +317,6 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
           <div id="error-description" className="sr-only">
             הודעת שגיאה בהתחברות עם Google
           </div>
-
-
-
-          {/* Marketing consent info */}
-          <div className="mt-2 text-xs text-gray-500 text-center">
-            הסכמה לשיווק היא רשות ואינה נדרשת להתחברות
-          </div>
         </div>
 
         {/* Close Button */}

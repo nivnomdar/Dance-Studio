@@ -4,7 +4,7 @@ import { assetUrl } from '../../lib/assets';
 function AboutSection() {
   if (HOMEPAGE_FLAGS.aboutUseImage) {
     return (
-      <section className="relative -mt-4 sm:-mt-0 pt-0 sm:pt-10 lg:pt-12 pb-6 sm:pb-8 lg:pb-10 bg-black overflow-hidden">
+      <section className="relative -mt-4 sm:-mt-0 pt-0 sm:pt-4 lg:pt-0 pb-2 sm:pb-4 lg:pb-5 bg-black overflow-hidden">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <img
             src={assetUrl(HOMEPAGE_ASSETS.about.portrait)}

@@ -434,7 +434,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       credit_type,
       purchase_price,
       payment_method, // לא קיים בטבלה - נשתמש רק לוולידציה
-      session_selection // לא קיים בטבלה - נשתמש רק לוולידציה
+      session_selection, // לא קיים בטבלה - נשתמש רק לוולידציה
+      registration_terms_accepted, // New field for general terms
+      health_declaration_accepted, // New field for health declaration
+      age_confirmation_accepted // New field for age confirmation
     } = req.body;
 
     logger.info('Raw request body:', req.body);
@@ -501,7 +504,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       credit_type,
       purchase_price,
       payment_method,
-      session_selection
+      session_selection,
+      registration_terms_accepted,
+      health_declaration_accepted,
+      age_confirmation_accepted
     });
     
     logger.info('Credit fields check:', {
@@ -512,6 +518,20 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       credit_type_value: credit_type,
       user_id_value: user_id
     });
+
+    // Validate terms acceptance
+    if (registration_terms_accepted !== true) {
+      logger.error('Registration terms not accepted');
+      throw new AppError('עליך לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך בהרשמה.', 400);
+    }
+    if (health_declaration_accepted !== true) {
+      logger.error('Health declaration terms not accepted');
+      throw new AppError('עליך לאשר את הצהרת הבריאות כדי להמשיך בהרשמה.', 400);
+    }
+    if (age_confirmation_accepted !== true) {
+      logger.error('Age confirmation not accepted');
+      throw new AppError('עליך לאשר את תנאי הגיל כדי להמשיך בהרשמה.', 400);
+    }
 
     // Check if class exists and get credit information
     console.log('Checking if class exists and getting credit information...');
@@ -773,7 +793,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       used_credit: used_credit === true, // Ensure boolean
       credit_type: credit_type || null, // Convert empty string to null
       purchase_price: purchase_price || null, // Convert empty string to null
-      status: 'active' // Default status for new registrations
+      status: 'active', // Default status for new registrations
+      registration_terms_accepted: registration_terms_accepted, // Use value from frontend
+      health_declaration_accepted: health_declaration_accepted, // New field
+      age_confirmation_accepted: age_confirmation_accepted // New field
       // Note: payment_method and session_selection are not stored in the database
       // They are only used for validation and frontend logic
     };

@@ -11,7 +11,7 @@ function PhotosCarousel() {
   const [isPaused, setIsPaused] = useState(false);
 
   return (
-    <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-16 mb-8 sm:mb-12 lg:mb-16 bg-black overflow-visible">
+    <section className="pt-2 sm:pt-3 lg:pt-0 pb-4 sm:pb-6 lg:pb-8 mb-4 sm:mb-6 lg:mb-1 bg-black overflow-visible">
       <style>{`
         .swiper-button-next,
         .swiper-button-prev {
@@ -31,7 +31,7 @@ function PhotosCarousel() {
         }
       `}</style>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 sm:mb-12">
+        <div className="text-center mb-1 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-3 sm:mb-4 font-agrandir-grand">
             גלריית תמונות
           </h2>

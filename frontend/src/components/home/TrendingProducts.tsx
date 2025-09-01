@@ -38,7 +38,7 @@ function TrendingProducts() {
   if (!trending.length) return null;
 
   return (
-    <section className="bg-black pt-6 sm:pt-8 lg:pt-10 pb-10 sm:pb-14 lg:pb-16">
+    <section className="bg-black pt-1 sm:pt-6 lg:pt-8 pb-6 sm:pb-8 lg:pb-10">
       <style>{`
         .swiper-button-next,
         .swiper-button-prev {
