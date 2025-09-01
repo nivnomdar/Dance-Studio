@@ -4,7 +4,6 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import DeveloperCredit from './components/layout/DeveloperCredit';
 import HomePage from './pages/HomePage';
-import AboutPage from './pages/AboutPage';
 import ClassesPage from './pages/ClassesPage';
 import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
@@ -25,6 +24,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import AdminDashboard from './admin/pages/dashboard/AdminDashboard';
 import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper';
 import CookieConsentBanner from './components/layout/CookieConsentBanner';
+import NotFoundPage from './pages/NotFoundPage'; // Import NotFoundPage
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
 
 function AppContent() {
@@ -39,7 +39,7 @@ function AppContent() {
       <main className="pt-12 flex-grow"> {/* Add padding-top to account for fixed navbar */}
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
+          {/* <Route path="/about" element={<AboutPage />} /> */}
           <Route path="/classes" element={<ClassesPage />} />
           <Route path="/class/:slug" element={<ClassDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
@@ -54,6 +54,7 @@ function AppContent() {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/accessibility-statement" element={<AccessibilityStatement />} />
           <Route path="/physical-accessibility" element={<PhysicalAccessibility />} />
+          <Route path="*" element={<NotFoundPage />} /> {/* Catch-all route for 404 */}
         </Routes>
       </main>
       {!isAdminPath ? <Footer /> : <DeveloperCredit />}
