@@ -24,7 +24,7 @@ const ShopPage = () => {
   // Configurable threshold: minimum active top-level categories to show the parent category bar
   const MIN_TOP_CATEGORIES = 3;
   const [page, setPage] = useState<number>(1);
-  const pageSizeAll = 18;
+  const pageSizeAll = 20;
 
   const staggerContainer = {
     hidden: { opacity: 0 },
@@ -331,9 +331,9 @@ const ShopPage = () => {
                   <span className="text-xl sm:text-2xl font-bold text-[#EC4899]">₪{product.price}</span>
                   <button
                     onClick={() => handleQuickView(product)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-[#EC4899]/80 transition-colors duration-300 text-sm sm:text-base"
+                    className="w-full sm:w-auto bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-[#EC4899]/80 transition-colors duration-300 text-sm sm:text-base cursor-pointer"
                   >
-                    הצג
+                    צפי במוצר
                   </button>
                 </div>
               </div>

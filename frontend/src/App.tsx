@@ -26,10 +26,16 @@ import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper
 import CookieConsentBanner from './components/layout/CookieConsentBanner';
 import NotFoundPage from './pages/NotFoundPage'; // Import NotFoundPage
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
+import { useEffect } from 'react';
 
 function AppContent() {
   const location = useLocation();
   
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // Check if current path is admin dashboard
   const isAdminPath = location.pathname.startsWith('/admin');
   

@@ -7,7 +7,7 @@ interface LoadingSpinnerProps {
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  message = "טוען...", 
+  message = "", 
   size = 'md',
   className = ""
 }) => {
@@ -23,7 +23,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         className={`animate-spin rounded-full border-b-2 border-[#EC4899] mx-auto mb-4 ${sizeClasses[size]}`}
         aria-hidden="true"
       ></div>
-      <p className="text-lg text-[#4B2E83]/70">{message}</p>
+      {message && <p className="text-lg text-[#4B2E83]/70">{message}</p>}
     </div>
   );
 };

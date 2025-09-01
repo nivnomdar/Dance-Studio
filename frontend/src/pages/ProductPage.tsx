@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import { useCart } from '../contexts/CartContext';
 import { usePopup } from '../contexts/PopupContext';
+import LoadingSpinner from '../components/common/LoadingSpinner'; // Import LoadingSpinner
 
 type ProductRecord = {
   id: string;
@@ -118,7 +119,7 @@ const ProductPage = () => {
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-pulse text-[#4B2E83]">טוען מוצר…</div>
+        <LoadingSpinner />
       </div>
     );
   }
