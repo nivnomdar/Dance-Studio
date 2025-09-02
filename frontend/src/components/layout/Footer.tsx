@@ -23,6 +23,11 @@ const Footer: React.FC = () => {
       return;
     }
 
+    if (profile && profile.email && email.trim() !== profile.email) {
+      setNewsletterMessage({ type: 'error', text: 'המייל שהוזן אינו תואם למייל של המשתמש המחובר.' });
+      return;
+    }
+
     // העברת המשתמש לדף יצירת קשר עם האימייל שכבר מלא
     navigate(`/contact?email=${encodeURIComponent(email.trim())}`);
   };
@@ -155,7 +160,7 @@ const Footer: React.FC = () => {
                   <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                   </svg>
-                  צור קשר
+                  צרי קשר
                 </Link>
               </li>
             </ul>
@@ -258,7 +263,7 @@ const Footer: React.FC = () => {
               © {currentYear} סטודיו Ladances. כל הזכויות שמורות.
             </div>
             
-            <div className="flex items-center gap-1.5 text-sm">
+            <div className="flex flex-wrap justify-center md:justify-end items-center gap-x-2 gap-y-1.5 text-sm">
                 <Link to="/privacy-policy" className="text-gray-400 hover:text-pink-400 transition-colors duration-200">
                   מדיניות פרטיות
                 </Link>

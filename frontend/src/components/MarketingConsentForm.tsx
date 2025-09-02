@@ -11,11 +11,11 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
   userEmail, 
   onSuccess 
 }) => {
-  const [email, setEmail] = useState(userEmail);
+  const [email, setEmail] = useState(''); // Always start with an empty email input
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const { loadProfile } = useAuth();
+  const { loadProfile, profile } = useAuth(); // Also get profile from context
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +25,12 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
       return;
     }
 
+    // Add validation: If user is logged in, email must match their current email
+    if (profile && profile.email && email.trim() !== profile.email) {
+      setError('המייל שהוזן אינו תואם למייל של המשתמש המחובר.');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setError(null);
@@ -35,7 +41,7 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
         throw new Error('לא מחובר למערכת');
       }
 
-      // Call backend API
+      // Call backend API - only update marketing consent, not email itself
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/update-marketing`, {
         method: 'POST',
         headers: {
@@ -43,7 +49,7 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          email: email.trim(),
+          // Do NOT send email to update here, as userEmail is for validation only
           marketing_consent: true
         })
       });
@@ -114,6 +120,10 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
           'הישארי מעודכנת'
         )}
       </button>
+      
+      <p className="text-gray-400 text-xs text-center mt-3">
+        בלחיצה על כפתור זה אני מאשרת קבלת תוכן שיווקי לכתובת המייל.
+      </p>
       
       {error && (
         <div className="p-3 rounded-md border-2 bg-red-900/20 border-red-500/30 text-red-300">
