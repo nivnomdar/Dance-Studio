@@ -15,7 +15,28 @@ interface ProductEditModalProps {
 
 export default function ProductEditModal({ isOpen, onClose, product, categories, products, onSaved }: ProductEditModalProps) {
   const numericSizes = ["35","36","37","38","39","40","41","42"];
-  const clothingSizes = ["S","M","L","XL"];
+  const clothingSizes = ["XS","S","M","L","XL"]; // Added XS to clothing sizes for completeness
+
+  const customSort = (a: string, b: string) => {
+    const numericIndexA = numericSizes.indexOf(a);
+    const numericIndexB = numericSizes.indexOf(b);
+    const clothingIndexA = clothingSizes.indexOf(a);
+    const clothingIndexB = clothingSizes.indexOf(b);
+
+    if (numericIndexA !== -1 && numericIndexB !== -1) {
+      return numericIndexA - numericIndexB; // Sort purely by numeric order
+    }
+    if (clothingIndexA !== -1 && clothingIndexB !== -1) {
+      return clothingIndexA - clothingIndexB; // Sort purely by clothing order
+    }
+    // Fallback for mixed or unlisted items: prioritize known lists, then alphanumeric
+    if (numericIndexA !== -1) return -1;
+    if (numericIndexB !== -1) return 1;
+    if (clothingIndexA !== -1) return -1;
+    if (clothingIndexB !== -1) return 1;
+    return a.localeCompare(b); // Default alphanumeric sort
+  };
+
   const [form, setForm] = useState({
     name: '',
     category_id: '',
@@ -64,7 +85,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
         main_image: product.main_image || '',
         gallery_images: Array.isArray(product.gallery_images) ? product.gallery_images.join(', ') : '',
         // Shoes
-        sizes: Array.isArray(product.sizes) ? product.sizes.map(String) : [],
+        sizes: Array.isArray(product.sizes) ? product.sizes.map(String).sort(customSort) : [],
         heel_height: product.heel_height != null ? String(product.heel_height) : '',
         sole_type: product.sole_type || '',
         materials: product.materials || '',
@@ -334,7 +355,25 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-2">מידות (EU / בגדים)</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-[#4B2E83]">מידות מספריות (EU)</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm(prev => {
+                          const allNumericSelected = numericSizes.every(size => prev.sizes.includes(size));
+                          const newSizes = allNumericSelected
+                            ? prev.sizes.filter(size => !numericSizes.includes(size))
+                            : Array.from(new Set([...prev.sizes, ...numericSizes])).sort(customSort);
+                          return { ...prev, sizes: newSizes };
+                        });
+                      }}
+                      className="px-3 py-1.5 rounded-lg border text-xs cursor-pointer border-[#4B2E83] text-[#4B2E83] hover:bg-[#4B2E83] hover:text-white transition-colors"
+                    >
+                      {numericSizes.every(size => form.sizes.includes(size)) ? 'בטלי הכל' : 'בחרי הכל'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {numericSizes.map((size) => (
                       <button
                         key={size}
@@ -343,7 +382,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                           setForm(prev => {
                             const selected = new Set(prev.sizes);
                             if (selected.has(size)) selected.delete(size); else selected.add(size);
-                            return { ...prev, sizes: Array.from(selected).sort() };
+                            return { ...prev, sizes: Array.from(selected).sort(customSort) };
                           });
                         }}
                         className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${form.sizes.includes(size) ? 'border-[#EC4899] bg-[#EC4899]/10 text-[#EC4899]' : 'border-gray-300 text-gray-700 hover:border-[#EC4899]'}`}
@@ -352,7 +391,25 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                       </button>
                     ))}
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex items-center justify-between mt-4 mb-2">
+                    <h4 className="text-sm font-semibold text-[#4B2E83]">מידות בגדים</h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm(prev => {
+                          const allClothingSelected = clothingSizes.every(size => prev.sizes.includes(size));
+                          const newSizes = allClothingSelected
+                            ? prev.sizes.filter(size => !clothingSizes.includes(size))
+                            : Array.from(new Set([...prev.sizes, ...clothingSizes])).sort(customSort);
+                          return { ...prev, sizes: newSizes };
+                        });
+                      }}
+                      className="px-3 py-1.5 rounded-lg border text-xs cursor-pointer border-[#4B2E83] text-[#4B2E83] hover:bg-[#4B2E83] hover:text-white transition-colors"
+                    >
+                      {clothingSizes.every(size => form.sizes.includes(size)) ? 'בטלי הכל' : 'בחרי הכל'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {clothingSizes.map((size) => (
                       <button
                         key={size}
@@ -361,7 +418,7 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                           setForm(prev => {
                             const selected = new Set(prev.sizes);
                             if (selected.has(size)) selected.delete(size); else selected.add(size);
-                            return { ...prev, sizes: Array.from(selected).sort() };
+                            return { ...prev, sizes: Array.from(selected).sort(customSort) };
                           });
                         }}
                         className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${form.sizes.includes(size) ? 'border-[#EC4899] bg-[#EC4899]/10 text-[#EC4899]' : 'border-gray-300 text-gray-700 hover:border-[#EC4899]'}`}
@@ -371,31 +428,33 @@ export default function ProductEditModal({ isOpen, onClose, product, categories,
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">גובה עקב (ס"מ)</label>
-                    <input type="number" step="0.1" value={form.heel_height} onChange={e => setForm({ ...form, heel_height: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none [field-sizing:content]" />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">גובה עקב (ס"מ)</label>
+                      <input type="number" step="0.1" value={form.heel_height} onChange={e => setForm({ ...form, heel_height: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none [field-sizing:content]" />
+                    </div>
+                    <div>
+                      <ResponsiveSelect
+                        id="sole-type"
+                        name="sole-type"
+                        label="סוג סוליה"
+                        value={form.sole_type}
+                        onChange={(val) => setForm({ ...form, sole_type: val })}
+                        options={[
+                          { value: 'מחליק', label: 'מחליק' },
+                          { value: 'לא מחליק', label: 'לא מחליק' }
+                        ]}
+                        placeholder="בחרי"
+                        menuZIndex={70}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <ResponsiveSelect
-                      id="sole-type"
-                      name="sole-type"
-                      label="סוג סוליה"
-                      value={form.sole_type}
-                      onChange={(val) => setForm({ ...form, sole_type: val })}
-                      options={[
-                        { value: 'מחליק', label: 'מחליק' },
-                        { value: 'לא מחליק', label: 'לא מחליק' }
-                      ]}
-                      placeholder="בחרי"
-                      menuZIndex={70}
-                    />
+                  <div className="mt-3 sm:mt-4">
+                    <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חומרי גלם</label>
+                    <textarea rows={2} value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
                   </div>
                 </div>
-              </div>
-              <div className="mt-3 sm:mt-4">
-                <label className="block text-xs sm:text-sm font-medium text-[#4B2E83] mb-1 sm:mb-2">חומרי גלם</label>
-                <textarea rows={2} value={form.materials} onChange={e => setForm({ ...form, materials: e.target.value })} className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm border border-[#EC4899]/20 rounded-lg focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none" />
               </div>
             </div>
 
