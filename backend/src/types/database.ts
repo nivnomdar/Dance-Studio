@@ -1,5 +1,3 @@
-import { User } from '@supabase/supabase-js';
-
 export interface DatabaseConfig {
   host: string;
   port: number;

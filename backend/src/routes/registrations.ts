@@ -4,7 +4,6 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { validateRegistration } from '../middleware/validation';
 import { auth } from '../middleware/auth';
-import { RegistrationWithDetails } from '../types/models';
 import { 
   deductCredit, 
   addCredit, 
@@ -26,7 +25,7 @@ import {
 const router = Router();
 
 // Get user's subscription credits
-router.get('/user/:userId/credits', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/user/:userId/credits', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId } = req.params;
     
@@ -49,12 +48,12 @@ router.get('/user/:userId/credits', auth, async (req: Request, res: Response, ne
     const credits = await getUserCredits(userId);
     res.json(credits);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Check if user has enough credits for a specific type
-router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId, creditType } = req.params;
     
@@ -77,12 +76,12 @@ router.get('/user/:userId/credits/check/:creditType', auth, async (req: Request,
     const creditInfo = await checkUserCredits(userId, creditType);
     res.json(creditInfo);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Add credits to user (admin only)
-router.post('/user/:userId/credits', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/user/:userId/credits', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId } = req.params;
     const { credit_group, remaining_credits, expires_at } = req.body;
@@ -110,12 +109,12 @@ router.post('/user/:userId/credits', auth, async (req: Request, res: Response, n
     const creditData = await addCreditsToUser(userId, credit_group, remaining_credits, expires_at);
     res.json(creditData);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Update user credits (admin only)
-router.put('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId, creditId } = req.params;
     const { remaining_credits, expires_at } = req.body;
@@ -143,12 +142,12 @@ router.put('/user/:userId/credits/:creditId', auth, async (req: Request, res: Re
     const creditData = await updateUserCredits(userId, creditId, remaining_credits, expires_at);
     res.json(creditData);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Delete user credits (admin only)
-router.delete('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/user/:userId/credits/:creditId', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId, creditId } = req.params;
     
@@ -170,12 +169,12 @@ router.delete('/user/:userId/credits/:creditId', auth, async (req: Request, res:
     await deleteUserCredits(userId, creditId);
     res.json({ message: 'Credits deleted successfully' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get credit statistics (admin only)
-router.get('/credits/statistics', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/credits/statistics', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     // Check if user is admin
     const { data: profile, error: profileError } = await supabase
@@ -195,12 +194,12 @@ router.get('/credits/statistics', auth, async (req: Request, res: Response, next
     const statistics = await getCreditStatistics();
     res.json(statistics);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get credit history for a user (admin only)
-router.get('/user/:userId/credits/history', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/user/:userId/credits/history', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId } = req.params;
     
@@ -222,12 +221,12 @@ router.get('/user/:userId/credits/history', auth, async (req: Request, res: Resp
     const history = await getUserCreditHistory(userId);
     res.json(history);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get available credit types for a class
-router.get('/class/:classId/credit-types', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/class/:classId/credit-types', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { classId } = req.params;
     
@@ -244,14 +243,14 @@ router.get('/class/:classId/credit-types', async (req: Request, res: Response, n
       available_credit_types: availableTypes
     });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 
 
 // Get all registrations with class and user details (admin only)
-router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin registrations endpoint called by user:', req.user?.sub);
     
@@ -292,12 +291,12 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
     logger.info('Registrations fetched successfully:', { count: data?.length || 0 });
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get user's own registrations
-router.get('/my', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/my', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('registrations')
@@ -314,12 +313,12 @@ router.get('/my', auth, async (req: Request, res: Response, next: NextFunction) 
 
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get user registrations by user_id and class_id (admin only)
-router.get('/user/:userId', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/user/:userId', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { userId } = req.params;
     const { class_id } = req.query;
@@ -361,12 +360,12 @@ router.get('/user/:userId', auth, async (req: Request, res: Response, next: Next
 
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get registration by ID
-router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     
@@ -407,14 +406,13 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Create new registration
-router.post('/', auth, validateRegistration, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', auth, validateRegistration, async (req: Request, res: Response, _next: NextFunction) => {
   try {
-    console.log('=== REGISTRATION ROUTE STARTED ===');
     logger.info('Registration request received:', req.body);
     logger.info('Validation passed, proceeding with registration creation');
     
@@ -435,9 +433,9 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       purchase_price,
       payment_method, // לא קיים בטבלה - נשתמש רק לוולידציה
       session_selection, // לא קיים בטבלה - נשתמש רק לוולידציה
-      registration_terms_accepted, // New field for general terms
-      health_declaration_accepted, // New field for health declaration
-      age_confirmation_accepted // New field for age confirmation
+      // registration_terms_accepted, // New field for general terms
+      // health_declaration_accepted, // New field for health declaration
+      // age_confirmation_accepted // New field for age confirmation
     } = req.body;
 
     logger.info('Raw request body:', req.body);
@@ -446,30 +444,21 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     // השתמש ב-user_id מה-body אם קיים, אחרת השתמש ב-req.user?.sub
     const user_id = bodyUserId || req.user?.sub;
 
-    console.log('Extracted user_id from body:', bodyUserId);
-    console.log('Current user ID:', req.user?.sub);
-    console.log('Final user_id to use:', user_id);
-
     // הגנה: רק אדמין או המשתמש עצמו יכול ליצור הרשמה
     // אם user_id לא קיים, נאפשר רק לאדמין ליצור הרשמה
     if (user_id && req.user?.sub !== user_id) {
-      console.log('User is creating registration for different user, checking admin role...');
       // נבדוק אם המשתמש המחובר הוא אדמין
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', req.user?.sub)
         .single();
-      
-      console.log('Profile check result:', { profile, profileError });
       
       if (profileError || !profile || profile.role !== 'admin') {
         logger.error('User is not admin and tries to create registration for another user');
         throw new AppError('אין הרשאה ליצור הרשמה עבור משתמש אחר', 403);
       }
-      console.log('User is admin, proceeding...');
     } else if (!user_id) {
-      console.log('No user_id provided, checking if current user is admin...');
       // נבדוק אם המשתמש המחובר הוא אדמין
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -477,15 +466,10 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .eq('id', req.user?.sub)
         .single();
       
-      console.log('Profile check result:', { profile, profileError });
-      
       if (profileError || !profile || profile.role !== 'admin') {
         logger.error('User is not admin and tries to create registration without user_id');
         throw new AppError('אין הרשאה ליצור הרשמה ללא user_id', 403);
       }
-      console.log('User is admin, proceeding...');
-    } else {
-      console.log('User is creating registration for themselves, proceeding...');
     }
 
     logger.info('Extracted fields:', {
@@ -505,9 +489,9 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       purchase_price,
       payment_method,
       session_selection,
-      registration_terms_accepted,
-      health_declaration_accepted,
-      age_confirmation_accepted
+      // registration_terms_accepted,
+      // health_declaration_accepted,
+      // age_confirmation_accepted
     });
     
     logger.info('Credit fields check:', {
@@ -519,22 +503,21 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       user_id_value: user_id
     });
 
-    // Validate terms acceptance
-    if (registration_terms_accepted !== true) {
-      logger.error('Registration terms not accepted');
-      throw new AppError('עליך לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך בהרשמה.', 400);
-    }
-    if (health_declaration_accepted !== true) {
-      logger.error('Health declaration terms not accepted');
-      throw new AppError('עליך לאשר את הצהרת הבריאות כדי להמשיך בהרשמה.', 400);
-    }
-    if (age_confirmation_accepted !== true) {
-      logger.error('Age confirmation not accepted');
-      throw new AppError('עליך לאשר את תנאי הגיל כדי להמשיך בהרשמה.', 400);
-    }
+    // Validate terms acceptance - REMOVED AS FRONTEND HANDLES AND SENDS SEPARATELY
+    // if (registration_terms_accepted !== true) {
+    //   logger.error('Registration terms not accepted');
+    //   throw new AppError('עליך לאשר את תנאי השימוש ומדיניות הפרטיות כדי להמשיך בהרשמה.', 400);
+    // }
+    // if (health_declaration_accepted !== true) {
+    //   logger.error('Health declaration terms not accepted');
+    //   throw new AppError('עליך לאשר את הצהרת הבריאות כדי להמשיך בהרשמה.', 400);
+    // }
+    // if (age_confirmation_accepted !== true) {
+    //   logger.error('Age confirmation not accepted');
+    //   throw new AppError('עליך לאשר את תנאי הגיל כדי להמשיך בהרשמה.', 400);
+    // }
 
     // Check if class exists and get credit information
-    console.log('Checking if class exists and getting credit information...');
     logger.info('Checking if class exists and getting credit information...');
     
     let classData: any;
@@ -547,16 +530,13 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .single();
       
       if (classResult.error || !classResult.data) {
-        console.log('Class not found or inactive:', { class_id, error: classResult.error });
         logger.error('Class not found or inactive:', { class_id, error: classResult.error });
         throw new AppError('Class not found or inactive', 404);
       }
       
       classData = classResult.data;
-      console.log('Class found:', classData);
       logger.info('Class found:', classData);
     } catch (error) {
-      console.log('Error fetching class:', error);
       logger.error('Error fetching class:', error);
       throw new AppError('Failed to fetch class information', 500);
     }
@@ -564,7 +544,6 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
     // Check if user already has an active registration for this class on the same date and time
     // Only check if user_id is provided
     if (user_id) {
-      console.log(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
       logger.info(`Checking for existing registration - user_id: ${user_id}, class_id: ${class_id}, date: ${selected_date}, time: ${selected_time}`);
       
       // Normalize time format for comparison (remove "עד" part if exists)
@@ -580,7 +559,6 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .eq('status', 'active');
 
       if (checkError) {
-        console.log('Error checking existing registration:', checkError);
         logger.error('Error checking existing registration:', checkError);
         throw new AppError('Failed to check existing registration', 500);
       }
@@ -592,18 +570,13 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         return regTime === inputTime || regTime === selected_time || regTime === normalizedTime;
       });
 
-      console.log('Existing registration check result:', { existingRegistration, checkError: checkError || null });
-
       if (existingRegistration) {
-        console.log(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
         logger.info(`Found existing active registration for same date/time: ${existingRegistration.id} with status: ${existingRegistration.status}`);
         throw new AppError('Already registered for this class on this date and time', 400);
       } else {
-        console.log('No existing active registration found for this date and time');
         logger.info('No existing active registration found for this date and time');
       }
     } else {
-      console.log('No user_id provided, skipping existing registration check');
       logger.info('No user_id provided, skipping existing registration check');
     }
 
@@ -633,7 +606,6 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 
     // Validate credit usage with new logic
     if (used_credit || credit_type) {
-      console.log('Validating credit usage with new logic...');
       logger.info('Validating credit usage with new logic...');
       
       try {
@@ -659,21 +631,18 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
             creditValidation.errorMessage &&
             creditValidation.errorMessage.includes('אין מספיק קרדיטים')
           ) {
-            console.log('Proceeding despite low balance due to purchase flow');
+            // Removed console.log('Proceeding despite low balance due to purchase flow');
           } else {
-            console.log('Credit validation failed:', creditValidation.errorMessage);
             logger.error('Credit validation failed:', creditValidation.errorMessage);
             throw new AppError(creditValidation.errorMessage || 'Credit validation failed', 400);
           }
         }
         
-        console.log('Credit validation passed:', creditValidation);
         logger.info('Credit validation passed:', creditValidation);
       } catch (error) {
         if (error instanceof AppError) {
           throw error;
         }
-        console.log('Error during credit validation:', error);
         logger.error('Error during credit validation:', error);
         throw new AppError('Failed to validate credit usage', 500);
       }
@@ -726,14 +695,12 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 
     // בדיקה שיש user_id תקין לפני יצירת ההרשמה
     if (!user_id) {
-      console.log('No user_id available, cannot create registration');
       logger.error('No user_id available, cannot create registration');
       throw new AppError('לא ניתן ליצור הרשמה ללא user_id', 400);
     }
 
     // Check availability before creating registration
     if (session_id && selected_date && selected_time) {
-      console.log(`Checking availability before registration - session_id: ${session_id}, date: ${selected_date}, time: ${selected_time}`);
       logger.info(`Checking availability before registration - session_id: ${session_id}, date: ${selected_date}, time: ${selected_time}`);
       
       // Get the session to check max capacity
@@ -744,7 +711,6 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .single();
 
       if (sessionError || !session) {
-        console.log('Error fetching session for availability check:', sessionError);
         logger.error('Error fetching session for availability check:', sessionError);
         throw new AppError('Session not found for availability check', 404);
       }
@@ -759,7 +725,6 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
         .eq('status', 'active');
 
       if (countError) {
-        console.log('Error counting registrations for availability check:', countError);
         logger.error('Error counting registrations for availability check:', countError);
         throw new AppError('Failed to check availability', 500);
       }
@@ -767,11 +732,9 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       const takenSpots = count || 0;
       const availableSpots = session.max_capacity - takenSpots;
       
-      console.log(`Availability check result: ${takenSpots}/${session.max_capacity} taken, ${availableSpots} available`);
       logger.info(`Availability check result: ${takenSpots}/${session.max_capacity} taken, ${availableSpots} available`);
 
       if (availableSpots <= 0) {
-        console.log('No available spots for this session');
         logger.warn('Registration attempt for full session:', { session_id, selected_date, selected_time, takenSpots, maxCapacity: session.max_capacity });
         throw new AppError('אין מקום פנוי בקבוצה זו. הקבוצה מלאה.', 400);
       }
@@ -794,14 +757,13 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       credit_type: credit_type || null, // Convert empty string to null
       purchase_price: purchase_price || null, // Convert empty string to null
       status: 'active', // Default status for new registrations
-      registration_terms_accepted: registration_terms_accepted, // Use value from frontend
-      health_declaration_accepted: health_declaration_accepted, // New field
-      age_confirmation_accepted: age_confirmation_accepted // New field
+      // registration_terms_accepted: registration_terms_accepted, // Use value from frontend
+      // health_declaration_accepted: health_declaration_accepted, // New field
+      // age_confirmation_accepted: age_confirmation_accepted // New field
       // Note: payment_method and session_selection are not stored in the database
       // They are only used for validation and frontend logic
     };
 
-    console.log('Attempting to create registration with data:', registrationData);
     logger.info('Attempting to create registration with data:', registrationData);
 
     const { data, error } = await supabase
@@ -813,15 +775,11 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
       `)
       .single();
 
-    console.log('Insert result:', { data, error });
-
     if (error) {
-      console.log('Failed to create registration:', error);
       logger.error('Failed to create registration:', error);
       throw new AppError(`Failed to create registration: ${error.message}`, 500);
     }
 
-    console.log('Registration created successfully:', data);
     logger.info('Registration created successfully:', data);
 
     // If this is a trial class, record per-class usage (idempotent by unique constraint)
@@ -921,12 +879,12 @@ router.post('/', auth, validateRegistration, async (req: Request, res: Response,
 
     res.status(201).json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Update registration status (admin only)
-router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/status', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { status, returnCredit, deductCredit: deductCreditOption } = req.body; // Admin choices
@@ -1084,12 +1042,12 @@ router.put('/:id/status', auth, async (req: Request, res: Response, next: NextFu
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Cancel registration (user can cancel own, admin can cancel any)
-router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id/cancel', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -1187,12 +1145,12 @@ router.put('/:id/cancel', auth, async (req: Request, res: Response, next: NextFu
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Delete registration (user can delete own, admin can delete any)
-router.delete('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -1225,7 +1183,7 @@ router.delete('/:id', auth, async (req: Request, res: Response, next: NextFuncti
 
     res.json({ message: 'Registration deleted successfully' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 

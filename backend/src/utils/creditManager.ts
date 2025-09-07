@@ -122,7 +122,7 @@ export const addCredit = async (userId: string, creditType: string): Promise<boo
       logger.info(`Credit added successfully to existing record for user ${userId}, credit_type: ${creditType}, total: ${existingCredits.remaining_credits + 1}`);
     } else {
       // Create new credit record
-      const { data: creditData, error: creditError } = await supabase
+      const { error } = await supabase
         .from('subscription_credits')
         .insert([{
           user_id: userId,
@@ -133,8 +133,8 @@ export const addCredit = async (userId: string, creditType: string): Promise<boo
         .select()
         .single();
 
-      if (creditError) {
-        logger.error('Failed to create new credit record:', creditError);
+      if (error) {
+        logger.error('Failed to create new credit record:', error);
         return false;
       }
 
@@ -267,7 +267,7 @@ export const addCreditsToUser = async (
       return updated;
     } else {
       // Insert a new record if none exists
-      const { data: creditData, error } = await supabase
+      const { data, error } = await supabase
         .from('subscription_credits')
         .insert([{
           user_id: userId,
@@ -283,8 +283,8 @@ export const addCreditsToUser = async (
         throw new Error('Failed to add credits to user');
       }
 
-      logger.info(`Credits added successfully for user ${userId}, credit_group: ${creditGroup}, amount: ${remainingCredits}, data: ${JSON.stringify(creditData)}`);
-      return creditData;
+      logger.info(`Credits added successfully for user ${userId}, credit_group: ${creditGroup}, amount: ${remainingCredits}, data: ${JSON.stringify(data)}`);
+      return data;
     }
   } catch (error) {
     logger.error('Error in addCreditsToUser:', error);

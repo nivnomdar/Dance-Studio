@@ -28,7 +28,7 @@ const upload = multer({
 const router = express.Router();
 
 // Get admin dashboard overview
-router.get('/overview', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/overview', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin overview endpoint called by user:', req.user?.sub);
     logger.info('Fetching admin dashboard overview');
@@ -82,7 +82,6 @@ router.get('/overview', admin, async (req: Request, res: Response, next: NextFun
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const oneDayAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -167,12 +166,12 @@ router.get('/overview', admin, async (req: Request, res: Response, next: NextFun
     logger.info('Admin overview data fetched successfully');
     res.json(overview);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all classes (admin)
-router.get('/classes', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/classes', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin classes endpoint called by user:', req.user?.sub);
     
@@ -189,12 +188,12 @@ router.get('/classes', admin, async (req: Request, res: Response, next: NextFunc
     logger.info('Classes fetched successfully:', { count: classes?.length || 0 });
     res.json(classes || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all registrations (admin)
-router.get('/registrations', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/registrations', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin registrations endpoint called by user:', req.user?.sub);
     
@@ -215,12 +214,12 @@ router.get('/registrations', admin, async (req: Request, res: Response, next: Ne
     logger.info('Registrations fetched successfully:', { count: registrations?.length || 0 });
     res.json(registrations || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all sessions (admin)
-router.get('/sessions', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/sessions', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin sessions endpoint called by user:', req.user?.sub);
     
@@ -237,12 +236,12 @@ router.get('/sessions', admin, async (req: Request, res: Response, next: NextFun
     logger.info('Sessions fetched successfully:', { count: sessions?.length || 0 });
     res.json(sessions || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get admin calendar data
-router.get('/calendar', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/calendar', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin calendar endpoint called by user:', req.user?.sub);
     
@@ -298,7 +297,6 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
     // Generate weekly schedule for the next 4 weeks
     const weeklySchedule: any = {};
     const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
     for (let week = 1; week <= 4; week++) {
       const weekKey = `week_${week}`;
@@ -313,7 +311,6 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
         
         const dateKey = currentDate.toISOString().split('T')[0];
         const dayName = weekdays[currentDate.getDay()];
-        const hebrewDayName = hebrewDays[currentDate.getDay()];
         
         days[dateKey] = {
           date: dateKey,
@@ -362,12 +359,12 @@ router.get('/calendar', admin, async (req: Request, res: Response, next: NextFun
     logger.info('Admin calendar data fetched successfully');
     res.json(calendarData);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all orders (admin)
-router.get('/orders', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/orders', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin orders endpoint called by user:', req.user?.sub);
     // Fetch orders first (without attempting an embedded join to profiles)
@@ -411,12 +408,12 @@ router.get('/orders', admin, async (req: Request, res: Response, next: NextFunct
 
     res.json(enriched);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get contact messages (admin)
-router.get('/contact/messages', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/contact/messages', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('contact_messages')
@@ -430,12 +427,12 @@ router.get('/contact/messages', admin, async (req: Request, res: Response, next:
 
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Update contact message status (admin)
-router.put('/contact/messages/:id/status', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/contact/messages/:id/status', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { status } = req.body || {};
@@ -463,12 +460,12 @@ router.put('/contact/messages/:id/status', admin, async (req: Request, res: Resp
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Upload class image to Supabase storage (admin)
-router.post('/upload-class-image', admin, upload.single('file'), async (req: MulterRequest, res: Response, next: NextFunction) => {
+router.post('/upload-class-image', admin, upload.single('file'), async (req: MulterRequest, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin upload-class-image endpoint called by user:', req.user?.sub);
     
@@ -510,7 +507,7 @@ router.post('/upload-class-image', admin, upload.single('file'), async (req: Mul
     const filePath = `images/v1/${fileName}`;
 
     // העלאה ל-Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('classes')
       .upload(filePath, uploadedFile.buffer, {
         contentType: uploadedFile.mimetype,

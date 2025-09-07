@@ -5,11 +5,10 @@ import { logger } from '../utils/logger';
 import { config } from '../config';
 import rateLimit from 'express-rate-limit';
 import { auth } from '../middleware/auth';
-import { 
-  setAuthCookie, 
-  setSessionCookie, 
-  clearCookie, 
-  clearAllCookies 
+import {
+  setAuthCookie,
+  setSessionCookie,
+  clearAllCookies
 } from '../utils/cookieManager';
 
 const router = Router();
@@ -27,7 +26,7 @@ const termsStatusLimiter = rateLimit({
 });
 
 // Get current session
-router.get('/session', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/session', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     
@@ -43,12 +42,12 @@ router.get('/session', async (req: Request, res: Response, next: NextFunction) =
     
     res.json(session);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Sign in with Google
-router.post('/google', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/google', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -66,12 +65,12 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Sign out
-router.post('/signout', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/signout', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { error } = await supabase.auth.signOut();
     
@@ -84,17 +83,21 @@ router.post('/signout', async (req: Request, res: Response, next: NextFunction) 
     
     res.json({ message: 'Signed out successfully' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Check terms acceptance status for user with rate limiting
-router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     // Get user from JWT payload (already verified by auth middleware)
     const user = (req as any).user;
     
+    // Log the user.sub for debugging
+    logger.info(`Terms status check for user ID: ${user?.sub}`);
+
     if (!user || !user.sub) {
+      logger.error('Terms status check: User not authenticated or user.sub missing');
       throw new AppError('User not authenticated', 401);
     }
 
@@ -106,11 +109,14 @@ router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: 
       .single();
 
     if (profileError) {
+      // Log the specific database error
       logger.error('Error fetching profile for terms validation:', profileError);
       throw new AppError('Failed to validate user profile', 500);
     }
 
     if (!profile) {
+      // Log if profile is not found
+      logger.warn(`Terms status check: User profile not found for ID: ${user.sub}`);
       throw new AppError('User profile not found', 404);
     }
 
@@ -127,7 +133,7 @@ router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: 
     logger.info(`Terms status checked for user ${user.sub}: terms_accepted=${profile.terms_accepted}`);
     
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 

@@ -660,16 +660,16 @@ export const getAvailableSpotsFromSessions = async (
       // If no session_class exists, try to create one
       if (!sessionClass) {
         try {
-          const { data: newSessionClass, error: newSessionClassError } = await apiService.sessionClasses.create({
-            session_id: matchingSession.id,
-            class_id: classId,
-            price: 0, // Placeholder, will be updated with class data
-            is_trial: false, // Placeholder, will be updated with class data
-            max_uses_per_user: null // Placeholder, will be updated with class data
-          });
+          const newSessionClass = await apiService.sessions.addClassToSession(
+            matchingSession.id,
+            classId,
+            0, // price
+            false, // is_trial
+            undefined // max_uses_per_user
+          );
 
-          if (newSessionClassError) {
-            console.error(`Error creating new session_class for session_id: ${matchingSession.id}, class_id: ${classId}:`, newSessionClassError);
+          if (!newSessionClass) {
+            console.error(`Error creating new session_class for session_id: ${matchingSession.id}, class_id: ${classId}`);
             throw new Error(`Failed to create new session_class`);
           }
 

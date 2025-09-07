@@ -130,7 +130,7 @@ export function validateClassCategoryCompatibility(
   classInfo: ClassCreditInfo,
   creditType: string
 ): boolean {
-  const { class_type, category } = classInfo;
+  const { category } = classInfo;
 
   // Group credits can only be used with subscription classes
   if (creditType === 'group' && category !== 'subscription') {

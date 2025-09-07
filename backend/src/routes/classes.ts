@@ -3,19 +3,12 @@ import { supabase } from '../database';
 import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { validateClass } from '../middleware/validation';
-import { auth, admin } from '../middleware/auth';
-
-/**
- * פונקציה משותפת לקבלת session מתוך session class
- */
-const getSessionFromSessionClass = (sc: any) => {
-  return Array.isArray(sc.schedule_sessions) ? sc.schedule_sessions[0] : sc.schedule_sessions;
-};
+import { admin } from '../middleware/auth';
 
 const router = Router();
 
 // Get admin calendar data (admin only)
-router.get('/admin/calendar', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/admin/calendar', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Fetching admin calendar data');
     
@@ -182,12 +175,12 @@ router.get('/admin/calendar', auth, async (req: Request, res: Response, next: Ne
     logger.info('Admin calendar data fetched successfully');
     res.json(calendarData);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get admin dashboard overview (admin only)
-router.get('/admin/overview', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/admin/overview', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin overview endpoint called by user:', req.user?.sub);
     logger.info('Fetching admin dashboard overview');
@@ -244,8 +237,6 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
     const oneDayAgo = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
     // Calculate statistics
     const totalClasses = classes.length;
     const activeClasses = classes.filter(cls => cls.is_active).length;
@@ -263,9 +254,6 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
     ).length;
 
     // Get day names in Hebrew
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const todayName = dayNames[today.getDay()];
-    const tomorrowName = dayNames[tomorrow.getDay()];
     
     // Classes happening today (based on sessions)
     const classesToday = classes.filter(cls => {
@@ -337,7 +325,7 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
           // Calculate total capacity and registrations across all sessions
           let totalCapacity = 0;
           let totalRegistrations = 0;
-          let sessionInfo = [];
+          const sessionInfo = [];
 
           for (const sessionClass of sessionClasses || []) {
             const session = Array.isArray(sessionClass.schedule_sessions) 
@@ -428,7 +416,7 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
           // Calculate total capacity and registrations across all sessions
           let totalCapacity = 0;
           let totalRegistrations = 0;
-          let sessionInfo = [];
+          const sessionInfo = [];
 
           for (const sessionClass of sessionClasses || []) {
             const session = Array.isArray(sessionClass.schedule_sessions) 
@@ -513,12 +501,12 @@ router.get('/admin/overview', admin, async (req: Request, res: Response, next: N
 
     res.json(overview);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all active classes (public)
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Public classes endpoint called');
     
@@ -537,12 +525,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     logger.info('Active classes:', data?.map(c => ({ id: c.id, name: c.name, is_active: c.is_active })));
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get active classes for current user, excluding trials already used
-router.get('/for-user', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/for-user', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     if (!req.user?.sub) {
       throw new AppError('Unauthorized', 401);
@@ -579,12 +567,12 @@ router.get('/for-user', auth, async (req: Request, res: Response, next: NextFunc
 
     res.json(filtered);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get all classes (admin only)
-router.get('/admin', admin, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/admin', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin classes endpoint called by user:', req.user?.sub);
     
@@ -602,12 +590,12 @@ router.get('/admin', admin, async (req: Request, res: Response, next: NextFuncti
     logger.info('All classes:', data?.map(c => ({ id: c.id, name: c.name, is_active: c.is_active, slug: c.slug })));
     res.json(data || []);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get class by ID
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
@@ -629,12 +617,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get class by slug
-router.get('/slug/:slug', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/slug/:slug', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { slug } = req.params;
 
@@ -657,12 +645,12 @@ router.get('/slug/:slug', async (req: Request, res: Response, next: NextFunction
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Create new class (admin only)
-router.post('/', auth, validateClass, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', admin, validateClass, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('classes')
@@ -676,12 +664,12 @@ router.post('/', auth, validateClass, async (req: Request, res: Response, next: 
 
     res.status(201).json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Update class (admin only)
-router.put('/:id', auth, validateClass, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', admin, validateClass, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
@@ -701,12 +689,12 @@ router.put('/:id', auth, validateClass, async (req: Request, res: Response, next
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Patch class (admin only) - for partial updates
-router.patch('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     logger.info(`Patching class ${id} with data:`, req.body);
@@ -742,12 +730,12 @@ router.patch('/:id', auth, async (req: Request, res: Response, next: NextFunctio
     res.json(data);
   } catch (error) {
     logger.error(`Error in PATCH /classes/${req.params.id}:`, error);
-    next(error);
+    _next(error);
   }
 });
 
 // Delete class (admin only)
-router.delete('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { error } = await supabase
@@ -761,7 +749,7 @@ router.delete('/:id', auth, async (req: Request, res: Response, next: NextFuncti
 
     res.json({ message: 'Class deleted successfully' });
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 

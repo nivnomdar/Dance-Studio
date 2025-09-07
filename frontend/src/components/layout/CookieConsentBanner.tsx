@@ -13,7 +13,6 @@ import { useAuth } from '../../contexts/AuthContext';
  * חשוב: הבאנר מופיע רק אחרי שהמשתמש אישר את תנאי השימוש
  */
 export const CookieConsentBanner: React.FC = () => {
-  const { profile, isAuthenticated } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);

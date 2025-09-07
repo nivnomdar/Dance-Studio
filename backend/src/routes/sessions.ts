@@ -1,7 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { supabase } from '../database';
 import { logger } from '../utils/logger';
-import { auth, admin } from '../middleware/auth';
+import { admin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -111,7 +111,7 @@ const countRegistrations = async (sessionId: string, date: string, time: string)
 };
 
 // Get all sessions (public)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Public sessions endpoint called');
     
@@ -135,7 +135,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get all session classes (public)
-router.get('/session-classes', async (req: Request, res: Response) => {
+router.get('/session-classes', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Public session-classes endpoint called');
     
@@ -160,7 +160,7 @@ router.get('/session-classes', async (req: Request, res: Response) => {
 });
 
 // Get all sessions (admin only)
-router.get('/admin', admin, async (req: Request, res: Response) => {
+router.get('/admin', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     logger.info('Admin sessions endpoint called by user:', req.user?.sub);
     
@@ -183,7 +183,7 @@ router.get('/admin', admin, async (req: Request, res: Response) => {
 });
 
 // Get all session classes (admin only)
-router.get('/admin/session-classes', admin, async (req, res) => {
+router.get('/admin/session-classes', admin, async (req, res, _next) => {
   try {
     logger.info('Admin session-classes endpoint called by user:', req.user?.sub);
     
@@ -207,7 +207,7 @@ router.get('/admin/session-classes', admin, async (req, res) => {
 });
 
 // Get session classes by class ID
-router.get('/session-classes/class/:classId', async (req, res) => {
+router.get('/session-classes/class/:classId', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { classId } = req.params;
     
@@ -233,7 +233,7 @@ router.get('/session-classes/class/:classId', async (req, res) => {
 });
 
 // Get session by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     
@@ -260,7 +260,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Get session classes (classes available for a specific session)
-router.get('/:id/classes', async (req, res) => {
+router.get('/:id/classes', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     
@@ -294,7 +294,7 @@ router.get('/:id/classes', async (req, res) => {
 });
 
 // Get available sessions for a specific date range
-router.get('/available/:startDate/:endDate', async (req, res) => {
+router.get('/available/:startDate/:endDate', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { startDate, endDate } = req.params;
     
@@ -334,7 +334,7 @@ router.get('/available/:startDate/:endDate', async (req, res) => {
 });
 
 // Get registration count for a specific session, date, and time
-router.get('/spots/:sessionId/:date/:time', async (req, res) => {
+router.get('/spots/:sessionId/:date/:time', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { sessionId, date, time } = req.params;
     
@@ -386,7 +386,7 @@ router.get('/spots/:sessionId/:date/:time', async (req, res) => {
 });
 
 // Batch: Get all spots for all times of a class on a given date
-router.get('/capacity/batch/:classId/:date', async (req, res) => {
+router.get('/capacity/batch/:classId/:date', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { classId, date } = req.params;
     
@@ -447,7 +447,7 @@ router.get('/capacity/batch/:classId/:date', async (req, res) => {
 });
 
 // Get session details with capacity for a specific class, date, and time
-router.get('/capacity/:classId/:date/:time', async (req, res) => {
+router.get('/capacity/:classId/:date/:time', async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { classId, date, time } = req.params;
     
@@ -512,7 +512,7 @@ router.get('/capacity/:classId/:date/:time', async (req, res) => {
 });
 
 // Create new session
-router.post('/', admin, async (req, res) => {
+router.post('/', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const {
       name,
@@ -520,8 +520,6 @@ router.post('/', admin, async (req, res) => {
       weekdays,
       start_time,
       end_time,
-      start_date,
-      end_date,
       max_capacity,
       address,
       is_active,
@@ -566,7 +564,6 @@ router.post('/', admin, async (req, res) => {
         weekdays,
         start_time,
         end_time,
-        start_date: new Date().toISOString().split('T')[0], // Set to current date
         max_capacity,
         address: address || 'רחוב יוסף לישנסקי 6 ראשון לציון ישראל',
         duration_minutes: calculateDuration(start_time, end_time),
@@ -610,7 +607,7 @@ router.post('/', admin, async (req, res) => {
 });
 
 // Update session
-router.put('/:id', admin, async (req, res) => {
+router.put('/:id', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const {
@@ -726,7 +723,7 @@ router.put('/:id', admin, async (req, res) => {
 });
 
 // Delete session
-router.delete('/:id', admin, async (req, res) => {
+router.delete('/:id', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -765,7 +762,7 @@ router.delete('/:id', admin, async (req, res) => {
 // Session Classes Management Routes
 
 // Get all session classes
-router.get('/session-classes/all', admin, async (req, res) => {
+router.get('/session-classes/all', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data: sessionClasses, error } = await supabase
       .from('session_classes')
@@ -797,7 +794,7 @@ router.get('/session-classes/all', admin, async (req, res) => {
 });
 
 // Add class to session
-router.post('/session-classes', admin, async (req, res) => {
+router.post('/session-classes', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { session_id, class_id, price, is_trial, max_uses_per_user } = req.body;
 
@@ -831,7 +828,7 @@ router.post('/session-classes', admin, async (req, res) => {
     }
 
     // Check if link already exists
-    const { data: existingLink, error: linkError } = await supabase
+    const { data: existingLink } = await supabase
       .from('session_classes')
       .select('id')
       .eq('session_id', session_id)
@@ -870,7 +867,7 @@ router.post('/session-classes', admin, async (req, res) => {
 });
 
 // Remove class from session
-router.delete('/session-classes/:sessionId/:classId', admin, async (req, res) => {
+router.delete('/session-classes/:sessionId/:classId', admin, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { sessionId, classId } = req.params;
 

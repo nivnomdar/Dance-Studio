@@ -1,14 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { supabase } from '../database';
 import { AppError } from '../middleware/errorHandler';
-import { logger } from '../utils/logger';
 import { auth } from '../middleware/auth';
 import { ORDER_STATUS } from '../constants';
 
 const router = Router();
 
 // Get user's orders (with items enriched from order_items/products)
-router.get('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -39,12 +38,12 @@ router.get('/', auth, async (req: Request, res: Response, next: NextFunction) =>
 
     res.json(normalized);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Get order by ID
-router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
@@ -81,12 +80,12 @@ router.get('/:id', auth, async (req: Request, res: Response, next: NextFunction)
 
     res.json(normalized);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Create new order
-router.post('/', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -104,12 +103,12 @@ router.post('/', auth, async (req: Request, res: Response, next: NextFunction) =
 
     res.status(201).json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
 // Update order status (admin only)
-router.put('/:id', auth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', auth, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -135,7 +134,7 @@ router.put('/:id', auth, async (req: Request, res: Response, next: NextFunction)
 
     res.json(data);
   } catch (error) {
-    next(error);
+    _next(error);
   }
 });
 
