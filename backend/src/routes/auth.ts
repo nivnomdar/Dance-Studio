@@ -104,7 +104,7 @@ router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: 
     // Get user's profile from database to check terms acceptance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('terms_accepted, marketing_consent, email')
+      .select('terms_accepted, email')
       .eq('id', user.sub)
       .single();
 
@@ -126,7 +126,6 @@ router.get('/terms-status', auth, termsStatusLimiter, async (req: Request, res: 
       userId: user.sub,
       email: profile.email,
       terms_accepted: profile.terms_accepted,
-      marketing_consent: profile.marketing_consent,
       requires_terms_acceptance: !profile.terms_accepted
     });
 

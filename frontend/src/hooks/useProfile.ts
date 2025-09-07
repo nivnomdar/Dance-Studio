@@ -118,7 +118,7 @@ export function useProfile(): UseProfileReturn {
         setLocalProfile({
           ...profileData,
           terms_accepted: fetchedConsents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null),
-          marketing_consent: fetchedConsents.some(c => c.consent_type === 'marketing' && c.version === null),
+          marketing_consent: fetchedConsents.some(c => c.consent_type === 'marketing_consent' && c.version === null),
         });
         setProfileError(null);
       } else {

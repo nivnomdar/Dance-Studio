@@ -29,6 +29,8 @@ interface ProfileTabsProps {
   session: any;
   onClassesCountUpdate?: () => void;
   onCreditsUpdate?: () => void;
+  localMarketingConsent: boolean; // New prop for local marketing consent
+  onLocalMarketingConsentChange: (checked: boolean) => void; // New prop for local marketing consent change handler
 }
 
 type TabType = 'personal' | 'classes' | 'orders';
@@ -47,7 +49,9 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   onClassesCountUpdate,
   onCreditsUpdate,
   userConsents, // Destructure userConsents
-  loadingConsents // Destructure loadingConsents
+  loadingConsents, // Destructure loadingConsents
+  localMarketingConsent, // Destructure new local marketing consent
+  onLocalMarketingConsentChange // Destructure new local marketing consent change handler
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal');
 
@@ -97,6 +101,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             onToggleEdit={onToggleEdit}
             userConsents={userConsents} // Pass consents to PersonalDetailsTab
             loadingConsents={loadingConsents} // Pass loading state to PersonalDetailsTab
+            localMarketingConsent={localMarketingConsent} // Pass new local state
+            onLocalMarketingConsentChange={onLocalMarketingConsentChange} // Pass setter directly
           />
         );
       case 'classes':

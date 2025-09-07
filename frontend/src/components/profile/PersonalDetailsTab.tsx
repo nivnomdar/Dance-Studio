@@ -1,5 +1,4 @@
 import React from 'react';
-import type { UserConsent } from '../../types/auth';
 
 interface PersonalDetailsTabProps {
   formData: {
@@ -11,14 +10,14 @@ interface PersonalDetailsTabProps {
     city: string;
     postalCode: string;
   };
-  userConsents: UserConsent[];
   loadingConsents: boolean;
   isEditing: boolean;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onToggleEdit: () => void;
+  localMarketingConsent: boolean;
+  onLocalMarketingConsentChange: (checked: boolean) => void;
 }
 
 const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
@@ -26,14 +25,12 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
   isEditing,
   isLoading,
   onInputChange,
-  onCheckboxChange,
   onSubmit,
   onToggleEdit,
-  userConsents,
   loadingConsents,
+  localMarketingConsent,
+  onLocalMarketingConsentChange,
 }) => {
-  const hasMarketingConsent = userConsents?.some(c => c.consent_type === 'marketing' && c.version === null) ?? false;
-
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden border border-[#EC4899]/10">
       {/* Form Header */}
@@ -211,28 +208,28 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
                 <div className="flex-shrink-0 mt-1">
                   <input
                     type="checkbox"
-                    id="marketingConsent"
-                    name="marketingConsent"
-                    checked={hasMarketingConsent}
-                    onChange={onCheckboxChange}
+                    id="marketing_consent"
+                    name="marketing_consent"
+                    checked={localMarketingConsent}
+                    onChange={(e) => onLocalMarketingConsentChange(e.target.checked)}
                     disabled={!isEditing || isLoading || loadingConsents}
                     className="w-4 h-4 text-[#EC4899] bg-white border-2 border-[#4B2E83]/30 rounded focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   />
                 </div>
                 <div className="flex-1">
-                  <label htmlFor="marketingConsent" className="text-sm sm:text-base text-[#4B2E83] font-medium leading-relaxed cursor-pointer">
+                  <label htmlFor="marketing_consent" className="text-sm sm:text-base text-[#4B2E83] font-medium leading-relaxed cursor-pointer">
                     אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
                   </label>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                      hasMarketingConsent
+                      localMarketingConsent
                         ? 'bg-green-100 text-green-700 border-green-200' 
                         : 'bg-gray-100 text-gray-600 border-gray-200'
                     }`}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      {hasMarketingConsent ? 'רשומה לעדכונים' : 'לא רשומה לעדכונים'}
+                      {localMarketingConsent ? 'רשומה לעדכונים' : 'לא רשומה לעדכונים'}
                     </span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">

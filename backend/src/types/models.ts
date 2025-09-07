@@ -146,8 +146,6 @@ export interface UserProfile {
   avatar_url?: string;
   role: 'user' | 'admin';
   is_active: boolean;
-  terms_accepted: boolean;
-  marketing_consent: boolean;
   last_login_at?: string;
   language: string;
   created_at: string;

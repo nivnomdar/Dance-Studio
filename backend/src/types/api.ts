@@ -40,8 +40,6 @@ export interface UpdateProfileRequest {
   address?: string;
   city?: string;
   postal_code?: string;
-  terms_accepted?: boolean;
-  marketing_consent?: boolean;
 }
 
 export interface Class {

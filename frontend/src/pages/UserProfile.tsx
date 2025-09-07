@@ -9,12 +9,8 @@ import { registrationsService } from '../lib/registrations';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 import { LoadingPage, ErrorPage, StatusModal } from '../components/common';
 import { CreditGroup } from '../types/subscription';
-import { 
-  setDataWithTimestamp, 
-  getDataWithTimestamp, 
-  hasCookie 
-} from '../utils/cookieManager';
 import { throttledApiFetch } from '../utils/api'; // Import throttledApiFetch
+import { getDataWithTimestamp, setDataWithTimestamp } from '../utils/cookieManager'; // New import
 import { motion } from 'framer-motion';
 
 function UserProfile() {
@@ -42,11 +38,13 @@ function UserProfile() {
   const [trialStatuses, setTrialStatuses] = useState<Array<{ id: string; name: string; used: boolean }>>([]);
   const [userConsents, setUserConsents] = useState<UserConsent[]>([]); // New state for consents
   const [loadingConsents, setLoadingConsents] = useState(true); // New state for loading consents
+  const [localMarketingConsent, setLocalMarketingConsent] = useState(false); // New state for local marketing consent
   const navigate = useNavigate();
   
   // Refs to track loaded data
   const dataLoadedRef = useRef(false);
   const currentUserIdRef = useRef<string | null>(null);
+  const profileDataLoadedRef = useRef<string | null>(null); // New ref to track profile data loading
 
   const staggerContainer = {
     hidden: { opacity: 0 },
@@ -69,15 +67,8 @@ function UserProfile() {
     if (!user || !session?.access_token) return;
     
     try {
-      // Check if we're already creating a profile to prevent race condition
-      const creatingKey = `creating_profile_${user.id}`;
-      if (hasCookie(creatingKey)) {
-        // Another process is creating the profile, wait a bit and retry
-        setTimeout(() => {
-          loadProfileData();
-        }, 500);
-        return;
-      }
+      setIsLoadingProfile(true); // Set loading to true at the start
+      // No need for creatingKey logic, throttledApiFetch handles rate limiting
 
       const [profileResponse, consentsResponse] = await Promise.all([
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
@@ -109,6 +100,8 @@ function UserProfile() {
       const profileDataArray = await profileResponse.json();
       const fetchedConsents: UserConsent[] = await consentsResponse.json();
       setUserConsents(fetchedConsents);
+      const hasMarketingConsent = fetchedConsents.some(c => c.consent_type === 'marketing_consent' && c.version === null);
+      setLocalMarketingConsent(hasMarketingConsent);
 
       if (profileDataArray.length === 0) {
         // Profile doesn't exist, create a new one
@@ -116,9 +109,6 @@ function UserProfile() {
         const nameParts = fullName.split(' ').filter(Boolean);
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
-
-        // Set flag to prevent other processes from creating profile
-        setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
 
         // First, try to create the profile using upsert
         try {
@@ -158,21 +148,19 @@ function UserProfile() {
               language: 'he'
             };
             
-            setTimeout(() => {
-              setLocalProfile(newProfile);
-              setFormData({
-                firstName: newProfile.first_name || '',
-                lastName: newProfile.last_name || '',
-                phone: newProfile.phone_number || '',
-                email: newProfile.email || '',
-                address: newProfile.address || '',
-                city: newProfile.city || '',
-                postalCode: newProfile.postal_code || '',
-              });
-              // For new users, terms and marketing consents are false by default until accepted
-              setUserConsents([]); 
-              setIsLoadingProfile(false);
-            }, 0);
+            setLocalProfile(newProfile);
+            setFormData({
+              firstName: newProfile.first_name || '',
+              lastName: newProfile.last_name || '',
+              phone: newProfile.phone_number || '',
+              email: newProfile.email || '',
+              address: newProfile.address || '',
+              city: newProfile.city || '',
+              postalCode: newProfile.postal_code || '',
+            });
+            // For new users, terms and marketing consents are false by default until accepted
+            setUserConsents([]); 
+            setLocalMarketingConsent(false); // Also initialize local state for new users
           } else {
             throw new Error(`Failed to create profile: ${createResponse.status}`);
           }
@@ -193,21 +181,20 @@ function UserProfile() {
               const profileDataArray = await finalResponse.json();
               if (profileDataArray.length > 0) {
                 const profileData = profileDataArray[0];
-                setTimeout(() => {
-                  setLocalProfile(profileData);
-                  setFormData({
-                    firstName: profileData.first_name || '',
-                    lastName: profileData.last_name || '',
-                    phone: profileData.phone_number || '',
-                    email: profileData.email || user.email || '',
-                    address: profileData.address || '',
-                    city: profileData.city || '',
-                    postalCode: profileData.postal_code || '',
-                  });
-                  // Update consents from fetched data
-                  setUserConsents(fetchedConsents);
-                  setIsLoadingProfile(false);
-                }, 0);
+                setLocalProfile(profileData);
+                setFormData({
+                  firstName: profileData.first_name || '',
+                  lastName: profileData.last_name || '',
+                  phone: profileData.phone_number || '',
+                  email: profileData.email || user.email || '',
+                  address: profileData.address || '',
+                  city: profileData.city || '',
+                  postalCode: profileData.postal_code || '',
+                });
+                // Update consents from fetched data
+                setUserConsents(fetchedConsents);
+                const hasMarketingConsent = fetchedConsents.some(c => c.consent_type === 'marketing_consent' && c.version === null);
+                setLocalMarketingConsent(hasMarketingConsent);
               } else {
                 throw new Error('Profile not found in final attempt');
               }
@@ -216,93 +203,54 @@ function UserProfile() {
             }
           } catch (finalError) {
             console.error('Final error loading profile:', finalError);
-            setTimeout(() => {
-              setProfileError(`שגיאה בטעינת הפרופיל: ${finalError instanceof Error ? finalError.message : 'שגיאה לא ידועה'}`);
-              setLocalProfile(null);
-              setIsLoadingProfile(false);
-            }, 0);
+            setProfileError(`שגיאה בטעינת הפרופיל: ${finalError instanceof Error ? finalError.message : 'שגיאה לא ידועה'}`);
+            setLocalProfile(null);
           }
-        } finally {
-          // Always remove the flag
         }
       } else {
         const profileData = profileDataArray[0];
-        setTimeout(() => {
-          setLocalProfile(profileData);
-          setFormData({
-            firstName: profileData.first_name || '',
-            lastName: profileData.last_name || '',
-            phone: profileData.phone_number || '',
-            email: profileData.email || user.email || '',
-            address: profileData.address || '',
-            city: profileData.city || '',
-            postalCode: profileData.postal_code || '',
-          });
-          // Update consents from fetched data
-          setUserConsents(fetchedConsents);
-          setIsLoadingProfile(false);
-        }, 0);
+        setLocalProfile(profileData);
+        setFormData({
+          firstName: profileData.first_name || '',
+          lastName: profileData.last_name || '',
+          phone: profileData.phone_number || '',
+          email: profileData.email || user.email || '',
+          address: profileData.address || '',
+          city: profileData.city || '',
+          postalCode: profileData.postal_code || '',
+        });
+        // Update consents from fetched data
+        setUserConsents(fetchedConsents);
+        const hasMarketingConsent = fetchedConsents.some(c => c.consent_type === 'marketing_consent' && c.version === null);
+        setLocalMarketingConsent(hasMarketingConsent);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      setTimeout(() => {
-        setProfileError(`שגיאה בטעינת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
-        setLocalProfile(null);
-        setIsLoadingProfile(false);
-      }, 0);
+      setProfileError(`שגיאה בטעינת הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+      setLocalProfile(null);
+      profileDataLoadedRef.current = null; // Reset ref on error
     } finally {
+      setIsLoadingProfile(false);
       setLoadingConsents(false);
     }
-  }, [user, session, contextProfile]);
+  }, [user, session]);
 
   useEffect(() => {
     if (!user || authLoading) {
       if (!user && !authLoading) {
-        // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          setIsLoadingProfile(false);
-        }, 0);
+        setIsLoadingProfile(false);
       }
       return;
     }
-    
-    // Create temporary profile immediately for better UX
-    const tempProfile: UserProfile = {
-      id: user.id,
-      email: user.email || '',
-      first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
-      last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-      role: 'user',
-      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_active: true,
-      last_login_at: new Date().toISOString(),
-      language: 'he',
-      phone_number: '',
-      address: '',
-      city: '',
-      postal_code: ''
-    };
 
-    // Set temporary profile immediately
-    setTimeout(() => {
-      setLocalProfile(tempProfile);
-      setFormData({
-        firstName: tempProfile.first_name || '',
-        lastName: tempProfile.last_name || '',
-        phone: tempProfile.phone_number || '',
-        email: tempProfile.email || '',
-        address: tempProfile.address || '',
-        city: tempProfile.city || '',
-        postalCode: tempProfile.postal_code || '',
-      });
-      setUserConsents([]); // No consents for temporary profile yet
-      setIsLoadingProfile(false);
-    }, 0);
-    
-    // Load real profile in background
+    // If profile data for this user has already been loaded, skip
+    if (profileDataLoadedRef.current === user.id) {
+      return;
+    }
+
     loadProfileData();
+    profileDataLoadedRef.current = user.id; // Mark as loaded for this user
+
   }, [user?.id, authLoading, loadProfileData]);
 
   // Handle navigation when no user
@@ -353,13 +301,12 @@ function UserProfile() {
     
     // Add cache check to prevent unnecessary requests
     const cacheKey = `classesCount_${user.id}`;
-    const cachedData = getDataWithTimestamp<number>(cacheKey, 5 * 60 * 1000); // 5 דקות
-    
-    // Check if we have recent cached data
+    const cachedData = getDataWithTimestamp<string>(cacheKey, 5 * 60 * 1000); // 5 דקות
+
     if (cachedData !== null) {
       // Use setTimeout to avoid setState during render
       setTimeout(() => {
-        setClassesCount(cachedData);
+        setClassesCount(parseInt(cachedData, 10) || 0);
       }, 0);
       return;
     }
@@ -391,7 +338,7 @@ function UserProfile() {
         }, 0);
         
         // Cache the result
-        setDataWithTimestamp(cacheKey, count, 5 * 60 * 1000); // 5 דקות
+        setDataWithTimestamp(cacheKey, count.toString(), 5 * 60 * 1000); // 5 דקות
         
       } catch (error) {
         console.error('Error fetching classes count:', error);
@@ -428,12 +375,9 @@ function UserProfile() {
       if (!dataLoadedRef.current) {
         dataLoadedRef.current = true;
         
-        // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          fetchClassesCount();
-          fetchSubscriptionCredits();
-          fetchTrialStatus();
-        }, 0);
+        fetchClassesCount();
+        fetchSubscriptionCredits();
+        fetchTrialStatus();
       }
     }
   }, [user?.id, session?.access_token, authLoading]);
@@ -505,41 +449,13 @@ function UserProfile() {
     }));
   };
 
-  const handleMarketingConsentChange = async (checked: boolean) => {
-    if (!user || !session) return;
-
-    try {
-      setIsLoading(true);
-      const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consent_type: 'marketing', version: null, consented: checked }), // Add consented field
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update marketing consent: ${errorText}`);
-      }
-
-      // Refresh consents after update
-      await loadProfileData(); // This will re-fetch both profile and consents
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 3000);
-    } catch (error) {
-      console.error('Error updating marketing consent:', error);
-      setErrorMessage(`אירעה שגיאה בעדכון הסכמת שיווק: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
-      setShowErrorPopup(true);
-      setTimeout(() => setShowErrorPopup(false), 5000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Removed handleMarketingConsentChange function, its logic is now in handleSubmit
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    // Special handling for marketingConsent
-    if (name === 'marketingConsent') {
-      handleMarketingConsentChange(checked);
+    // Special handling for marketing_consent
+    if (name === 'marketing_consent') {
+      setLocalMarketingConsent(checked); // Directly update local state
     } else {
       setFormData(prev => ({
         ...prev,
@@ -554,6 +470,21 @@ function UserProfile() {
     try {
       if (!user || !session) throw new Error('No user or session found');
       
+      // Handle marketing consent update if changed
+      const currentMarketingConsent = userConsents.some(c => c.consent_type === 'marketing_consent' && c.version === null);
+      if (localMarketingConsent !== currentMarketingConsent) {
+        const consentPayload = JSON.stringify({ consent_type: 'marketing_consent', version: null, consented: localMarketingConsent });
+        const consentResponse = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: consentPayload,
+        });
+        if (!consentResponse.ok) {
+            const errorText = await consentResponse.text();
+            throw new Error(`Failed to update marketing consent during submit: ${errorText}`);
+        }
+      }
+
       const profileData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -606,8 +537,9 @@ function UserProfile() {
           loadProfile().catch(console.error);
         }, 100);
       }
+      await loadProfileData(); // Reload consents and profile to reflect all changes
       
-      setIsEditing(false);
+      setIsEditing(false); // Exit edit mode only after successful submit
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (error) {
@@ -805,6 +737,8 @@ function UserProfile() {
               onCreditsUpdate={fetchSubscriptionCredits}
               userConsents={userConsents} // Pass consents to ProfileTabs
               loadingConsents={loadingConsents} // Pass loading state to ProfileTabs
+              localMarketingConsent={localMarketingConsent} // Pass new local state
+              onLocalMarketingConsentChange={setLocalMarketingConsent} // Pass setter directly
             />
           </motion.div>
         </div>

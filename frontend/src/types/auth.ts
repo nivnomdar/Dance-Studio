@@ -1,5 +1,3 @@
-import { User, Session } from '@supabase/supabase-js';
-
 // Safe user metadata type
 export interface SafeUserMetadata {
   full_name?: string;
@@ -63,7 +61,7 @@ export interface UserProfile {
 export interface UserConsent {
   id: number;
   user_id: string;
-  consent_type: 'terms_and_privacy' | 'age_18' | 'health_declaration' | 'marketing' | 'registration_terms_and_privacy';
+  consent_type: 'terms_and_privacy' | 'age_18' | 'health_declaration' | 'marketing_consent' | 'registration_terms_and_privacy';
   version: string | null;
   consented_at: string;
   registration_id: string | null;

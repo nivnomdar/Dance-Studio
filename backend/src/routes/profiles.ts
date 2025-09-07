@@ -111,15 +111,16 @@ const generalConsentLimiter = rateLimit({
 
 router.post('/accept-consent', auth, generalConsentLimiter, async (req: Request, res: Response, _next: NextFunction) => {
   try {
+    console.log('Raw req.body:', req.body); // <-- Add this line
     const user = (req as any).user;
     
     if (!user || !user.sub) {
       throw new AppError('User not authenticated', 401);
     }
 
-    const { consent_type, version, registration_id } = req.body;
+    const { consent_type, version, registration_id, consented } = req.body;
 
-    logger.debug('Received consent acceptance request:', { userId: user.sub, consent_type, version, registration_id });
+    logger.debug('Received consent acceptance request:', { userId: user.sub, consent_type, version, registration_id, consented });
 
     if (!consent_type || typeof consent_type !== 'string') {
       throw new AppError('Invalid consent_type provided', 400);
@@ -136,37 +137,49 @@ router.post('/accept-consent', auth, generalConsentLimiter, async (req: Request,
 
     switch (consent_type) {
       case 'age_18':
-      case 'marketing': { // Add block scope
+      case 'marketing_consent': { // Add block scope
         // These consents are one-time per user, so we need to manually handle upsert logic due to partial index limitations.
         // The frontend should NOT send registration_id for these.
         if (registration_id) {
           throw new AppError(`Consent type ${consent_type} should not have a registration_id`, 400);
         }
         commonConsentData.version = null; // Explicitly set version to null for one-time consents
-        logger.debug(`Attempting SELECT then UPDATE/INSERT for consent_type ${consent_type} with data:`, commonConsentData);
-        const { data: existingConsents, error: selectError } = await supabase
-          .from('user_consents')
-          .select('id')
-          .eq('user_id', user.sub)
-          .eq('consent_type', consent_type)
-          .is('version', null)
-          .single();
 
-        if (selectError && selectError.code !== 'PGRST116') { // PGRST116 means no rows found
-          throw new AppError(`Failed to check existing consent for ${consent_type}: ${selectError.message}`, 500);
-        }
-
-        if (existingConsents) {
-          // If record exists, update it
+        if (consented === false) {
+          // If consented is false, delete the existing consent
+          logger.debug(`Attempting DELETE for consent_type ${consent_type}:`, { userId: user.sub });
           ({ data, error } = await supabase
             .from('user_consents')
-            .update({ ...commonConsentData })
-            .eq('id', existingConsents.id));
+            .delete()
+            .eq('user_id', user.sub)
+            .eq('consent_type', consent_type)
+            .is('version', null)); // Ensure it's the one-time marketing consent
         } else {
-          // If no record exists, insert a new one
-          ({ data, error } = await supabase
+          logger.debug(`Attempting SELECT then UPDATE/INSERT for consent_type ${consent_type} with data:`, commonConsentData);
+          const { data: existingConsents, error: selectError } = await supabase
             .from('user_consents')
-            .insert(commonConsentData));
+            .select('id')
+            .eq('user_id', user.sub)
+            .eq('consent_type', consent_type)
+            .is('version', null)
+            .single();
+
+          if (selectError && selectError.code !== 'PGRST116') { // PGRST116 means no rows found
+            throw new AppError(`Failed to check existing consent for ${consent_type}: ${selectError.message}`, 500);
+          }
+
+          if (existingConsents) {
+            // If record exists, update it
+            ({ data, error } = await supabase
+              .from('user_consents')
+              .update({ ...commonConsentData })
+              .eq('id', existingConsents.id));
+          } else {
+            // If no record exists, insert a new one
+            ({ data, error } = await supabase
+              .from('user_consents')
+              .insert(commonConsentData));
+          }
         }
         break;
       } // Close block scope
@@ -289,7 +302,7 @@ router.get('/me', async (req: Request, res: Response, _next: NextFunction) => {
 // Rate limiting for fetching user consents
 const getConsentsLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 15, // Allow 15 attempts per minute (can be adjusted)
+  max: 60, // Allow 60 attempts per minute (can be adjusted)
   message: {
     error: 'Too many requests to fetch consents. Please try again later.',
     retryAfter: '60 seconds'
