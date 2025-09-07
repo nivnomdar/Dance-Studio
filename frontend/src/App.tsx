@@ -75,6 +75,7 @@ function App() {
       <Router>
         <AuthProvider>
           <PopupProvider>
+            {/* CartProvider should wrap AppContent to ensure useCart is available */}
             <CartProvider>
               <TermsGuard>
                 <AppContent />

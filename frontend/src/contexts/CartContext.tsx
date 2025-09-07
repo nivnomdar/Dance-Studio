@@ -25,8 +25,7 @@ export const useCart = () => {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const auth = useAuth();
-  const user = auth?.user;
+  const { user, loading: authLoading, session } = useAuth(); // Destructure directly
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
   const isSavingRef = useRef<boolean>(false);
@@ -37,15 +36,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   //   return () => { isMounted.current = false; };
   // }, []);
 
-  // If auth is not ready, show children without cart functionality
-  if (!auth) {
-    return <>{children}</>;
-  }
-
   // Load cart from Supabase user metadata on mount
   useEffect(() => {
-    // Don't load cart if auth is not ready
-    if (!auth) { // || !isMounted.current // Removed isMounted check
+    // Don't load cart if auth is not ready or user is not available
+    if (authLoading || !user) {
       return;
     }
 
@@ -86,12 +80,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     };
 
     loadCart();
-  }, [user, auth]); // Removed isMounted from dependency array
+  }, [user, authLoading, session]); // Add authLoading to dependencies
 
   // Save cart to Supabase user metadata with throttling and debouncing
   useEffect(() => {
-    // Don't save cart if auth is not ready
-    if (!auth) { // || !isMounted.current // Removed isMounted check
+    // Don't save cart if auth is not ready or user is not available
+    if (authLoading || !user) {
       return;
     }
 
@@ -162,7 +156,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [cartItems, user, auth]); // Removed isMounted from dependency array
+  }, [cartItems, user, authLoading, session]); // Add authLoading to dependencies
 
   const clearCart = useCallback(() => {
     setCartItems([]);
@@ -178,6 +172,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // האזנה לשינויים ב-auth state כדי לסנכרן את הסל
   useEffect(() => {
+    if (authLoading) { // Don't run if auth is still loading
+      return;
+    }
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         // ניקוי הסל בזמן התנתקות
@@ -208,7 +205,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, [clearCart]); // Removed isMounted from dependency array
+  }, [clearCart, user, session, authLoading]); // Add authLoading to dependencies
 
   const cartCount = Array.isArray(cartItems) ? cartItems.reduce((total, item) => total + item.quantity, 0) : 0;
 

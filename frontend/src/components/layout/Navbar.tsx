@@ -15,15 +15,13 @@ function Navbar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
-  const { cartCount, clearCart } = useCart();
   const { user, profile, signOut } = useAuth();
   const { profile: localProfile } = useProfile();
 
-  // שימוש בפרופיל מהטעינה המקומית קודם, אחרת מה-AuthContext
+  // Use useCart unconditionally
+  const { cartCount, clearCart } = useCart();
+  
   const currentProfile = localProfile || profile;
-
-  // אם יש משתמש, תמיד יש פרופיל (זמני או אמיתי)
-  // const hasProfile = user && (currentProfile || user);
 
   // לוגים לדיבוג - הוסרו כי הכל עובד
 
@@ -106,7 +104,7 @@ function Navbar() {
           {/* Desktop Layout */}
           <div className="hidden md:flex items-center overflow-visible">
             {/* Login/Profile Button - Left side */}
-            {user ? (
+            {user && profile ? (
               <div className="relative overflow-visible">
                 <button
                   onClick={() => {
@@ -206,7 +204,7 @@ function Navbar() {
             </button>
             
             {/* Login/Profile Button - Left side on mobile */}
-            {user ? (
+            {user && profile ? (
               <div className="relative overflow-visible">
                 <button
                   onClick={() => {
