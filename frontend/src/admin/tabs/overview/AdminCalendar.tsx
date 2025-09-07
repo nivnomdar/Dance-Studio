@@ -363,15 +363,14 @@ export default function AdminCalendar({}: AdminCalendarProps) {
     const baseClasses = `
       relative flex items-center justify-center rounded-full font-medium transition-all duration-200 cursor-pointer touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EC4899]/40
       ${isMobile ? 'w-9 h-9 text-[11px]' : 'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-xs sm:text-sm md:text-base'}
-      ${isSelected
-        ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border border-transparent shadow-lg shadow-[#EC4899]/30'
-        : isToday
-          ? 'bg-white text-[#4B2E83] border border-white ring-2 ring-[#4B2E83] shadow'
-          : !isCurrentMonth
-            ? 'bg-white text-gray-400 border border-gray-100'
-            : isPastDate
-              ? 'bg-white text-gray-400 border border-gray-200'
-              : 'bg-white text-[#4B2E83] border border-[#EC4899]/20 hover:bg-[#EC4899]/5'}
+      ${!isCurrentMonth
+          ? 'bg-white text-gray-400 border border-gray-100'
+          : isPastDate
+            ? 'bg-white text-gray-400 border border-gray-200'
+            : 'bg-white text-[#4B2E83] border border-[#EC4899]/20 hover:bg-[#EC4899]/5'
+      }
+      ${isToday ? 'ring-2 ring-[#4B2E83] shadow' : ''}
+      ${isSelected ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white border-transparent shadow-lg shadow-[#EC4899]/30' : ''}
     `;
 
     return (
