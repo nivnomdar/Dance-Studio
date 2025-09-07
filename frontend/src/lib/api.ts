@@ -396,10 +396,6 @@ export const apiService = {
         headers['Authorization'] = `Bearer ${accessToken}`;
       }
       
-      // Debug log
-          // console.log('API create registration - data:', data);
-    // console.log('API create registration - headers:', headers);
-      
       return fetchWithRetryAndQueue<RegistrationWithDetails>(() => 
         fetch(`${API_BASE_URL}/registrations`, {
           method: 'POST',

@@ -95,10 +95,8 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
 
   // Event handlers
   const handleEditClass = (classData: any) => {
-    console.log("handleEditClass called with classData:", classData);
     setEditingClass(classData);
     setEditModalOpen(true);
-    console.log("editModalOpen set to true, editingClass set to:", classData);
   };
 
   const handleViewClassSessions = (classData: any) => {
@@ -166,7 +164,6 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
   };
 
   const handleAddNewClass = () => {
-    console.log("handleAddNewClass called.");
     handleEditClass({});
   };
 

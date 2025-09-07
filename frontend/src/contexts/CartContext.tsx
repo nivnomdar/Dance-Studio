@@ -50,7 +50,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
 
     const loadCart = async () => {
-      // console.log('CartContext: Attempting to load cart'); // Remove log
+      // 
       if (user) {
         // נסה לטעון מהמשתמש המחובר
         const userCart = user.user_metadata?.cart;
@@ -59,7 +59,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             const parsedCart = JSON.parse(userCart);
             if (Array.isArray(parsedCart)) {
               setCartItems(parsedCart);
-              // console.log('CartContext: Loaded cart from user metadata.', parsedCart); // Remove log
+              // 
             } else {
               console.warn('User cart is not an array, resetting to empty array');
               setCartItems([]);
@@ -69,7 +69,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             setCartItems([]);
           }
         } else {
-          // console.log('CartContext: No cart found in user metadata.'); // Remove log
+          // 
           setCartItems([]);
         }
       } else {
@@ -77,9 +77,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         const sessionCart = getDataWithTimestamp<CartItem[]>('temp_cart', 24 * 60 * 60 * 1000); // 24 שעות
         if (sessionCart && Array.isArray(sessionCart)) {
           setCartItems(sessionCart);
-          // console.log('CartContext: Loaded cart from cookies.', sessionCart); // Remove log
+          // 
         } else {
-          // console.log('CartContext: No cart found in cookies.'); // Remove log
+          // 
           setCartItems([]);
         }
       }
@@ -96,16 +96,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
 
     const saveCart = async () => {
-      // console.log('CartContext: saveCart triggered.'); // Remove log
+      // 
       if (!user) {
-        // console.log('CartContext: No user, saving cart to cookies.'); // Remove log
+        // 
         setDataWithTimestamp('temp_cart', cartItems, 24 * 60 * 60 * 1000); // 24 שעות
         return;
       }
 
       // Check if we're already saving
       if (isSavingRef.current) {
-        // console.log('CartContext: Already saving, skipping.'); // Remove log
+        // 
         return;
       }
 
@@ -113,13 +113,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       const now = Date.now();
       const timeSinceLastSave = now - lastSaveTimeRef.current;
       if (timeSinceLastSave < RATE_LIMIT_DELAY) {
-        // console.log(`CartContext: Rate limited. Last save ${timeSinceLastSave}ms ago. Skipping.`); // Remove log
+        // 
         return;
       }
 
       isSavingRef.current = true;
       lastSaveTimeRef.current = now; // Update last save time immediately before starting the request
-      // console.log('CartContext: Performing actual cart save to Supabase.'); // Remove log
+      // 
 
       try {
         const { error } = await supabase.auth.updateUser({
@@ -129,17 +129,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           console.error('Error saving cart to user metadata:', error);
           // If rate limited, wait longer before next save
           if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-            // console.warn('CartContext: Supabase rate limit hit. Extending next save delay.'); // Remove log
+            // 
             // Double the rate limit delay if hit, up to a max
             lastSaveTimeRef.current = now + RATE_LIMIT_DELAY; // Revert to original delay logic
           }
         } else {
-          // console.log('CartContext: Cart saved successfully to user metadata.'); // Remove log
+          // 
         }
       } catch (error) {
         console.error('Error updating user metadata:', error);
         if (error instanceof Error && (error.message?.includes('rate limit') || error.message?.includes('429'))) {
-          // console.warn('CartContext: Supabase rate limit hit (catch). Extending next save delay.'); // Remove log
+          // 
           lastSaveTimeRef.current = now + RATE_LIMIT_DELAY; // Revert to original delay logic
         }
       } finally {
@@ -195,7 +195,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
                 await supabase.auth.updateUser({
                   data: { cart: JSON.stringify(sessionCart) }
                 });
-                // console.log('CartContext: Cart saved after sign in from cookies to user metadata.'); // Remove log
+                // 
               // }
               // Note: Cookies will be cleared automatically when expired
             } catch (error) {

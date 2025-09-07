@@ -30,17 +30,9 @@ export const CookieConsentBanner: React.FC = () => {
     // 2. המשתמש אישר תנאי שימוש (terms_accepted = true)
     // 3. המשתמש לא הסכים עדיין ל-cookies
     
-    console.log('CookieConsentBanner: Checking banner visibility:', {
-      isAuthenticated,
-      hasProfile: !!profile,
-      profileTermsAccepted: profile?.terms_accepted,
-      currentCookieConsent: hasCookie('ladances-cookie-consent')
-    });
-    
     // Condition to show banner if not already consented
     const cookieConsent = hasCookie('ladances-cookie-consent');
     if (!cookieConsent) {
-      console.log('CookieConsentBanner: User has not consented to cookies, showing banner');
       setShowBanner(true);
       setTimeout(() => {
         setIsVisible(true);
@@ -49,7 +41,6 @@ export const CookieConsentBanner: React.FC = () => {
         }
       }, 100);
     } else {
-      console.log('CookieConsentBanner: User already consented to cookies, not showing banner');
       setAccepted(true);
     }
   }, []); // Removed isAuthenticated, profile from dependency array
@@ -92,11 +83,9 @@ export const CookieConsentBanner: React.FC = () => {
   }, [showBanner, accepted]);
 
   const handleAccept = () => {
-    console.log('CookieConsentBanner: User explicitly accepted cookies');
     
     // שמירת הסכמה ב-Cookie עם תוקף של שנה
     setCookie('ladances-cookie-consent', 'true', { expires: 365 });
-    console.log('CookieConsentBanner: Cookie consent saved.');
     
     setIsVisible(false);
     setTimeout(() => {
@@ -106,11 +95,9 @@ export const CookieConsentBanner: React.FC = () => {
   };
 
   const handleDecline = () => {
-    console.log('CookieConsentBanner: User declined cookies');
     
     // שמירת אי-הסכמה ב-Cookie עם תוקף של שנה
     setCookie('ladances-cookie-consent', 'false', { expires: 365 });
-    console.log('CookieConsentBanner: Cookie decline saved.');
     
     setIsVisible(false);
     setTimeout(() => {

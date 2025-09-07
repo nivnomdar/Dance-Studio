@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import type { UserProfile } from '../types/auth';
+import type { UserProfile, UserConsent } from '../types/auth';
 import { supabase } from '../lib/supabase';
-import { 
-  setDataWithTimestamp, 
-  getDataWithTimestamp, 
-  hasCookie 
+import {
+  setDataWithTimestamp,
+  hasCookie
 } from '../utils/cookieManager';
+import { throttledApiFetch } from '../utils/api'; // Import throttledApiFetch
 
 interface UseProfileReturn {
   profile: UserProfile | null;
@@ -37,28 +37,47 @@ export function useProfile(): UseProfileReturn {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      const [profileResponse, consentsResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      ]);
+      
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text();
+        throw new Error(`HTTP ${profileResponse.status}: ${errorText}`);
       }
 
-      const profileDataArray = await response.json();
-      
+      if (!consentsResponse.ok) {
+        const errorText = await consentsResponse.text();
+        throw new Error(`HTTP ${consentsResponse.status}: ${errorText}`);
+      }
+
+      const profileDataArray = await profileResponse.json();
+      const fetchedConsents: UserConsent[] = await consentsResponse.json();
+
       if (profileDataArray && profileDataArray.length > 0) {
         const profileData = profileDataArray[0];
         // Cache the profile
         const cacheKey = `profile_${user.id}`;
         setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
-        
-        setLocalProfile(profileData);
+
+        setLocalProfile({
+          ...profileData,
+          terms_accepted: fetchedConsents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null),
+          marketing_consent: fetchedConsents.some(c => c.consent_type === 'marketing' && c.version === null),
+        });
         setProfileError(null);
       } else {
         // Profile doesn't exist, try to create it
@@ -87,13 +106,7 @@ export function useProfile(): UseProfileReturn {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Check if profile already exists to avoid overwriting existing values
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('terms_accepted, marketing_consent')
-        .eq('id', user.id)
-        .maybeSingle();
-
+      // Check if profile already exists to avoid overwriting existing values - REMOVED TERMS_ACCEPTED AND MARKETING_CONSENT
       const newProfile = {
         id: user.id,
         email: user.email || '',
@@ -103,9 +116,7 @@ export function useProfile(): UseProfileReturn {
         avatar_url: user.user_metadata?.avatar_url || '',
         created_at: new Date().toISOString(),
         is_active: true,
-        // Preserve existing values if they exist, otherwise use defaults
-        terms_accepted: existingProfile?.terms_accepted ?? false,
-        marketing_consent: existingProfile?.marketing_consent ?? false,
+        // terms_accepted and marketing_consent are handled in user_consents table, not directly in profile
         last_login_at: new Date().toISOString(),
         language: 'he',
         has_used_trial_class: false
@@ -203,8 +214,6 @@ export function useProfile(): UseProfileReturn {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_active: true,
-      terms_accepted: false, // User must explicitly accept terms
-      marketing_consent: false, // User must explicitly consent to marketing
       last_login_at: new Date().toISOString(),
       language: 'he',
       has_used_trial_class: false,

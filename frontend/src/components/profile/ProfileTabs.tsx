@@ -4,7 +4,7 @@ import PersonalDetailsTab from './PersonalDetailsTab';
 import MyClassesTab from './MyClassesTab';
 import MyOrdersTab from './MyOrdersTab';
 
-import type { UserProfile } from '../../types/auth';
+import type { UserProfile, UserConsent } from '../../types/auth';
 
 interface ProfileTabsProps {
   user: any;
@@ -17,9 +17,9 @@ interface ProfileTabsProps {
     address: string;
     city: string;
     postalCode: string;
-    termsAccepted: boolean;
-    marketingConsent: boolean;
   };
+  userConsents: UserConsent[]; // New prop for user consents
+  loadingConsents: boolean; // New prop for loading state of consents
   isEditing: boolean;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -45,7 +45,9 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   onToggleEdit,
   session,
   onClassesCountUpdate,
-  onCreditsUpdate
+  onCreditsUpdate,
+  userConsents, // Destructure userConsents
+  loadingConsents // Destructure loadingConsents
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal');
 
@@ -93,6 +95,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             onCheckboxChange={onCheckboxChange}
             onSubmit={onSubmit}
             onToggleEdit={onToggleEdit}
+            userConsents={userConsents} // Pass consents to PersonalDetailsTab
+            loadingConsents={loadingConsents} // Pass loading state to PersonalDetailsTab
           />
         );
       case 'classes':

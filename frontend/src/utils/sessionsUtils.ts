@@ -6,7 +6,6 @@ import { isSessionActiveOnDay } from './weekdaysUtils';
 import { 
   setDataWithTimestamp, 
   getDataWithTimestamp, 
-  hasCookie 
 } from './cookieManager';
 
 // Enhanced cache with class-specific caching
@@ -255,6 +254,11 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       return classCache!.data;
     }
     
+    const todayString = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+    const futureDate = new Date();
+    futureDate.setDate(new Date().getDate() + BOOKING_DAYS_AHEAD - 1); // Furthest date in the booking window
+    const futureDateString = futureDate.toISOString().split('T')[0];
+
     // Check global cache - if we have valid global cache, use it for all classes
     if (isCacheValid(sessionsCache) && isCacheValid(sessionClassesCache)) {
       const allSessions = sessionsCache!.data;
@@ -274,10 +278,24 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
       // Get session IDs for this class
       const sessionIds = sessionClasses.map((sc: any) => sc.session_id);
       
-      // Filter sessions for this class
-      const sessions = allSessions.filter((session: any) => 
-        sessionIds.includes(session.id) && session.is_active === true
-      );
+      // Filter sessions for this class, also considering start_date and end_date
+      const sessions = allSessions.filter((session: any) => {
+        const isLinkedToClass = sessionIds.includes(session.id);
+        const isActive = session.is_active === true;
+
+        // Check session date range (using string comparison for YYYY-MM-DD)
+        const sessionStartDate = session.start_date;
+        const sessionEndDate = session.end_date;
+
+        let isDateRangeRelevant = true;
+        if (sessionStartDate && sessionStartDate > futureDateString) {
+          isDateRangeRelevant = false; // Session starts after the latest day we're looking for
+        }
+        if (sessionEndDate && sessionEndDate < todayString) {
+          isDateRangeRelevant = false; // Session ended before today
+        }
+        return isLinkedToClass && isActive && isDateRangeRelevant;
+      });
       
       // Cache the result
       classSessionsCache.set(classId, { data: sessions, timestamp: Date.now() });
@@ -318,15 +336,24 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
     // Get session IDs for this class
     const sessionIds = sessionClasses.map((sc: any) => sc.session_id);
     
-    // Filter sessions for this class
-    const sessions = allSessions.filter((session: any) => 
-      sessionIds.includes(session.id) && session.is_active === true
-    );
+    // Filter sessions by IDs, start_date, and end_date
+    const filteredSessions = allSessions.filter((session: Session) => {
+      const sessionStartDate = session.start_date;
+      const sessionEndDate = session.end_date;
+
+      if (sessionIds.includes(session.id) &&
+          session.is_active === true &&
+          (sessionStartDate === null || sessionStartDate <= futureDateString) &&
+          (!sessionEndDate || sessionEndDate >= todayString)) {
+        return true;
+      }
+      return false;
+    });
+
+    // Cache the result for this specific class
+    classSessionsCache.set(classId, { data: filteredSessions, timestamp: now });
     
-    // Cache the result
-    classSessionsCache.set(classId, { data: sessions, timestamp: now });
-    
-    return sessions || [];
+    return filteredSessions || [];
   } catch (error) {
     console.error('Error in getAvailableSessionsForClass:', error);
     return [];
@@ -633,37 +660,20 @@ export const getAvailableSpotsFromSessions = async (
       // If no session_class exists, try to create one
       if (!sessionClass) {
         try {
-          console.log(`No session_class found for session_id: ${matchingSession.id}, class_id: ${classId}. Attempting to create one.`);
-          
-          // Get class data first
-          const classResponse = await throttledFetch(`${API_BASE_URL}/classes/${classId}`);
-          let classData = null;
-          if (classResponse.ok) {
-            classData = await classResponse.json();
-          }
-          
-          const createResponse = await throttledFetch(`${API_BASE_URL}/sessions/session-classes`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              session_id: matchingSession.id,
-              class_id: classId,
-              price: classData?.price || 0,
-              is_trial: (classData?.category || '').toLowerCase() === 'trial',
-              max_uses_per_user: (classData?.category || '').toLowerCase() === 'trial' ? 1 : null
-            })
+          const { data: newSessionClass, error: newSessionClassError } = await apiService.sessionClasses.create({
+            session_id: matchingSession.id,
+            class_id: classId,
+            price: 0, // Placeholder, will be updated with class data
+            is_trial: false, // Placeholder, will be updated with class data
+            max_uses_per_user: null // Placeholder, will be updated with class data
           });
-          
-          if (createResponse.ok) {
-            const newSessionClass = await createResponse.json();
-            sessionClass = newSessionClass;
-            console.log(`Created new session_class: ${newSessionClass.id}`);
-          } else {
-            console.error('Failed to create session_class');
-            return { available: 0, message: 'השיעור לא זמין בsession זה' };
+
+          if (newSessionClassError) {
+            console.error(`Error creating new session_class for session_id: ${matchingSession.id}, class_id: ${classId}:`, newSessionClassError);
+            throw new Error(`Failed to create new session_class`);
           }
+
+          sessionClass = newSessionClass;
         } catch (createError) {
           console.error('Error creating session_class:', createError);
           return { available: 0, message: 'השיעור לא זמין בsession זה' };

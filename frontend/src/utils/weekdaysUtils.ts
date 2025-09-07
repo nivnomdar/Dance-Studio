@@ -131,22 +131,14 @@ export const weekdaysToHebrew = (weekdays: (string | number)[]): string[] => {
  * @returns True if session is active on the day
  */
 export const isSessionActiveOnDay = (session: any, dayName: string): boolean => {
-  if (!session || !session.is_active) return false;
+  if (!session || !session.is_active || !session.weekdays) return false;
   
+  const targetDayNumber = normalizeWeekdayToNumber(dayName);
+  if (targetDayNumber === -1) return false; // Invalid target day
+
   return session.weekdays.some((weekday: any) => {
-    // Handle number format (0-6) - this is the main case for schedule_sessions
-    if (typeof weekday === 'number' && weekday >= 0 && weekday <= 6) {
-      return ENGLISH_WEEKDAYS[weekday] === dayName.toLowerCase();
-    }
-    
-    // Handle string format (e.g., "monday", "Tuesday")
-    if (typeof weekday === 'string') {
-      const weekdayLower = weekday.toLowerCase();
-      const dayNameLower = dayName.toLowerCase();
-      return weekdayLower === dayNameLower;
-    }
-    
-    return false;
+    const normalizedSessionWeekday = normalizeWeekdayToNumber(weekday);
+    return normalizedSessionWeekday === targetDayNumber;
   });
 };
 
@@ -195,4 +187,33 @@ export const getAllHebrewWeekdays = (): string[] => {
  */
 export const getAllEnglishWeekdays = (): string[] => {
   return [...ENGLISH_WEEKDAYS];
+};
+
+/**
+ * Normalize any weekday format (number, English string, Hebrew string) to a number (0-6).
+ * @param weekday - Weekday in any format.
+ * @returns Normalized weekday number (0-6), or -1 if invalid.
+ */
+export const normalizeWeekdayToNumber = (weekday: string | number): number => {
+  if (typeof weekday === 'number' && weekday >= 0 && weekday <= 6) {
+    return weekday;
+  }
+
+  if (typeof weekday === 'string') {
+    const weekdayLower = weekday.toLowerCase();
+    
+    // Check if it's an English day name
+    const englishIndex = ENGLISH_WEEKDAYS.indexOf(weekdayLower);
+    if (englishIndex !== -1) {
+      return englishIndex;
+    }
+
+    // Check if it's a Hebrew day name
+    const hebrewIndex = HEBREW_WEEKDAYS.indexOf(weekday);
+    if (hebrewIndex !== -1) {
+      return hebrewIndex;
+    }
+  }
+
+  return -1; // Invalid weekday
 }; 

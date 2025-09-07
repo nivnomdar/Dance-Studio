@@ -9,7 +9,6 @@ import SecondaryNavbar from './SecondaryNavbar';
 import { GoogleLoginModal } from '../GoogleLogin';
 
 function Navbar() {
-  // console.log('Navbar render at:', new Date().toISOString()); // Debug log
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutSuccess, setShowLogoutSuccess] = useState(false);
@@ -283,7 +282,6 @@ function Navbar() {
                   // Fallback to local image if Supabase image fails to load
                   const target = e.target as HTMLImageElement;
                   target.src = "/images/LOGOladance.png";
-                  console.log("Falling back to local logo image");
                 }}
               />
             </Link>

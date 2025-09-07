@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 // import { useProfile } from '../hooks/useProfile';
 import ProfileTabs from '../components/profile/ProfileTabs';
-import type { UserProfile } from '../types/auth';
+import type { UserProfile, UserConsent } from '../types/auth';
 import { registrationsService } from '../lib/registrations';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 import { LoadingPage, ErrorPage, StatusModal } from '../components/common';
@@ -14,6 +14,7 @@ import {
   getDataWithTimestamp, 
   hasCookie 
 } from '../utils/cookieManager';
+import { throttledApiFetch } from '../utils/api'; // Import throttledApiFetch
 import { motion } from 'framer-motion';
 
 function UserProfile() {
@@ -28,8 +29,6 @@ function UserProfile() {
     address: '',
     city: '',
     postalCode: '',
-    termsAccepted: false,
-    marketingConsent: false,
   });
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showErrorPopup, setShowErrorPopup] = useState(false);
@@ -41,6 +40,8 @@ function UserProfile() {
   const [creditsTotals, setCreditsTotals] = useState<Record<CreditGroup, number>>({ group: 0, private: 0, zoom: 0, workshop: 0, intensive: 0 });
   const [isFetchingCount, setIsFetchingCount] = useState(false);
   const [trialStatuses, setTrialStatuses] = useState<Array<{ id: string; name: string; used: boolean }>>([]);
+  const [userConsents, setUserConsents] = useState<UserConsent[]>([]); // New state for consents
+  const [loadingConsents, setLoadingConsents] = useState(true); // New state for loading consents
   const navigate = useNavigate();
   
   // Refs to track loaded data
@@ -78,21 +79,37 @@ function UserProfile() {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const [profileResponse, consentsResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+      ]);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text();
+        throw new Error(`HTTP ${profileResponse.status}: ${errorText}`);
+      }
+
+      if (!consentsResponse.ok) {
+        const errorText = await consentsResponse.text();
+        throw new Error(`HTTP ${consentsResponse.status}: ${errorText}`);
       }
       
-      const profileDataArray = await response.json();
-      
+      const profileDataArray = await profileResponse.json();
+      const fetchedConsents: UserConsent[] = await consentsResponse.json();
+      setUserConsents(fetchedConsents);
+
       if (profileDataArray.length === 0) {
         // Profile doesn't exist, create a new one
         const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
@@ -105,25 +122,6 @@ function UserProfile() {
 
         // First, try to create the profile using upsert
         try {
-          // Check if profile already exists to avoid overwriting existing values
-          const existingProfileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=terms_accepted,marketing_consent`, {
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session.access_token}`,
-            }
-          });
-
-          let existingTermsAccepted = false;
-          let existingMarketingConsent = false;
-
-          if (existingProfileResponse.ok) {
-            const existingProfileData = await existingProfileResponse.json();
-            if (existingProfileData.length > 0) {
-              existingTermsAccepted = existingProfileData[0].terms_accepted ?? false;
-              existingMarketingConsent = existingProfileData[0].marketing_consent ?? false;
-            }
-          }
-
           const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
             headers: {
@@ -141,9 +139,6 @@ function UserProfile() {
               avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
               created_at: new Date().toISOString(),
               is_active: true,
-              // Preserve existing values if they exist, otherwise use defaults
-              terms_accepted: existingTermsAccepted,
-              marketing_consent: existingMarketingConsent,
               last_login_at: new Date().toISOString(),
               language: 'he'
             })
@@ -159,8 +154,6 @@ function UserProfile() {
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               is_active: true,
-              terms_accepted: false, // User must explicitly accept terms
-              marketing_consent: false, // User must explicitly consent to marketing
               last_login_at: new Date().toISOString(),
               language: 'he'
             };
@@ -175,9 +168,9 @@ function UserProfile() {
                 address: newProfile.address || '',
                 city: newProfile.city || '',
                 postalCode: newProfile.postal_code || '',
-                termsAccepted: newProfile.terms_accepted || false,
-                marketingConsent: newProfile.marketing_consent || false,
               });
+              // For new users, terms and marketing consents are false by default until accepted
+              setUserConsents([]); 
               setIsLoadingProfile(false);
             }, 0);
           } else {
@@ -185,7 +178,6 @@ function UserProfile() {
           }
         } catch (error) {
           // If upsert fails, try to load existing profile
-          // Note: Cookie will be cleared automatically when expired
           
           // Final attempt to load existing profile
           try {
@@ -211,9 +203,9 @@ function UserProfile() {
                     address: profileData.address || '',
                     city: profileData.city || '',
                     postalCode: profileData.postal_code || '',
-                    termsAccepted: profileData.terms_accepted || false,
-                    marketingConsent: profileData.marketing_consent || false,
                   });
+                  // Update consents from fetched data
+                  setUserConsents(fetchedConsents);
                   setIsLoadingProfile(false);
                 }, 0);
               } else {
@@ -232,7 +224,6 @@ function UserProfile() {
           }
         } finally {
           // Always remove the flag
-          // Note: Cookie will be cleared automatically when expired
         }
       } else {
         const profileData = profileDataArray[0];
@@ -246,9 +237,9 @@ function UserProfile() {
             address: profileData.address || '',
             city: profileData.city || '',
             postalCode: profileData.postal_code || '',
-            termsAccepted: profileData.terms_accepted || false,
-            marketingConsent: profileData.marketing_consent || false,
           });
+          // Update consents from fetched data
+          setUserConsents(fetchedConsents);
           setIsLoadingProfile(false);
         }, 0);
       }
@@ -259,6 +250,8 @@ function UserProfile() {
         setLocalProfile(null);
         setIsLoadingProfile(false);
       }, 0);
+    } finally {
+      setLoadingConsents(false);
     }
   }, [user, session, contextProfile]);
 
@@ -284,8 +277,6 @@ function UserProfile() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       is_active: true,
-      terms_accepted: false, // User must explicitly accept terms
-      marketing_consent: false, // User must explicitly consent to marketing
       last_login_at: new Date().toISOString(),
       language: 'he',
       phone_number: '',
@@ -305,9 +296,8 @@ function UserProfile() {
         address: tempProfile.address || '',
         city: tempProfile.city || '',
         postalCode: tempProfile.postal_code || '',
-        termsAccepted: tempProfile.terms_accepted || false,
-        marketingConsent: tempProfile.marketing_consent || false,
       });
+      setUserConsents([]); // No consents for temporary profile yet
       setIsLoadingProfile(false);
     }, 0);
     
@@ -515,12 +505,47 @@ function UserProfile() {
     }));
   };
 
+  const handleMarketingConsentChange = async (checked: boolean) => {
+    if (!user || !session) return;
+
+    try {
+      setIsLoading(true);
+      const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consent_type: 'marketing', version: null, consented: checked }), // Add consented field
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update marketing consent: ${errorText}`);
+      }
+
+      // Refresh consents after update
+      await loadProfileData(); // This will re-fetch both profile and consents
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 3000);
+    } catch (error) {
+      console.error('Error updating marketing consent:', error);
+      setErrorMessage(`אירעה שגיאה בעדכון הסכמת שיווק: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+      setShowErrorPopup(true);
+      setTimeout(() => setShowErrorPopup(false), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
+    // Special handling for marketingConsent
+    if (name === 'marketingConsent') {
+      handleMarketingConsentChange(checked);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -529,7 +554,6 @@ function UserProfile() {
     try {
       if (!user || !session) throw new Error('No user or session found');
       
-      // עדכון ישיר עם fetch - רק השדות הניתנים לעריכה
       const profileData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -537,8 +561,7 @@ function UserProfile() {
         address: formData.address,
         city: formData.city,
         postal_code: formData.postalCode,
-        marketing_consent: formData.marketingConsent,
-        // terms_accepted לא נכלל כי הוא לא ניתן לשינוי
+        // marketing_consent ו-terms_accepted מטופלים בנפרד דרך טבלת user_consents
       };
       
       const updateResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
@@ -566,7 +589,7 @@ function UserProfile() {
       };
       setLocalProfile(newLocalProfile);
       
-      // עדכון ה-formData עם הנתונים המעודכנים מיד
+      // עדכון ה-formData עם הנתונים המעודכנים מיד (למעט הסכמות)
       setFormData(prev => ({
         ...prev,
         firstName: newLocalProfile.first_name || '',
@@ -575,28 +598,22 @@ function UserProfile() {
         address: newLocalProfile.address || '',
         city: newLocalProfile.city || '',
         postalCode: newLocalProfile.postal_code || '',
-        marketingConsent: newLocalProfile.marketing_consent || false,
-        // termsAccepted נשאר כפי שהוא - לא ניתן לשינוי
       }));
       
       // עדכון מיד של הפרופיל בקונטקסט
       if (contextProfile) {
-        // עדכון הפרופיל בקונטקסט באמצעות loadProfile
         setTimeout(() => {
           loadProfile().catch(console.error);
         }, 100);
       }
       
       setIsEditing(false);
-      // הצגת הודעת הצלחה
       setShowSuccessPopup(true);
-      // סגירת הפופאפ אחרי 3 שניות
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (error) {
       console.error('Error updating profile:', error);
       setErrorMessage(`אירעה שגיאה בעדכון הפרופיל: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
       setShowErrorPopup(true);
-      // סגירת הפופאפ אחרי 5 שניות
       setTimeout(() => setShowErrorPopup(false), 5000);
     } finally {
       setIsLoading(false);
@@ -604,18 +621,13 @@ function UserProfile() {
   };
 
   // Auth loading state
-  if (authLoading) {
+  if (authLoading || isLoadingProfile || loadingConsents) {
     return <LoadingPage message="טוען..." />;
   }
 
   // No user state - redirect to home
   if (!user && !authLoading) {
     return null;
-  }
-
-  // Loading state
-  if (isLoadingProfile) {
-    return <LoadingPage message="טוען פרופיל..." />;
   }
 
   // Error state
@@ -791,6 +803,8 @@ function UserProfile() {
               session={session}
               onClassesCountUpdate={fetchClassesCount}
               onCreditsUpdate={fetchSubscriptionCredits}
+              userConsents={userConsents} // Pass consents to ProfileTabs
+              loadingConsents={loadingConsents} // Pass loading state to ProfileTabs
             />
           </motion.div>
         </div>

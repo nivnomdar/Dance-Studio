@@ -343,7 +343,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // טעינת נתוני סקירה כללית
   const fetchOverview = useCallback(async () => {
     if (!session) {
-      console.log('fetchOverview: No session available');
       return;
     }
     if (isRateLimited()) {
@@ -351,11 +350,9 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
       return;
     }
     if (dataRef.current.overview && isDataFresh()) {
-      console.log('fetchOverview: Using cached data');
       return;
     }
 
-    console.log('fetchOverview: Starting to fetch overview...');
     isFetchingRef.current = true;
     setIsFetching(true);
     setIsLoading(true);
@@ -482,7 +479,6 @@ export const AdminDataProvider: React.FC<AdminDataProviderProps> = ({ children }
   // Listen for refresh admin data event
   useEffect(() => {
     const handleRefreshAdminData = () => {
-      console.log('Refreshing admin data due to new registration');
       fetchClasses(true); // Force refresh
     };
 

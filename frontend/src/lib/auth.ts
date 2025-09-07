@@ -14,13 +14,6 @@ export const handleAuthStateChange = async (event: string, session: any) => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Check if profile already exists to avoid overwriting existing values
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('terms_accepted, marketing_consent')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
       const { error } = await supabase
         .from('profiles')
         .insert([
@@ -33,9 +26,6 @@ export const handleAuthStateChange = async (event: string, session: any) => {
             avatar_url: session.user.user_metadata?.avatar_url || null,
             created_at: new Date().toISOString(),
             is_active: true,
-            // Preserve existing values if they exist, otherwise use defaults
-            terms_accepted: existingProfile?.terms_accepted ?? false,
-            marketing_consent: existingProfile?.marketing_consent ?? false,
             last_login_at: new Date().toISOString(),
             language: 'he'
           }

@@ -17,7 +17,7 @@ import {
 import { getColorScheme } from '../utils/colorUtils';
 import { subscriptionCreditsService } from '../lib/subscriptionCredits';
 import { UserSubscriptionCredits, CREDIT_GROUP_LABELS, CREDIT_GROUP_COLORS } from '../types/subscription';
-import type { UserProfile } from '../types/auth';
+import type { UserProfile, UserConsent } from '../types/auth'; // Added UserConsent
 import { SkeletonBox } from './skeleton/SkeletonComponents';
 import {
   getCreditGroupForClass,
@@ -25,6 +25,7 @@ import {
   getAvailableCreditsForGroup,
   formatCreditMessage
 } from '../lib/creditLogic';
+import { throttledApiFetch } from '../utils/api'; // Added this import
 
 interface SubscriptionRegistrationProps {
   classData: Class;
@@ -63,12 +64,52 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
   const [userCredits, setUserCredits] = useState<UserSubscriptionCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(true);
 
+  // New consent states
+  const [loadingConsents, setLoadingConsents] = useState(true); // Added loadingConsents state (kept)
+
   // Derived - memoized for performance (kept for future use if needed)
   useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
 
   const colors = getColorScheme('pink');
 
   const creditGroup = getCreditGroupForClass(classData);
+
+  // Fetch and set user consents
+  useEffect(() => {
+    const fetchConsentStatuses = async () => {
+      if (!user?.id || !session?.access_token) {
+        setLoadingConsents(false);
+        return;
+      }
+      try {
+        setLoadingConsents(true);
+        const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session!.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const consents: UserConsent[] = await response.json();
+          // Removed setUserConsents(consents); as userConsents state is not directly read after this point
+
+          // Update checkbox states based on fetched consents (for one-time consents)
+          setAgeConfirmationAccepted(consents.some(c => c.consent_type === 'age_18' && c.version === null));
+          setGeneralTermsAccepted(consents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null));
+        } else {
+          console.error('Failed to fetch consent statuses:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching consent statuses:', error);
+      } finally {
+        setLoadingConsents(false);
+      }
+    };
+
+    fetchConsentStatuses();
+  }, [user?.id, session?.access_token]); // Depend on user and session for re-fetch
 
   // Function to load all data at once for better performance
   const loadAllData = useCallback(async (classId: string) => {
@@ -372,13 +413,56 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
         used_credit: getAvailableCredits() > 0, // Only true if user has credits
         credit_type: getAvailableCredits() > 0 ? creditGroup : undefined, // Only set if using credits
         purchase_price: classData.price, // Store the actual price paid
-        registration_terms_accepted: generalTermsAccepted,
-        health_declaration_accepted: healthDeclarationAccepted,
-        age_confirmation_accepted: ageConfirmationAccepted // New field
       };
 
-      await registrationsService.createRegistration(registrationData, session?.access_token);
-      // Credits are now handled entirely on the server to avoid double changes
+      const newRegistration = await registrationsService.createRegistration(registrationData, session!.access_token); // Ensure non-null access_token
+
+      // Handle consents after successful registration
+      const consentPromises = [];
+
+      // Age confirmation (one-time, upsert, no registration_id, version: null)
+      if (ageConfirmationAccepted) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consent_type: 'age_18', version: null }),
+        }));
+      }
+
+      // Health declaration (per-registration, insert, requires registration_id and version)
+      if (healthDeclarationAccepted && newRegistration?.id) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            consent_type: 'health_declaration',
+            registration_id: newRegistration.id,
+            version: '1.0' // Assuming 1.0 for initial version
+          }),
+        }));
+      }
+
+      // General terms and privacy (per-registration, insert, requires registration_id and version)
+      // For subscription registration, this is also a per-registration consent.
+      if (generalTermsAccepted && newRegistration?.id) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-terms`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            consent_type: 'registration_terms_and_privacy', // Explicitly setting consent type for /accept-terms
+            registration_id: newRegistration.id,
+            version: '1.0' // Assuming 1.0 for initial version
+          }),
+        }));
+      }
+
+      // Execute all consent updates in parallel
+      const consentResponses = await Promise.allSettled(consentPromises);
+      consentResponses.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`Error accepting consent ${index}:`, result.reason);
+        }
+      });
 
       // שמירת הנתונים לפני האיפוס
       setSavedRegistrationData({
@@ -443,7 +527,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
     }
   };
 
-  if (loadingCredits) {
+  if (loadingCredits || loadingConsents) { // Include loadingConsents
     return (
       <div className="bg-white rounded-2xl p-8 shadow-lg h-fit">
         <div className="text-center">
@@ -867,14 +951,14 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || formData.phone.replace(/\D/g, '').length !== 10 || isSubmitting || !generalTermsAccepted || !healthDeclarationAccepted || !ageConfirmationAccepted || (() => {
+              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || formData.phone.replace(/\D/g, '').length !== 10 || isSubmitting || !generalTermsAccepted || !healthDeclarationAccepted || !ageConfirmationAccepted || loadingConsents || (() => { // Added loadingConsents
                 const spotsKey = classData.id + '_' + selectedDate;
                 const spotsData = spotsCache[spotsKey] || {};
                 const spotsInfo = spotsData[selectedTime];
                 return spotsInfo?.available === 0;
               })()}
               className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl mt-6 ${
-                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && ageConfirmationAccepted && !isSubmitting && (() => {
+                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && ageConfirmationAccepted && !isSubmitting && !loadingConsents && (() => { // Added !loadingConsents
                   const spotsKey = classData.id + '_' + selectedDate;
                   const spotsData = spotsCache[spotsKey] || {};
                   const spotsInfo = spotsData[selectedTime];
@@ -884,10 +968,10 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {isSubmitting ? (
+              {(isSubmitting || loadingConsents) ? ( // Include loadingConsents
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></div>
-                  מבצע זימון שיעור...
+                  {loadingConsents ? 'טוען הסכמות...' : 'מבצע זימון שיעור...'}
                 </div>
               ) : !selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
                 const spotsKey = classData.id + '_' + selectedDate;

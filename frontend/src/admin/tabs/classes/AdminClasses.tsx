@@ -16,7 +16,6 @@ type TabType = 'classes' | 'sessions' | 'registrations';
 let globalAdminClassesInitialized = false;
 
 export default function AdminClasses({ profile }: AdminClassesProps) {
-  console.log("AdminClasses component rendered.");
   const navigate = useNavigate();
   const { session } = useAuth();
   const { data, isLoading, error, fetchClasses, isFetching, resetRateLimit } = useAdminData();
@@ -25,7 +24,6 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
 
   // Load data on component mount - only once
   useEffect(() => {
-    console.log("AdminClasses useEffect triggered.", { globalAdminClassesInitialized, classesLength: data.classes.length, isLoading });
     // טען רק אם לא טענו עדיין ואין נתונים ולא בטעינה
     if (!globalAdminClassesInitialized && data.classes.length === 0 && !isLoading) {
       globalAdminClassesInitialized = true;
@@ -84,7 +82,6 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
   };
 
   if (isLoading && data.classes.length === 0) {
-    console.log("AdminClasses: Loading state.");
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
@@ -102,7 +99,6 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
   }
 
   if (error && data.classes.length === 0) {
-    console.log("AdminClasses: Error state.", error);
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
@@ -139,7 +135,6 @@ export default function AdminClasses({ profile }: AdminClassesProps) {
     );
   }
 
-  console.log("AdminClasses: Main content rendered.", { classesLength: data.classes.length, isLoading, error });
   return (
     <div className="space-y-6">
       {/* Header */}

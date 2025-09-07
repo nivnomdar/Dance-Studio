@@ -193,24 +193,24 @@ function ClassesPage() {
           const firstName = nameParts[0] || '';
           const lastName = nameParts.slice(1).join(' ') || '';
 
-          // Check if profile already exists to avoid overwriting existing values
-          const existingProfileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=terms_accepted,marketing_consent`, {
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session?.access_token}`,
-            }
-          });
+          // Check if profile already exists to avoid overwriting existing values - REMOVED TERMS_ACCEPTED AND MARKETING_CONSENT FETCH
+          // const existingProfileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=terms_accepted,marketing_consent`, {
+          //   headers: {
+          //     'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          //     'Authorization': `Bearer ${session?.access_token}`,
+          //   }
+          // });
 
-          let existingTermsAccepted = false;
-          let existingMarketingConsent = false;
+          // let existingTermsAccepted = false;
+          // let existingMarketingConsent = false;
 
-          if (existingProfileResponse.ok) {
-            const existingProfileData = await existingProfileResponse.json();
-            if (existingProfileData.length > 0) {
-              existingTermsAccepted = existingProfileData[0].terms_accepted ?? false;
-              existingMarketingConsent = existingProfileData[0].marketing_consent ?? false;
-            }
-          }
+          // if (existingProfileResponse.ok) {
+          //   const existingProfileData = await existingProfileResponse.json();
+          //   if (existingProfileData.length > 0) {
+          //     existingTermsAccepted = existingProfileData[0].terms_accepted ?? false;
+          //     existingMarketingConsent = existingProfileData[0].marketing_consent ?? false;
+          //   }
+          // }
 
           const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
             method: 'POST',
@@ -229,9 +229,9 @@ function ClassesPage() {
               avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
               created_at: new Date().toISOString(),
               is_active: true,
-              // Preserve existing values if they exist, otherwise use defaults
-              terms_accepted: existingTermsAccepted,
-              marketing_consent: existingMarketingConsent,
+              // Removed explicit setting of terms_accepted and marketing_consent as they are managed in user_consents table
+              // terms_accepted: existingTermsAccepted,
+              // marketing_consent: existingMarketingConsent,
               last_login_at: new Date().toISOString(),
               language: 'he'
             })
@@ -251,8 +251,9 @@ function ClassesPage() {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             is_active: true,
-            terms_accepted: false, // User must explicitly accept terms
-            marketing_consent: false, // User must explicitly consent to marketing
+            // Removed explicit setting of terms_accepted and marketing_consent
+            // terms_accepted: false, // User must explicitly accept terms
+            // marketing_consent: false, // User must explicitly consent to marketing
             last_login_at: new Date().toISOString(),
             language: 'he'
           };
@@ -476,7 +477,7 @@ function ClassesPage() {
                       slidesPerView={'auto'}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length > 1}
+                      loop={classes.length >= 4}
                       watchSlidesProgress
                       virtualTranslate={false}
                       onSwiper={(swiper) => {
@@ -507,7 +508,7 @@ function ClassesPage() {
                       slidesPerView={1}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length > 2}
+                      loop={classes.length >= 4}
                       navigation
                       breakpoints={{
                         640: { slidesPerView: 1, spaceBetween: 20 },
@@ -543,7 +544,7 @@ function ClassesPage() {
                       slidesPerView={'auto'}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length > 1}
+                      loop={classes.length >= 4}
                       watchSlidesProgress
                       virtualTranslate={false}
                       onSwiper={(swiper) => {
@@ -574,7 +575,7 @@ function ClassesPage() {
                       slidesPerView={1}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length > 1}
+                      loop={classes.length >= 4}
                       navigation
                       breakpoints={{
                         640: { slidesPerView: 1, spaceBetween: 20 },

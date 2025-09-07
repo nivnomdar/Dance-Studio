@@ -53,13 +53,20 @@ export interface UserProfile {
   avatar_url?: string;
   role: 'user' | 'admin';
   is_active: boolean;
-  terms_accepted: boolean | undefined; // Allow undefined for temporary profiles
-  marketing_consent: boolean | undefined; // Allow undefined for temporary profiles
   last_login_at?: string;
   language: string;
   created_at: string;
   updated_at: string;
   has_used_trial_class?: boolean; // deprecated; kept optional for backward compatibility
+}
+
+export interface UserConsent {
+  id: number;
+  user_id: string;
+  consent_type: 'terms_and_privacy' | 'age_18' | 'health_declaration' | 'marketing' | 'registration_terms_and_privacy';
+  version: string | null;
+  consented_at: string;
+  registration_id: string | null;
 }
 
 // Auth state enum for better type safety

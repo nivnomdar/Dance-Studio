@@ -3,6 +3,7 @@ import { useAdminData } from '../../contexts';
 import type { UserProfile } from '../../../types/auth';
 import { RefreshButton } from '../../components';
 import CalendarDetailsModal from '../../modals/calender/CalendarDetailsModal';
+import { numberToHebrewDay, normalizeWeekdayToNumber } from '../../../utils/weekdaysUtils'; // Import numberToHebrewDay
 
 // Calendar Constants
 const HEBREW_MONTHS = [
@@ -10,7 +11,7 @@ const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
-const HEBREW_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+// Removed HEBREW_DAYS as getHebrewDayFromDate is used instead
 
 const OCCUPANCY_COLORS = {
   FULL: 'bg-green-500',
@@ -110,10 +111,6 @@ const getHebrewMonthName = (month: number): string => {
   return HEBREW_MONTHS[month];
 };
 
-const getHebrewDayName = (day: number): string => {
-  return HEBREW_DAYS[day];
-};
-
 const getCalendarOccupancyColor = (occupancyRate?: number) => {
   if (!occupancyRate) return OCCUPANCY_COLORS.LOW;
   
@@ -178,17 +175,41 @@ export default function AdminCalendar({}: AdminCalendarProps) {
     if (!data.sessions || !data.session_classes) return [];
     
     const [year, month, day] = dateKey.split('-').map(Number);
-    // Use Israel timezone
     const date = new Date(year, month - 1, day, 12, 0, 0);
-    // Get day of week in Israel timezone
-    const dayOfWeek = date.getDay();
-    
+
+    // Use Intl.DateTimeFormat to get timezone-adjusted year, month, day
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'numeric', // 'numeric' for month number (1-12)
+      day: 'numeric',
+      timeZone: 'Asia/Jerusalem'
+    });
+    const parts = formatter.formatToParts(date);
+
+    const yearPart = parseInt(parts.find(p => p.type === 'year')?.value || String(year));
+    const monthPart = parseInt(parts.find(p => p.type === 'month')?.value || String(month));
+    const dayPart = parseInt(parts.find(p => p.type === 'day')?.value || String(day));
+
+    // Create a new Date object using these timezone-adjusted components
+    // Note: monthPart is 1-indexed from Intl.DateTimeFormat, but Date constructor expects 0-indexed month
+    const timezoneAdjustedDate = new Date(
+      yearPart,
+      monthPart - 1, // Adjust to 0-indexed
+      dayPart,
+      12, 0, 0 // Set to noon to avoid daylight saving issues
+    );
+
+    const dayOfWeek = timezoneAdjustedDate.getDay(); // Get day of week from the timezone-adjusted date
+
     const daySessions = data.sessions.filter((session: any) => {
-      // Check if session is active on this day of week
-      if (!session.weekdays || !Array.isArray(session.weekdays)) return false;
-      
-      // weekdays is JSONB array like [3,4] where 0=Sunday, 1=Monday, etc.
-      return session.weekdays.includes(dayOfWeek);
+      // Check if session is active on this day of week AND if the session itself is active
+      if (!session.weekdays || !Array.isArray(session.weekdays) || !session.is_active) return false;
+
+      const matchesDay = session.weekdays.some((weekday: any) => {
+        const normalizedWeekday = normalizeWeekdayToNumber(weekday);
+        return normalizedWeekday === dayOfWeek;
+      });
+      return matchesDay;
     });
     
     return daySessions.map((session: any) => {
@@ -652,13 +673,15 @@ export default function AdminCalendar({}: AdminCalendarProps) {
         <div className="p-2 sm:p-4 md:p-6">
           {/* Day names header */}
           <div className="grid grid-cols-7 gap-1 sm:gap-1 md:gap-x-1 md:gap-y-2 mb-2 sm:mb-3 md:mb-4">
-            {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((dayLetter, index) => (
-              <div key={dayLetter} className="text-center min-h-[1.5rem] sm:min-h-[1.75rem] md:min-h-[2rem] flex items-center justify-center">
-                <span className="text-[11px] sm:text-xs md:text-sm font-medium text-gray-700">
-                  {isMobile ? dayLetter : getHebrewDayName(index)}
-                </span>
-              </div>
-            ))}
+            {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((dayLetter, index) => {
+              return (
+                <div key={dayLetter} className="text-center min-h-[1.5rem] sm:min-h-[1.75rem] md:min-h-[2rem] flex items-center justify-center">
+                  <span className="text-[11px] sm:text-xs md:text-sm font-medium text-gray-700">
+                    {isMobile ? dayLetter : numberToHebrewDay(index)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Calendar days (by week) */}

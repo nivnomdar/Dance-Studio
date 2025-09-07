@@ -26,14 +26,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // This is a placeholder and should be replaced with a proper logging solution
 // to avoid silencing console.log across the application.
 // Temporarily disable this override to enable debugging.
-/*
-console.log = (...args) => {
-  // console.debug("Supabase Log:", ...args);
-  // Implement custom logging logic here if needed
-  // For now, we are letting console.log pass through for debugging purposes.
-};
-*/
-
 // Optional: Expose supabase client to window for easier debugging
 // if (typeof window !== 'undefined') {
 //   (window as any).supabase = supabase;

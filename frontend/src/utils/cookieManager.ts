@@ -242,7 +242,6 @@ export class FrontendCookieManager {
 
     // אם זה לא Cookie הכרחי, בדוק הסכמה
     if (!isEssential && !this.canSetNonEssentialCookies()) {
-      console.log(`Cookie consent required for: ${name}`);
       return;
     }
 

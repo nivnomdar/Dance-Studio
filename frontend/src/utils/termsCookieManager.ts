@@ -36,13 +36,8 @@ export class TermsCookieManager {
     const cookieString = `${TERMS_COOKIE_NAME}=true; path=/; expires=${expiryDate.toUTCString()}; SameSite=Strict${domain ? `; domain=${domain}` : ''}`;
     document.cookie = cookieString;
     
-    console.log('TermsCookieManager: Set terms accepted cookie for user:', userId);
-    console.log('TermsCookieManager: Cookie string:', cookieString);
-    console.log('TermsCookieManager: Cookie expires:', expiryDate.toUTCString());
-    
     // Verify cookie was set
     const verification = this.getCookie(TERMS_COOKIE_NAME);
-    console.log('TermsCookieManager: Cookie verification after setting:', verification);
   }
 
   /**
@@ -76,7 +71,6 @@ export class TermsCookieManager {
   static clearTermsCookie(): void {
     // Clear cookie by setting it to expire immediately
     document.cookie = `${TERMS_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-    console.log('TermsCookieManager: Cleared terms cookie');
   }
 
   /**
@@ -106,7 +100,6 @@ export class TermsCookieManager {
           if (!cookieName.includes(currentUserId)) {
             // Remove old profile cookie
             document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-            console.log(`TermsCookieManager: Removed old profile cookie: ${cookieName}`);
           }
         }
       });
@@ -123,10 +116,8 @@ export class TermsCookieManager {
       // Remove old profile localStorage entries
       keysToRemove.forEach(key => {
         localStorage.removeItem(key);
-        console.log(`TermsCookieManager: Removed old profile localStorage: ${key}`);
       });
 
-      console.log('TermsCookieManager: Profile cache cleanup completed');
     } catch (error) {
       console.error('TermsCookieManager: Error during profile cache cleanup:', error);
     }
@@ -172,7 +163,6 @@ export class TermsCookieManager {
    */
   static emergencyCleanup(): void {
     try {
-      console.log('TermsCookieManager: Starting emergency cleanup...');
       
       // Clear all profile cookies
       const cookies = document.cookie.split(';');
@@ -181,7 +171,6 @@ export class TermsCookieManager {
         if (trimmedCookie.startsWith('profile_')) {
           const cookieName = trimmedCookie.split('=')[0];
           document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-          console.log(`TermsCookieManager: Removed cookie: ${cookieName}`);
         }
       });
 
@@ -196,10 +185,8 @@ export class TermsCookieManager {
 
       keysToRemove.forEach(key => {
         localStorage.removeItem(key);
-        console.log(`TermsCookieManager: Removed localStorage: ${key}`);
       });
 
-      console.log('TermsCookieManager: Emergency cleanup completed');
     } catch (error) {
       console.error('TermsCookieManager: Error during emergency cleanup:', error);
     }

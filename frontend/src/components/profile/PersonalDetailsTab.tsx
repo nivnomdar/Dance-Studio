@@ -1,4 +1,5 @@
 import React from 'react';
+import type { UserConsent } from '../../types/auth';
 
 interface PersonalDetailsTabProps {
   formData: {
@@ -9,9 +10,9 @@ interface PersonalDetailsTabProps {
     address: string;
     city: string;
     postalCode: string;
-    termsAccepted: boolean;
-    marketingConsent: boolean;
   };
+  userConsents: UserConsent[];
+  loadingConsents: boolean;
   isEditing: boolean;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -27,8 +28,12 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
   onInputChange,
   onCheckboxChange,
   onSubmit,
-  onToggleEdit
+  onToggleEdit,
+  userConsents,
+  loadingConsents,
 }) => {
+  const hasMarketingConsent = userConsents?.some(c => c.consent_type === 'marketing' && c.version === null) ?? false;
+
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden border border-[#EC4899]/10">
       {/* Form Header */}
@@ -208,9 +213,9 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
                     type="checkbox"
                     id="marketingConsent"
                     name="marketingConsent"
-                    checked={formData.marketingConsent}
+                    checked={hasMarketingConsent}
                     onChange={onCheckboxChange}
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading || loadingConsents}
                     className="w-4 h-4 text-[#EC4899] bg-white border-2 border-[#4B2E83]/30 rounded focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   />
                 </div>
@@ -220,14 +225,14 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
                   </label>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
-                      formData.marketingConsent 
+                      hasMarketingConsent
                         ? 'bg-green-100 text-green-700 border-green-200' 
                         : 'bg-gray-100 text-gray-600 border-gray-200'
                     }`}>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      {formData.marketingConsent ? 'רשומה לעדכונים' : 'לא רשומה לעדכונים'}
+                      {hasMarketingConsent ? 'רשומה לעדכונים' : 'לא רשומה לעדכונים'}
                     </span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#EC4899]/10 text-[#EC4899] border border-[#EC4899]/20">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor">

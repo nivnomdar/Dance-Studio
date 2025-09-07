@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { TermsCookieManager } from '../utils/termsCookieManager';
 
 interface TermsAcceptanceModalProps {
   isOpen: boolean;
   userId: string;
-  marketingConsent: boolean;
-  isNewUser: boolean;
+  marketingConsent?: boolean; 
+  isNewUser?: boolean; // Added this prop
   showWelcomeBack?: boolean; // New prop for existing users
   onAccept: () => void;
 }
@@ -14,8 +14,6 @@ interface TermsAcceptanceModalProps {
 export const TermsAcceptanceModal = ({ 
   isOpen, 
   userId,
-  marketingConsent,
-  isNewUser,
   showWelcomeBack = false, // Default to false for backward compatibility
   onAccept 
 }: TermsAcceptanceModalProps) => {
@@ -23,7 +21,6 @@ export const TermsAcceptanceModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -33,22 +30,6 @@ export const TermsAcceptanceModal = ({
       setShowSuccess(false);
     }
   }, [isOpen]);
-
-  // For existing users, show welcome back message immediately
-  useEffect(() => {
-    if (isOpen && showWelcomeBack) {
-      setShowSuccess(true);
-      
-      // Add minimum display time for welcome back modal
-      // This ensures users can read the message
-      const timer = setTimeout(() => {
-        // Allow modal to be closed after minimum time
-        console.log('TermsAcceptanceModal: Welcome back modal minimum display time completed');
-      }, 3000); // 3 seconds minimum
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, showWelcomeBack]);
 
   // No auto-close - let the user control when to go to home page
   // This prevents duplicate success handling
@@ -90,15 +71,11 @@ export const TermsAcceptanceModal = ({
       setIsLoading(true);
       setError(null);
 
-      console.log('Starting terms acceptance process...');
-
       // Get current session
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('לא מחובר למערכת');
       }
-
-      console.log('Session found, calling API...');
 
       // Call backend API to accept terms
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-terms`, {
@@ -110,22 +87,39 @@ export const TermsAcceptanceModal = ({
         // No body needed - backend gets userId from token
       });
 
-      console.log('API response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'שגיאה לא ידועה' }));
         throw new Error(errorData.message || 'שגיאה באישור התנאים');
       }
 
       const result = await response.json();
-      console.log('API result:', result);
       
       if (result.success) {
-        console.log('Terms accepted successfully!');
         
         // Set client-side cookie immediately for immediate access
         TermsCookieManager.setTermsAccepted(userId);
-        console.log('TermsCookieManager: Client-side cookie set for user:', userId);
+        
+        // Clear any cached profile data to force fresh load
+        const cacheKey = `profile_${userId}`;
+        try {
+          localStorage.removeItem(cacheKey);
+        } catch (error) {
+          console.warn('Could not clear profile cache:', error);
+        }
+        
+        // Also clear any profile cookies
+        try {
+          const cookies = document.cookie.split(';');
+          cookies.forEach(cookie => {
+            const trimmedCookie = cookie.trim();
+            if (trimmedCookie.startsWith('profile_')) {
+              const cookieName = trimmedCookie.split('=')[0];
+              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+            }
+          });
+        } catch (error) {
+          console.warn('Could not clear profile cookies:', error);
+        }
         
         // Note: Backend should also set httpOnly cookie for security
         // The client-side cookie is for immediate UI updates
@@ -141,54 +135,12 @@ export const TermsAcceptanceModal = ({
         
         // Verify cookie was set
         const cookieData = TermsCookieManager.getTermsAccepted();
-        console.log('TermsCookieManager: Cookie verification:', cookieData);
         
         // Show success message first
         setShowSuccess(true);
-        console.log('TermsAcceptanceModal: Success message set to true');
-        
-        // Update profile in Supabase directly to ensure immediate update
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            terms_accepted: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId);
-
-        if (updateError) {
-          console.error('Error updating profile directly:', updateError);
-        } else {
-          console.log('Profile updated directly in Supabase');
-          
-          // Clear any cached profile data to force fresh load
-          const cacheKey = `profile_${userId}`;
-          try {
-            localStorage.removeItem(cacheKey);
-            console.log('Cleared profile cache for immediate refresh');
-          } catch (error) {
-            console.warn('Could not clear profile cache:', error);
-          }
-          
-          // Also clear any profile cookies
-          try {
-            const cookies = document.cookie.split(';');
-            cookies.forEach(cookie => {
-              const trimmedCookie = cookie.trim();
-              if (trimmedCookie.startsWith('profile_')) {
-                const cookieName = trimmedCookie.split('=')[0];
-                document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-                console.log(`Cleared profile cookie: ${cookieName}`);
-              }
-            });
-          } catch (error) {
-            console.warn('Could not clear profile cookies:', error);
-          }
-        }
         
         // Don't call onAccept here - let the user see the success message first
         // onAccept will be called when they click the "Go to Home" button
-        console.log('TermsAcceptanceModal: Success flow completed, waiting for user to click home button');
       } else {
         throw new Error('שגיאה באישור התנאים');
       }
@@ -355,7 +307,6 @@ export const TermsAcceptanceModal = ({
               {/* Go to Home Button */}
               <button
                 onClick={() => {
-                  console.log('TermsAcceptanceModal: User clicked go to home button');
                   
                   if (showWelcomeBack) {
                     // For existing users, just close the modal

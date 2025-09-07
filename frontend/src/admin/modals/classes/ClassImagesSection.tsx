@@ -15,7 +15,6 @@ interface ClassImagesSectionProps {
 
 const ClassImagesSection = forwardRef<ClassImagesSectionHandle, ClassImagesSectionProps>(
   ({ imageUrl, onImageUrlChange, isOpen, onShowMessage }, ref) => {
-    // console.log("ClassImagesSection component RENDERING."); // Removed log
     const { session } = useAuth();
 
     // תמונות שנבחרו מקומית אך טרם הועלו

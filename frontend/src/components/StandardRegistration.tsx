@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaClock, FaCalendarAlt, FaSignInAlt } from 'react-icons/fa';
+import { FaClock, FaCalendarAlt, FaSignInAlt, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { registrationsService } from '../lib/registrations';
 import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +16,7 @@ import {
 import { getColorScheme } from '../utils/colorUtils';
 import { SkeletonBox } from './skeleton/SkeletonComponents';
 import { throttledApiFetch } from '../utils/api';
+import type { UserConsent } from '../types/auth';
 
 interface StandardRegistrationProps {
   classData: Class;
@@ -38,6 +39,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
   const [generalTermsAccepted, setGeneralTermsAccepted] = useState(false);
   const [ageConfirmationAccepted, setAgeConfirmationAccepted] = useState(false); // New state
   const [showFullHealthTerms, setShowFullHealthTerms] = useState(false);
+  // Removed userConsents state
+  const [loadingConsents, setLoadingConsents] = useState(true); // New state for loading consents
 
   // Prevent modal from closing automatically
   useEffect(() => {
@@ -65,6 +68,44 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
 
   // Derived - memoized for performance
   // const profile = useMemo(() => localProfile || contextProfile, [localProfile, contextProfile]);
+
+  // Fetch and set user consents
+  useEffect(() => {
+    const fetchConsentStatuses = async () => {
+      if (!user?.id || !session?.access_token) {
+        setLoadingConsents(false);
+        return;
+      }
+      try {
+        setLoadingConsents(true);
+        const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session!.access_token}`, // Added non-null assertion
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const consents: UserConsent[] = await response.json();
+          // Removed setUserConsents(consents);
+
+          // Update checkbox states based on fetched consents (for one-time consents)
+          setAgeConfirmationAccepted(consents.some(c => c.consent_type === 'age_18' && c.version === null));
+          setGeneralTermsAccepted(consents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null));
+          // health_declaration and registration_terms_and_privacy are per-registration, no global state needed
+        } else {
+          console.error('Failed to fetch consent statuses:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching consent statuses:', error);
+      } finally {
+        setLoadingConsents(false);
+      }
+    };
+
+    fetchConsentStatuses();
+  }, [user?.id, session?.access_token]); // Depend on user and session for re-fetch
 
   // Function to load all data at once for better performance
   const loadAllData = useCallback(async (classId: string) => {
@@ -310,7 +351,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       try {
         const response = await throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/registrations/my`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${session!.access_token}`, // Added non-null assertion
             'Content-Type': 'application/json'
           }
         });
@@ -469,12 +510,58 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
         used_credit: false, // Standard registration doesn't use credits
         credit_type: undefined, // No credit type for standard registrations
         purchase_price: classData.price, // Store the actual price paid
-        registration_terms_accepted: generalTermsAccepted,
-        health_declaration_accepted: healthDeclarationAccepted,
-        age_confirmation_accepted: ageConfirmationAccepted // New field
       };
       
-      await registrationsService.createRegistration(registrationData, session?.access_token);
+      const newRegistration = await registrationsService.createRegistration(registrationData, session!.access_token); // Added non-null assertion
+      
+      // Handle consents after successful registration
+      const consentPromises = [];
+
+      // Age confirmation (one-time, no registration_id, version: null)
+      if (ageConfirmationAccepted) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' }, // Added non-null assertion
+          body: JSON.stringify({ consent_type: 'age_18', version: null }),
+        }));
+      }
+
+      // Health declaration (per-registration, requires registration_id and version)
+      if (healthDeclarationAccepted && newRegistration?.id) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' }, // Added non-null assertion
+          body: JSON.stringify({ 
+            consent_type: 'health_declaration',
+            registration_id: newRegistration.id,
+            version: '1.0' // Assuming 1.0 for initial version
+          }),
+        }));
+      }
+
+      // General terms and privacy (per-registration, requires registration_id and version)
+      // For standard registration, this is also a per-registration consent.
+      if (generalTermsAccepted && newRegistration?.id) {
+        consentPromises.push(throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-terms`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session!.access_token}`, 'Content-Type': 'application/json' }, // Added non-null assertion
+          body: JSON.stringify({ 
+            consent_type: 'registration_terms_and_privacy', // Explicitly setting consent type for /accept-terms
+            registration_id: newRegistration.id,
+            version: '1.0' // Assuming 1.0 for initial version
+          }),
+        }));
+      }
+
+      // Execute all consent updates in parallel
+      const consentResponses = await Promise.allSettled(consentPromises);
+      consentResponses.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`Error accepting consent ${index}:`, result.reason);
+          // Decide how to handle this: show a warning to the user, log it, etc.
+          // For now, we proceed with registration success even if consent fails, but log the error.
+        }
+      });
       
       // שמירת הנתונים לפני האיפוס
       setSavedRegistrationData({
@@ -529,10 +616,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/v1/callback`,
-          queryParams: {
-            access_type: 'offline',
-          },
+          redirectTo: `${window.location.origin}/class/${classData.slug}` // Changed redirect to class slug
         }
       });
       
@@ -581,9 +665,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
+                  <FaExclamationTriangle className="h-5 w-5 text-red-400" />
         </div>
                 <div className="mr-3">
                   <h3 className="text-sm font-medium text-red-800">
@@ -596,7 +678,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               {/* Close button in top-right corner */}
               <button
                 onClick={() => {
-                  setShowRegistrationSuccess(false);
+                  setRegistrationError(null); // Clear error on close
                 }}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 aria-label="סגור"
@@ -618,7 +700,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 בחרי תאריך לשיעור *
               </label>
               <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                {loadingDates ? (
+                {(loadingDates || loadingConsents) ? ( // Added loadingConsents
                   Array.from({ length: 3 }).map((_, index) => (
                     <SkeletonBox key={index} className="h-16 rounded-xl" />
                   ))
@@ -640,6 +722,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                           setSelectedTime('');
                           setSpotsCache({});
                           setLoadingSpots({});
+                          setRegistrationError(null);
                         }}
                         className={`
                           p-1 lg:p-3 py-3 lg:py-5 rounded-xl border-2 transition-all duration-200 text-xs lg:text-sm font-bold relative h-16 flex items-center justify-center
@@ -697,7 +780,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                   בחרי שעה לשיעור *
                 </label>
                 <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                  {loadingTimes ? (
+                  {(loadingTimes || loadingConsents) ? ( // Added loadingConsents
                     Array.from({ length: 3 }).map((_, index) => (
                       <SkeletonBox key={index} className="h-16 rounded-xl" />
                     ))
@@ -857,7 +940,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
               </label>
             </div>
 
-            {/* Health Declaration and Age 18+ Checkbox */}
+            {/* Health Declaration Checkbox */}
             <div className="mt-4">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
@@ -919,22 +1002,22 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
                 const spotsData = spotsCache[spotsKey] || {};
                 const spotsInfo = spotsData[selectedTime];
                 return spotsInfo?.available === 0;
-              })()}
+              })() || loadingConsents} // Added loadingConsents
               className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl mt-6 ${
                 selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && ageConfirmationAccepted && !isSubmitting && (() => {
                   const spotsKey = classData.id + '_' + selectedDate;
                   const spotsData = spotsCache[spotsKey] || {};
                   const spotsInfo = spotsData[selectedTime];
                   return spotsInfo?.available !== 0;
-                })()
+                })() && !loadingConsents // Added loadingConsents
                   ? `${colors.bgColor} ${colors.hoverColor} text-white`
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              {isSubmitting ? (
+              {(isSubmitting || loadingConsents) ? ( // Added loadingConsents
                 <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></div>
-                  מבצע זימון שיעור...
+                  <FaSpinner className="animate-spin h-5 w-5 text-white ml-2" />
+                  {loadingConsents ? 'טוען הסכמות...' : 'מבצע זימון שיעור...'}
                 </div>
               ) : !selectedDate ? 'בחרי תאריך תחילה' : !selectedTime ? 'בחרי שעה' : !formData.first_name ? 'מלאי שם פרטי' : !formData.last_name ? 'מלאי שם משפחה' : !formData.phone ? 'מלאי מספר טלפון' : (() => {
                 const spotsKey = classData.id + '_' + selectedDate;

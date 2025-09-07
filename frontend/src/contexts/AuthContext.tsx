@@ -1,30 +1,31 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { 
-  AuthContextType, 
-  UserProfile, 
-  SafeUser, 
-  SafeSession, 
+import {
+  AuthContextType,
+  UserProfile,
+  SafeUser,
+  SafeSession,
   AuthState,
-  AuthEvent 
+  AuthEvent
 } from '../types/auth';
 import {
   createSafeSession,
   handleAuthError
 } from '../utils/authUtils';
-import { 
-  setDataWithTimestamp, 
-  getDataWithTimestamp, 
-  hasCookie, 
-  clearAllCookies 
+import {
+  setDataWithTimestamp,
+  getDataWithTimestamp,
+  hasCookie,
+  clearAllCookies,
+  frontendCookieManager // Added this import
 } from '../utils/cookieManager';
 import { TermsCookieManager } from '../utils/termsCookieManager';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  
+
   // State
   const [user, setUser] = useState<SafeUser | null>(null);
   const [session, setSession] = useState<SafeSession | null>(null);
@@ -32,11 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [, setAuthState] = useState<AuthState>(AuthState.LOADING);
-  
+
   // Refs for rate limiting and timeouts
   const lastProfileUpdateRef = useRef<number>(0);
   const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Function refs to prevent re-renders
   const loadProfileSafelyRef = useRef<((userId: string, forceRefresh?: boolean) => Promise<UserProfile | null>) | null>(null);
   const createProfileForUserRef = useRef<((safeUser: SafeUser) => Promise<UserProfile | null>) | null>(null);
@@ -65,12 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set flag to prevent other processes from creating profile
       setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
 
-      // Check if profile already exists to avoid overwriting existing values
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('terms_accepted, marketing_consent')
-        .eq('id', safeUser.id)
-        .maybeSingle();
+      // Check if profile already exists to avoid overwriting existing values - removed terms_accepted, marketing_consent
+      // No need to fetch existingProfile explicitly, upsert handles conflicts by 'id'
+      // Removed explicit select of 'id' and 'maybeSingle()' as it's redundant with upsert on 'id'
 
       const avatarUrl = safeUser.user_metadata?.avatar_url || '';
       const profileData = {
@@ -82,18 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatar_url: avatarUrl,
         created_at: new Date().toISOString(),
         is_active: true,
-        // Preserve existing values if they exist, otherwise use defaults
-        terms_accepted: existingProfile?.terms_accepted ?? false,
-        marketing_consent: existingProfile?.marketing_consent ?? false,
+        // Removed explicit setting of terms_accepted and marketing_consent as they are managed in user_consents table
         last_login_at: new Date().toISOString(),
         language: 'he'
       };
 
       const { data: newProfile, error: createError } = await supabase
         .from('profiles')
-        .upsert([profileData], { 
+        .upsert([profileData], {
           onConflict: 'id',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false
         })
         .select()
         .maybeSingle();
@@ -116,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Always remove the flag
       const creatingKey = `creating_profile_${safeUser.id}`;
-      clearAllCookies(); // זה ימחק את כל ה-cookies כולל הדגל
+      frontendCookieManager.removeCookie(creatingKey); // Remove only the specific flag cookie
     }
   }, []);
 
@@ -136,20 +132,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!forceRefresh) {
         const cachedProfile = getDataWithTimestamp<UserProfile>(cacheKey, 5 * 60 * 1000);
         if (cachedProfile) {
-          console.log('Using cached profile data');
           return cachedProfile;
         }
       } else {
         // Clear cache if forcing refresh
         try {
           localStorage.removeItem(cacheKey);
-          console.log('Cleared profile cache for forced refresh');
         } catch (error) {
           console.warn('Could not clear profile cache:', error);
         }
       }
 
-      console.log('Loading fresh profile data from Supabase');
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
@@ -177,7 +170,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Cache the profile
       setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
-      console.log('Profile data cached:', profileData.terms_accepted);
 
       return profileData;
     } catch (error) {
@@ -230,8 +222,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       is_active: true,
       // Don't set hardcoded values for consent fields - they will be loaded from database
       // Set to undefined instead of false to prevent wrong modal from showing
-      terms_accepted: undefined, // Will be updated when real profile loads
-      marketing_consent: undefined, // Will be updated when real profile loads
       last_login_at: new Date().toISOString(),
       language: 'he',
       has_used_trial_class: false,
@@ -274,15 +264,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const profileData = await loadProfileSafelyRef.current?.(safeUser.id, false);
         if (profileData) {
           setProfile(profileData);
-          
+
           // Clean up old cookies and validate current user data
           TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
-          
+
           // Don't auto-update terms cookie for existing users
           // This allows the welcome back modal to stay open
           // Cookie will be updated when user closes the modal
-          console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
-          
+
           // Cache the profile
           const cacheKey = `profile_${safeUser.id}`;
           setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
@@ -303,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthState(AuthState.LOADING);
 
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.error('Error getting session:', error);
         setAuthState(AuthState.ERROR);
@@ -323,11 +312,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (profileData) {
           // Clean up old cookies and validate current user data
           TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
-          
+
           // Don't auto-update terms cookie for existing users
           // This allows the welcome back modal to stay open
           // Cookie will be updated when user closes the modal
-          console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
+
         }
         setProfile(profileData || null);
       } else {
@@ -351,7 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setAuthState(AuthState.UNAUTHENTICATED);
       }, 0);
-      
+
       // Clear timeouts
       if (profileUpdateTimeoutRef.current) {
         clearTimeout(profileUpdateTimeoutRef.current);
@@ -365,13 +354,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.removeItem(key);
             }
           });
-          
+
           // Clear all cookies
           clearAllCookies();
-          
+
           // Clear terms cookie
           TermsCookieManager.clearTermsCookie();
-          
+
           // Clear any remaining profile cookies
           const cookies = document.cookie.split(';');
           cookies.forEach(cookie => {
@@ -406,11 +395,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileData) {
         // Clean up old cookies and validate current user data
         TermsCookieManager.validateAndCleanupTermsCookie(user.id);
-        
+
         // Don't auto-update terms cookie for existing users
         // This allows the welcome back modal to stay open
         // Cookie will be updated when user closes the modal
-        console.log('AuthContext: Profile loaded, but not auto-updating cookie to allow modal display');
+
       }
       setProfile(profileData || null);
     } catch (error) {
@@ -430,7 +419,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthEvent, session: Session | null) => {
-        
+
         const safeSession = createSafeSession(session);
         const safeUser = safeSession?.user || null;
 
@@ -439,7 +428,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(safeSession);
           setUser(safeUser);
         }, 0);
-        
+
         switch (event) {
           case 'SIGNED_OUT':
             setTimeout(() => {
