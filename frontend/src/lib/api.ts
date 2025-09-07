@@ -653,6 +653,34 @@ export const apiService = {
       );
     },
 
+    async getById(id: string): Promise<any | null> {
+      try {
+        const response = await fetch(`${API_BASE_URL}/sessions/${id}`);
+        if (response.status === 404) {
+          return null; // Session not found
+        }
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if ((errorData as any)?.message) errorMessage = (errorData as any).message;
+            else if ((errorData as any)?.error) errorMessage = (errorData as any).error;
+          } catch {}
+          throw new Error(errorMessage);
+        }
+        return (await response.json()) as any;
+      } catch (error) {
+        console.error('Sessions API getById error:', error);
+        return null;
+      }
+    },
+
+    async getCapacity(classId: string, date: string, time: string): Promise<any> {
+      return fetchWithRetryAndQueue<any>(() => 
+        fetch(`${API_BASE_URL}/sessions/capacity/${classId}/${date}/${time}`)
+      );
+    },
+
     // Session Classes Management
     async getAllSessionClasses(): Promise<any[]> {
       const headers = await getAuthHeaders();

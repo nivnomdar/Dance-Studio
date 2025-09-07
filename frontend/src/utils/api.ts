@@ -6,9 +6,8 @@ interface EndpointThrottle {
 }
 
 const endpointThrottles: Map<string, EndpointThrottle> = new Map();
-const MIN_REQUEST_INTERVAL = 2000; // 2 seconds base interval
-const MAX_REQUEST_INTERVAL = 10000; // 10 seconds max interval
-const MAX_REQUESTS_PER_MINUTE = 30; // Max requests per minute per endpoint
+const MIN_REQUEST_INTERVAL = 5000; // 5 seconds base interval
+const MAX_REQUEST_INTERVAL = 30000; // 30 seconds max interval
 const BACKOFF_MULTIPLIER = 1.5; // Exponential backoff multiplier
 
 /**
@@ -52,13 +51,8 @@ const calculateDelay = (endpointKey: string): number => {
     MAX_REQUEST_INTERVAL
   );
   
-  // If we've made too many requests recently, increase delay
-  if (throttle.requestCount > MAX_REQUESTS_PER_MINUTE) {
-    return Math.max(baseDelay, 5000); // At least 5 seconds
-  }
-  
-  // If enough time has passed, reset backoff
-  if (timeSinceLastRequest > 60000) { // 1 minute
+  // If enough time has passed (1 minute), reset backoff and request count.
+  if (timeSinceLastRequest > 60000) { 
     throttle.backoffMultiplier = 1;
     throttle.requestCount = 0;
   }
@@ -74,12 +68,12 @@ const updateThrottle = (endpointKey: string, success: boolean): void => {
   throttle.lastRequestTime = Date.now();
   
   if (success) {
-    // Reset backoff on success
-    throttle.backoffMultiplier = Math.max(1, throttle.backoffMultiplier / 1.2);
-    throttle.requestCount++;
+    // Reset backoff more aggressively on success, but ensure it doesn't go below 1
+    throttle.backoffMultiplier = Math.max(1, throttle.backoffMultiplier / 1.5); 
+    throttle.requestCount++; // Increment only on successful requests (non-429 handling)
   } else {
-    // Increase backoff on failure
-    throttle.backoffMultiplier = Math.min(10, throttle.backoffMultiplier * BACKOFF_MULTIPLIER);
+    // For non-429 failures, reset backoff or slightly increase for general errors
+    throttle.backoffMultiplier = Math.max(1, throttle.backoffMultiplier * 1.1); // Slight increase for non-429 errors
   }
 };
 
@@ -88,49 +82,49 @@ const updateThrottle = (endpointKey: string, success: boolean): void => {
  */
 export const throttledApiFetch = async (url: string, options?: RequestInit): Promise<Response> => {
   const endpointKey = getEndpointKey(url);
-  const delay = calculateDelay(endpointKey);
-  
-  // Debug logging
-  if (delay > 0) {
-            // console.log(`Throttling ${endpointKey}: waiting ${delay}ms`);
-  }
-  
-  // Wait if needed
-  if (delay > 0) {
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-  
-  try {
-    const response = await fetch(url, options);
-    
-    // Update throttle based on response
-    const success = response.ok || response.status === 429; // Don't penalize for 429s
-    updateThrottle(endpointKey, success);
-    
-    // If we get a 429, increase backoff for this endpoint
-    if (response.status === 429) {
-      const throttle = getEndpointThrottle(endpointKey);
-      throttle.backoffMultiplier = Math.min(10, throttle.backoffMultiplier * 2);
-      
-      console.warn(`Rate limited (429) for ${endpointKey}. Backoff multiplier: ${throttle.backoffMultiplier}`);
-      
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      // Retry once with exponential backoff
-      const retryDelay = Math.min(10000, MIN_REQUEST_INTERVAL * throttle.backoffMultiplier);
-              // console.log(`Retrying ${endpointKey} after ${retryDelay}ms`);
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-      
-      const retryResponse = await fetch(url, options);
-      updateThrottle(endpointKey, retryResponse.ok);
-      return retryResponse;
+  let currentThrottle = getEndpointThrottle(endpointKey);
+  const maxRetries = 5; // Allow up to 5 retries for 429 errors
+  let retries = 0;
+
+  while (true) {
+    const delay = calculateDelay(endpointKey);
+
+    // Debug logging
+    if (delay > 0) {
+      console.log(`Throttling ${endpointKey}: waiting ${delay}ms`);
     }
-    
-    return response;
-  } catch (error) {
-    updateThrottle(endpointKey, false);
-    throw error;
+
+    // Wait if needed
+    if (delay > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    try {
+      const response = await fetch(url, options);
+
+      if (response.status === 429) {
+        retries++;
+        if (retries <= maxRetries) {
+          // Only increase backoff for 429s, and this is the main place it should happen
+          currentThrottle.backoffMultiplier = Math.min(10, currentThrottle.backoffMultiplier * BACKOFF_MULTIPLIER);
+          console.warn(`Rate limited (429) for ${endpointKey}. Retrying ${retries}/${maxRetries} after backoff multiplier: ${currentThrottle.backoffMultiplier}`);
+          continue; // Go to next iteration of while loop to re-calculate delay and retry
+        } else {
+          console.error(`Max retries reached for ${endpointKey}. Aborting request.`);
+          updateThrottle(endpointKey, false); // Mark as failure after max retries
+          throw new Error(`HTTP 429: Too many requests, please try again later.`);
+        }
+      }
+
+      // For non-429 responses, update throttle normally
+      // Success is determined by response.ok, not just !429
+      updateThrottle(endpointKey, response.ok);
+      return response;
+    } catch (error) {
+      console.error(`Error in throttledApiFetch for ${endpointKey}:`, error);
+      updateThrottle(endpointKey, false); // Mark as failure
+      throw error;
+    }
   }
 };
 

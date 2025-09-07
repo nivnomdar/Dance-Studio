@@ -21,6 +21,7 @@ import {
   frontendCookieManager // Added this import
 } from '../utils/cookieManager';
 import { TermsCookieManager } from '../utils/termsCookieManager';
+import { throttledApiFetch } from '../utils/api'; // Added this import
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -35,7 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [, setAuthState] = useState<AuthState>(AuthState.LOADING);
 
   // Refs for rate limiting and timeouts
-  const lastProfileUpdateRef = useRef<number>(0);
   const profileUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Function refs to prevent re-renders
@@ -85,15 +85,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         language: 'he'
       };
 
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .upsert([profileData], {
-          onConflict: 'id',
-          ignoreDuplicates: false
-        })
-        .select()
-        .maybeSingle();
-
+      // Use throttledApiFetch for profile creation
+      const { data: newProfile, error: createError } = await (async () => {
+        const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
+          method: 'POST',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(profileData)
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to create profile: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        return { data: data[0], error: null }; // Supabase returns an array for inserts
+      })();
+      
       if (createError) {
         handleAuthError(createError, 'create profile');
         return null;
@@ -143,12 +154,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
+      // Use throttledApiFetch for profile loading
+      const { data: profileData, error } = await (async () => {
+        const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${userId}`, {
+          method: 'GET',
+          headers: {
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${session?.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch profile: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        return { data: data[0], error: null }; // Supabase returns an array for selects
+      })();
+      
       if (error) {
         console.error('Error loading profile:', error);
         return null;
@@ -186,104 +209,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!userId) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', userId);
+      // Use throttledApiFetch for updating last_login_at
+      const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal' // No need to return data for this update
+        },
+        body: JSON.stringify({ last_login_at: new Date().toISOString() })
+      });
 
-      if (error) {
-        console.error('Error updating last login time:', error);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error updating last login time:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error in updateProfileLoginTime:', error);
     }
-  }, []);
+  }, [session]); // Depend on session to get access_token
 
   // Store function in ref immediately
   updateProfileLoginTimeRef.current = updateProfileLoginTime;
-
-  // Handle profile operations with rate limiting
-  const handleProfileOperations = useCallback(async (safeUser: SafeUser, _event: AuthEvent) => {
-    if (!safeUser?.id) {
-      console.error('Cannot handle profile operations: user ID is missing');
-      return;
-    }
-
-    // Create a temporary profile immediately for better UX
-    const tempProfile: UserProfile = {
-      id: safeUser.id,
-      email: safeUser.email || '',
-      first_name: safeUser.user_metadata?.full_name?.split(' ')[0] || '',
-      last_name: safeUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-      role: 'user',
-      avatar_url: safeUser.user_metadata?.avatar_url || safeUser.user_metadata?.picture || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_active: true,
-      // Don't set hardcoded values for consent fields - they will be loaded from database
-      // Set to undefined instead of false to prevent wrong modal from showing
-      last_login_at: new Date().toISOString(),
-      language: 'he',
-      has_used_trial_class: false,
-      phone_number: '',
-      address: '',
-      city: '',
-      postal_code: ''
-    };
-
-    // Set temporary profile immediately
-    setProfile(tempProfile);
-
-    // Rate limiting check
-    const now = Date.now();
-    if (now - lastProfileUpdateRef.current < 15000) {
-      return;
-    }
-    lastProfileUpdateRef.current = now;
-
-    // Clear existing timeout
-    if (profileUpdateTimeoutRef.current) {
-      clearTimeout(profileUpdateTimeoutRef.current);
-    }
-
-    // Delay profile operations to prevent rate limiting
-    profileUpdateTimeoutRef.current = setTimeout(async () => {
-      try {
-        // Test connection first
-        const { error: testError } = await supabase
-          .from('profiles')
-          .select('count')
-          .limit(1);
-
-        if (testError) {
-          console.error('Connection test failed:', testError);
-          return;
-        }
-
-        // Load or create profile in background
-        const profileData = await loadProfileSafelyRef.current?.(safeUser.id, false);
-        if (profileData) {
-          setProfile(profileData);
-
-          // Clean up old cookies and validate current user data
-          TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
-
-          // Don't auto-update terms cookie for existing users
-          // This allows the welcome back modal to stay open
-          // Cookie will be updated when user closes the modal
-
-          // Cache the profile
-          const cacheKey = `profile_${safeUser.id}`;
-          setDataWithTimestamp(cacheKey, profileData, 5 * 60 * 1000);
-        }
-
-        // Update last login time
-        await updateProfileLoginTimeRef.current?.(safeUser.id);
-      } catch (error) {
-        console.error('Error in handleProfileOperations:', error);
-      }
-    }, 1000);
-  }, []);
 
   // Initialize auth state
   const initializeAuth = useCallback(async () => {
@@ -307,16 +255,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (safeUser) {
         setAuthState(AuthState.AUTHENTICATED);
-        // Load profile
+        // Load profile here, this is the main place to do it.
         const profileData = await loadProfileSafelyRef.current?.(safeUser.id, false);
         if (profileData) {
           // Clean up old cookies and validate current user data
           TermsCookieManager.validateAndCleanupTermsCookie(safeUser.id);
-
-          // Don't auto-update terms cookie for existing users
-          // This allows the welcome back modal to stay open
-          // Cookie will be updated when user closes the modal
-
         }
         setProfile(profileData || null);
       } else {
@@ -447,12 +390,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (safeUser) {
               setTimeout(() => {
                 setAuthState(AuthState.AUTHENTICATED);
-                setProfileLoading(true);
+                // setProfileLoading(true);
               }, 0);
-              await handleProfileOperations(safeUser, event);
-              setTimeout(() => {
-                setProfileLoading(false);
-              }, 0);
+              // Profile loading is handled by initializeAuth
+              // await handleProfileOperations(safeUser, event);
+              // setTimeout(() => {
+              //   setProfileLoading(false);
+              // }, 0);
             }
             break;
 
@@ -481,7 +425,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(profileUpdateTimeoutRef.current);
       }
     };
-  }, [handleProfileOperations]);
+  }, []);
 
   // Context value
   const value: AuthContextType = useMemo(() => {

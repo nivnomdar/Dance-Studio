@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { UserProfile, UserConsent } from '../types/auth';
-import { supabase } from '../lib/supabase';
 import {
   setDataWithTimestamp,
-  hasCookie
+  hasCookie,
+  getCookie
 } from '../utils/cookieManager';
 import { throttledApiFetch } from '../utils/api'; // Import throttledApiFetch
 
@@ -37,21 +37,52 @@ export function useProfile(): UseProfileReturn {
         return;
       }
 
+      // Check for cached consents first
+      const consentsCacheKey = `consents_${user.id}`;
+      const cachedConsents = getCookie(consentsCacheKey);
+      let fetchedConsents: UserConsent[] = [];
+      let consentsPromise: Promise<Response>;
+
+      if (cachedConsents) {
+        try {
+        const parsedConsents = JSON.parse(cachedConsents);
+        if (Array.isArray(parsedConsents)) {
+          fetchedConsents = parsedConsents;
+        } else if (parsedConsents) {
+          // If it's a single object, wrap it in an array
+          fetchedConsents = [parsedConsents];
+        }
+        consentsPromise = Promise.resolve(new Response(JSON.stringify(fetchedConsents), { status: 200 }));
+        } catch (parseError) {
+          console.error("Error parsing cached consents, fetching fresh:", parseError);
+          // Fallback to fetching fresh if parsing fails
+          consentsPromise = throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+        }
+      } else {
+        consentsPromise = throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+
       const [profileResponse, consentsResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+        throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           }
         }),
-        throttledApiFetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        })
+        consentsPromise
       ]);
       
       if (!profileResponse.ok) {
@@ -59,13 +90,24 @@ export function useProfile(): UseProfileReturn {
         throw new Error(`HTTP ${profileResponse.status}: ${errorText}`);
       }
 
-      if (!consentsResponse.ok) {
+      if (!cachedConsents && !consentsResponse.ok) {
         const errorText = await consentsResponse.text();
         throw new Error(`HTTP ${consentsResponse.status}: ${errorText}`);
       }
 
       const profileDataArray = await profileResponse.json();
-      const fetchedConsents: UserConsent[] = await consentsResponse.json();
+      // Only parse consents if not from cache
+      if (!cachedConsents) {
+        const responseData = await consentsResponse.json();
+        if (Array.isArray(responseData)) {
+          fetchedConsents = responseData;
+        } else if (responseData) {
+          fetchedConsents = [responseData]; // Ensure it's an array
+        } else {
+          fetchedConsents = [];
+        }
+        setDataWithTimestamp(consentsCacheKey, fetchedConsents, 5 * 60 * 1000); // Cache for 5 minutes
+      }
 
       if (profileDataArray && profileDataArray.length > 0) {
         const profileData = profileDataArray[0];
@@ -123,7 +165,7 @@ export function useProfile(): UseProfileReturn {
       };
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
+        const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
           method: 'POST',
           headers: {
             'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -151,7 +193,7 @@ export function useProfile(): UseProfileReturn {
         
         // Final attempt to load existing profile
         try {
-          const finalResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
+          const finalResponse = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
             headers: {
               'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
               'Authorization': `Bearer ${session.access_token}`,
@@ -203,30 +245,6 @@ export function useProfile(): UseProfileReturn {
       return;
     }
 
-    // Create temporary profile immediately for better UX
-    const tempProfile: UserProfile = {
-      id: user.id,
-      email: user.email || '',
-      first_name: user.user_metadata?.full_name?.split(' ')[0] || '',
-      last_name: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-      role: 'user',
-      avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_active: true,
-      last_login_at: new Date().toISOString(),
-      language: 'he',
-      has_used_trial_class: false,
-      phone_number: '',
-      address: '',
-      city: '',
-      postal_code: ''
-    };
-
-    // Set temporary profile immediately and set loading to false
-    setLocalProfile(tempProfile);
-    setIsLoadingProfile(false);
-    
     // Load real profile in background
     loadProfileWithFetch();
   }, [user?.id, authLoading, session, loadProfileWithFetch]);

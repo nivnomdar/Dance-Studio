@@ -101,27 +101,29 @@ function ClassesPage() {
     } catch (err: any) {
 
       
-      // Handle rate limiting with exponential backoff
-      if (err instanceof Error && (err.message.includes('429') || err.message.includes('Too Many Requests'))) {
-        if (retryAttempt < 3) {
-          const delay = Math.pow(2, retryAttempt + 1) * 1000; // 2s, 4s, 8s
-          setError(`יותר מדי בקשות. מנסה שוב בעוד ${delay/1000} שניות... (ניסיון ${retryAttempt + 1}/4)`);
-          
-          setTimeout(() => {
-            fetchClasses(false, retryAttempt + 1);
-          }, delay);
-          return;
-        } else {
-          setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
-          setRetryCount(retryAttempt);
-        }
-      } else if (err instanceof Error && err.message.includes('Failed to fetch')) {
-        setError('השרת לא זמין. אנא ודא שהשרת פועל ונסה שוב.');
-      } else if (err instanceof Error && err.message.includes('Request timeout')) {
-        setError('הבקשה ארכה זמן רב מדי. אנא נסי שוב.');
-      } else {
-        setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעורים');
-      }
+      // Error handling is now centralized in throttledApiFetch
+      // if (err instanceof Error && (err.message.includes('429') || err.message.includes('Too Many Requests'))) {
+      //   if (retryAttempt < 3) {
+      //     const delay = Math.pow(2, retryAttempt + 1) * 1000; // 2s, 4s, 8s
+      //     setError(`יותר מדי בקשות. מנסה שוב בעוד ${delay/1000} שניות... (ניסיון ${retryAttempt + 1}/4)`);
+      //     
+      //     setTimeout(() => {
+      //       fetchClasses(false, retryAttempt + 1);
+      //     }, delay);
+      //     return;
+      //   } else {
+      //     setError('יותר מדי בקשות. אנא המתן מספר דקות ונסה שוב.');
+      //     setRetryCount(retryAttempt);
+      //   }
+      // } else if (err instanceof Error && err.message.includes('Failed to fetch')) {
+      //   setError('השרת לא זמין. אנא ודא שהשרת פועל ונסה שוב.');
+      // } else if (err instanceof Error && err.message.includes('Request timeout')) {
+      //   setError('הבקשה ארכה זמן רב מדי. אנא נסי שוב.');
+      // } else {
+      //   setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעורים');
+      // }
+
+      setError(err instanceof Error ? err.message : 'שגיאה בטעינת השיעורים');
     } finally {
       isFetchingRef.current = false;
     }
@@ -148,131 +150,6 @@ function ClassesPage() {
       fetchClasses(true);
     }
   }, [user, fetchClasses]);
-
-  // Load profile if not available in context
-  useEffect(() => {
-    if (!user || authLoading) {
-      return;
-    }
-    
-    // Use context profile if available
-    if (contextProfile) {
-      setLocalProfile(contextProfile);
-      return;
-    }
-    
-    // Don't load if already loading
-    if (isLoadingProfile) {
-      return;
-    }
-    
-    // Load profile directly from Supabase
-    const loadProfileWithFetch = async () => {
-      try {
-        setIsLoadingProfile(true);
-        
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user.id}`, {
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-        
-        const profileDataArray = await response.json();
-        
-        if (profileDataArray.length === 0) {
-          // Create new profile if doesn't exist
-          const fullName = user.user_metadata?.full_name || user.user_metadata?.name || '';
-          const nameParts = fullName.split(' ').filter(Boolean);
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
-
-          // Check if profile already exists to avoid overwriting existing values - REMOVED TERMS_ACCEPTED AND MARKETING_CONSENT FETCH
-          // const existingProfileResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=terms_accepted,marketing_consent`, {
-          //   headers: {
-          //     'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-          //     'Authorization': `Bearer ${session?.access_token}`,
-          //   }
-          // });
-
-          // let existingTermsAccepted = false;
-          // let existingMarketingConsent = false;
-
-          // if (existingProfileResponse.ok) {
-          //   const existingProfileData = await existingProfileResponse.json();
-          //   if (existingProfileData.length > 0) {
-          //     existingTermsAccepted = existingProfileData[0].terms_accepted ?? false;
-          //     existingMarketingConsent = existingProfileData[0].marketing_consent ?? false;
-          //   }
-          // }
-
-          const createResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
-            method: 'POST',
-            headers: {
-              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${session?.access_token}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'resolution=merge-duplicates'
-            },
-            body: JSON.stringify({
-              id: user.id,
-              email: user.email,
-              first_name: firstName,
-              last_name: lastName,
-              role: 'user',
-              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
-              created_at: new Date().toISOString(),
-              is_active: true,
-              // Removed explicit setting of terms_accepted and marketing_consent as they are managed in user_consents table
-              // terms_accepted: existingTermsAccepted,
-              // marketing_consent: existingMarketingConsent,
-              last_login_at: new Date().toISOString(),
-              language: 'he'
-            })
-          });
-          
-          if (!createResponse.ok) {
-            const createErrorText = await createResponse.text();
-            throw new Error(`Create failed: ${createErrorText}`);
-          }
-          
-          const newProfile: UserProfile = {
-            id: user.id,
-            email: user.email || '',
-            first_name: firstName,
-            last_name: lastName,
-            role: 'user',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            is_active: true,
-            // Removed explicit setting of terms_accepted and marketing_consent
-            // terms_accepted: false, // User must explicitly accept terms
-            // marketing_consent: false, // User must explicitly consent to marketing
-            last_login_at: new Date().toISOString(),
-            language: 'he'
-          };
-          
-          setLocalProfile(newProfile);
-        } else {
-          const profileData = profileDataArray[0];
-          setLocalProfile(profileData);
-        }
-        
-        setIsLoadingProfile(false);
-      } catch (error) {
-
-        setIsLoadingProfile(false);
-      }
-    };
-    
-    loadProfileWithFetch();
-  }, [user?.id, authLoading, contextProfile, session, isLoadingProfile]);
 
   // Load per-class trial usage for current user
   useEffect(() => {

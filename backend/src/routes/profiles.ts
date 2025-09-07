@@ -35,10 +35,11 @@ router.post('/accept-terms', auth, termsAcceptanceLimiter, async (req: Request, 
     }
 
     const { version, registration_id } = req.body; // Expect version and potentially registration_id
+    const request_consent_type = req.body.consent_type; // Get consent_type from request body
 
     const commonConsentData: any = {
       user_id: user.sub,
-      consent_type: 'terms_and_privacy',
+      consent_type: request_consent_type || 'terms_and_privacy', // Use request_consent_type if provided, else default
       consented_at: new Date().toISOString(),
     };
 
@@ -285,8 +286,20 @@ router.get('/me', async (req: Request, res: Response, _next: NextFunction) => {
   }
 });
 
+// Rate limiting for fetching user consents
+const getConsentsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15, // Allow 15 attempts per minute (can be adjusted)
+  message: {
+    error: 'Too many requests to fetch consents. Please try again later.',
+    retryAfter: '60 seconds'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // New endpoint to fetch all user consents
-router.get('/consents', auth, async (req: Request, res: Response, _next: NextFunction) => {
+router.get('/consents', auth, getConsentsLimiter, async (req: Request, res: Response, _next: NextFunction) => {
   try {
     const user = (req as any).user;
 

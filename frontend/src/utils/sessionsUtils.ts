@@ -1,6 +1,6 @@
 import { Session } from '../types/sessions';
 import { BOOKING_DAYS_AHEAD } from '../config/booking';
-import { API_BASE_URL, CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
+import { CACHE_DURATION, DAY_NAMES_EN, DAY_NAMES_HE, TIMEOUTS, createTimeoutPromise } from './constants';
 import { apiService } from '../lib/api';
 import { isSessionActiveOnDay } from './weekdaysUtils';
 import { 
@@ -12,6 +12,14 @@ import {
 interface CacheEntry {
   data: any;
   timestamp: number;
+}
+
+// Define the SessionCapacity interface
+interface SessionCapacity {
+  available: number;
+  message: string;
+  sessionId?: string;
+  sessionClassId?: string;
 }
 
 // Cache for sessions data to prevent excessive API calls
@@ -91,16 +99,8 @@ const saveCacheToStorage = (key: string, data: any) => {
   }
 };
 
-// Initialize cache from cookies
+// Initialize cache from localStorage
 loadCacheFromStorage();
-
-// Request throttling
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests - reduced from 8 seconds
-let isRequestInProgress = false;
-let requestQueue: Array<() => void> = [];
-let consecutiveErrors = 0;
-const MAX_CONSECUTIVE_ERRORS = 3;
 
 /**
  * פונקציה משותפת ליצירת הודעות זמינות
@@ -178,69 +178,6 @@ const cleanupExpiredCache = () => {
 };
 
 /**
- * פונקציה לניהול בקשות API עם throttling משופר
- */
-const throttledFetch = async (url: string, options?: RequestInit): Promise<Response> => {
-  return new Promise((resolve, reject) => {
-    const executeRequest = async () => {
-      try {
-        const now = Date.now();
-        const timeSinceLastRequest = now - lastRequestTime;
-        
-        // Increase delay if we've had consecutive errors
-        const dynamicDelay = consecutiveErrors > 0 ? MIN_REQUEST_INTERVAL * (consecutiveErrors + 1) : MIN_REQUEST_INTERVAL;
-        
-        if (timeSinceLastRequest < dynamicDelay) {
-          // Wait before making the request
-          await new Promise(resolve => setTimeout(resolve, dynamicDelay - timeSinceLastRequest));
-        }
-        
-        lastRequestTime = Date.now();
-        const response = await fetch(url, options);
-        
-        // Reset consecutive errors on success
-        if (response.ok) {
-          consecutiveErrors = 0;
-        } else if (response.status === 429) {
-          consecutiveErrors++;
-          console.warn(`Rate limited (429). Consecutive errors: ${consecutiveErrors}`);
-          
-          // If too many consecutive errors, wait longer
-          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
-            consecutiveErrors = 0; // Reset after long wait
-          }
-        }
-        
-        resolve(response);
-      } catch (error) {
-        consecutiveErrors++;
-        console.error('Request error:', error);
-        reject(error);
-      } finally {
-        isRequestInProgress = false;
-        
-        // Process next request in queue
-        if (requestQueue.length > 0) {
-          const nextRequest = requestQueue.shift();
-          if (nextRequest) {
-            nextRequest();
-          }
-        }
-      }
-    };
-    
-    if (isRequestInProgress) {
-      // Queue the request
-      requestQueue.push(executeRequest);
-    } else {
-      isRequestInProgress = true;
-      executeRequest();
-    }
-  });
-};
-
-/**
  * קבלת sessions זמינים לפי class ID עם cache משופר ו-throttling
  */
 export const getAvailableSessionsForClass = async (classId: string): Promise<Session[]> => {
@@ -305,17 +242,17 @@ export const getAvailableSessionsForClass = async (classId: string): Promise<Ses
     
     // Fetch fresh data from API with throttling
     const [sessionsResponse, sessionClassesResponse] = await Promise.all([
-      throttledFetch(`${API_BASE_URL}/sessions`),
-      throttledFetch(`${API_BASE_URL}/sessions/session-classes`)
+      apiService.sessions.getAllSessions(),
+      apiService.sessions.getSessionClasses()
     ]);
     
-    if (!sessionsResponse.ok || !sessionClassesResponse.ok) {
+    if (!sessionsResponse || !sessionClassesResponse) {
       console.error('Failed to fetch sessions data from API');
       return [];
     }
     
-    const allSessions = await sessionsResponse.json();
-    const allSessionClasses = await sessionClassesResponse.json();
+    const allSessions = sessionsResponse;
+    const allSessionClasses = sessionClassesResponse;
     
     // Update global cache
     const now = Date.now();
@@ -431,13 +368,11 @@ export const getAvailableDatesForSession = async (sessionId: string): Promise<st
     }
     
     // Fetch session data with throttling
-    const response = await throttledFetch(`${API_BASE_URL}/sessions/${sessionId}`);
-    if (!response.ok) {
+    const session = await apiService.sessions.getById(sessionId) as Session;
+    if (!session) {
       console.error('Failed to fetch session data');
       return [];
     }
-    
-    const session = await response.json();
     
     if (!session || !session.is_active) {
       classDatesCache.set(cacheKey, { data: [], timestamp: Date.now() });
@@ -499,13 +434,11 @@ export const getAvailableTimesForSessionAndDate = async (
     }
     
     // Fetch session data with throttling
-    const response = await throttledFetch(`${API_BASE_URL}/sessions/${sessionId}`);
-    if (!response.ok) {
+    const session = await apiService.sessions.getById(sessionId) as Session;
+    if (!session) {
       console.error('Failed to fetch session data');
       return [];
     }
-    
-    const session = await response.json();
     
     if (!session || !session.is_active) {
       classTimesCache.set(cacheKey, { data: [], timestamp: Date.now() });
@@ -607,11 +540,11 @@ export const getAvailableSpotsFromSessions = async (
   classId: string, 
   selectedDate: string, 
   selectedTime: string
-): Promise<{ available: number; message: string; sessionId?: string; sessionClassId?: string }> => {
+): Promise<SessionCapacity> => {
   // Add timeout to prevent hanging
   const timeoutPromise = createTimeoutPromise(TIMEOUTS.SPOTS_CHECK, 'Timeout: Function took too long to complete');
   
-  const spotsPromise = (async () => {
+  const spotsPromise = (async (): Promise<SessionCapacity> => {
     try {
       // קבל את ה-sessions עבור השיעור
       const sessions = await getAvailableSessionsForClass(classId);
@@ -643,11 +576,11 @@ export const getAvailableSpotsFromSessions = async (
       if (isCacheValid(sessionClassesCache)) {
         allSessionClasses = sessionClassesCache!.data;
       } else {
-        const sessionClassesResponse = await throttledFetch(`${API_BASE_URL}/sessions/session-classes`);
-        if (!sessionClassesResponse.ok) {
+        const sessionClasses = await apiService.sessions.getSessionClasses();
+        if (!sessionClasses) {
           return { available: 0, message: 'שגיאה בקבלת פרטי session' };
         }
-        allSessionClasses = await sessionClassesResponse.json();
+        allSessionClasses = sessionClasses;
         sessionClassesCache = { data: allSessionClasses, timestamp: Date.now() };
       }
       
@@ -682,9 +615,8 @@ export const getAvailableSpotsFromSessions = async (
 
       // בדיקה אם זה שיעור פרטי - נשתמש ב-API במקום Supabase ישירות
       try {
-        const classResponse = await throttledFetch(`${API_BASE_URL}/classes/${classId}`);
-        if (classResponse.ok) {
-          const classData = await classResponse.json();
+        const classData = await apiService.classes.getById(classId);
+        if (classData) {
           
           // Flow decision: if appointment_only, consider always available
           if ((classData.registration_type || '').toLowerCase() === 'appointment_only') {
@@ -697,15 +629,14 @@ export const getAvailableSpotsFromSessions = async (
       
       // ספור הרשמות קיימות לתאריך זה - נשתמש ב-API החדש
       try {
-        const spotsResponse = await throttledFetch(`${API_BASE_URL}/sessions/capacity/${classId}/${selectedDate}/${selectedTime}`);
+        const spotsData = await apiService.sessions.getCapacity(classId, selectedDate, selectedTime) as SessionCapacity;
         
-        if (spotsResponse.ok) {
-          const spotsData = await spotsResponse.json();
+        if (spotsData) {
           
           return { 
-            available: spotsData.available, 
-            message: spotsData.message, 
-            sessionId: spotsData.sessionId, 
+            available: spotsData.available,
+            message: spotsData.message,
+            sessionId: spotsData.sessionId,
             sessionClassId: spotsData.sessionClassId 
           };
         } else {
@@ -720,7 +651,7 @@ export const getAvailableSpotsFromSessions = async (
         const availableSpots = matchingSession.max_capacity;
         const message = generateAvailabilityMessage(availableSpots);
         
-        const result = { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
+        const result: SessionCapacity = { available: availableSpots, message, sessionId: matchingSession.id, sessionClassId: sessionClass.id };
         return result;
       }
     } catch (error) {
@@ -823,11 +754,6 @@ export const clearSessionsCache = () => {
   classSessionsCache.clear();
   classDatesCache.clear();
   classTimesCache.clear();
-  
-  // Reset throttling state
-  lastRequestTime = 0;
-  isRequestInProgress = false;
-  requestQueue = [];
   
   // Clear cookies cache
   try {

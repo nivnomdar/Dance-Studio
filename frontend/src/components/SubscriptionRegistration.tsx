@@ -98,7 +98,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
           const consents: UserConsent[] = await response.json();
           // Update checkbox states based on fetched consents (for one-time consents)
           setHasAcceptedAgeConsentPreviously(consents.some(c => c.consent_type === 'age_18' && c.version === null));
-          setGeneralTermsAccepted(false); // Ensure this is always false initially for manual user acceptance
+          // The generalTermsAccepted checkbox must always be false by default for new registrations
+          // setGeneralTermsAccepted(false); // This was already done but will ensure no other logic interferes
         } else {
           console.error('Failed to fetch consent statuses:', response.status, response.statusText);
         }
@@ -241,7 +242,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
 
   const loadProfileWithFetch = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user!.id}`, {
+      const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${user!.id}`, {
         headers: {
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${session?.access_token}`,
@@ -344,7 +345,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       return;
     }
 
-    if (!ageConfirmationAccepted) {
+    if (!ageConfirmationAccepted && !hasAcceptedAgeConsentPreviously) {
       showPopup({ type: 'error', message: 'עליך לאשר שגילך הוא 18 ומעלה כדי להמשיך בהרשמה.' }); // New validation
       return;
     }
@@ -954,14 +955,14 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || formData.phone.replace(/\D/g, '').length !== 10 || isSubmitting || !generalTermsAccepted || !healthDeclarationAccepted || !ageConfirmationAccepted || loadingConsents || (() => { // Added loadingConsents
+              disabled={!selectedDate || !selectedTime || !formData.first_name || !formData.last_name || !formData.phone || formData.phone.replace(/\D/g, '').length !== 10 || isSubmitting || !generalTermsAccepted || !healthDeclarationAccepted || (!hasAcceptedAgeConsentPreviously && !ageConfirmationAccepted) || loadingConsents || (() => { // Added loadingConsents and conditional check for ageConfirmationAccepted
                 const spotsKey = classData.id + '_' + selectedDate;
                 const spotsData = spotsCache[spotsKey] || {};
                 const spotsInfo = spotsData[selectedTime];
                 return spotsInfo?.available === 0;
               })()}
               className={`w-full py-4 px-6 rounded-xl transition-colors duration-300 font-bold text-lg shadow-lg hover:shadow-xl mt-6 ${
-                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && ageConfirmationAccepted && !isSubmitting && !loadingConsents && (() => { // Added !loadingConsents
+                selectedDate && selectedTime && formData.first_name && formData.last_name && formData.phone && generalTermsAccepted && healthDeclarationAccepted && (hasAcceptedAgeConsentPreviously || ageConfirmationAccepted) && !isSubmitting && !loadingConsents && (() => { // Corrected conditional check for ageConfirmationAccepted
                   const spotsKey = classData.id + '_' + selectedDate;
                   const spotsData = spotsCache[spotsKey] || {};
                   const spotsInfo = spotsData[selectedTime];

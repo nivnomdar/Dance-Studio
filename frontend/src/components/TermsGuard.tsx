@@ -34,8 +34,8 @@ async function checkTermsStatusFromBackend(): Promise<{ terms_accepted: boolean;
 
     const consents: UserConsent[] = await response.json();
     
-    const termsAccepted = consents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null);
-    const marketingConsent = consents.some(c => c.consent_type === 'marketing' && c.version === null);
+    const termsAccepted = consents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null && c.registration_id === null);
+    const marketingConsent = consents.some(c => c.consent_type === 'marketing' && c.version === null && c.registration_id === null);
     
     return {
       terms_accepted: termsAccepted,
