@@ -16,7 +16,7 @@ const AccessibilityStatement: React.FC = () => {
             
             <div className="prose prose-lg max-w-none text-right" dir="rtl">
               <p className="text-gray-600 mb-6">
-                <strong>תאריך עדכון אחרון:</strong> 26 באוגוסט 2025
+                <strong>תאריך עדכון אחרון:</strong> 2 בדצמבר 2024
               </p>
 
               <p className="text-[#2B2B2B] mb-6">
@@ -189,7 +189,7 @@ const AccessibilityStatement: React.FC = () => {
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-gray-600 text-sm text-center">
                   הצהרה זו מתעדכנת מעת לעת בהתאם לשיפורים בנגישות האתר והשירותים. 
-                  עדכון אחרון: 26 באוגוסט 2025. הצהרה זו מהווה חלק בלתי נפרד מתנאי השימוש באתר.
+                  עדכון אחרון: 2 בדצמבר 2024. הצהרה זו מהווה חלק בלתי נפרד מתנאי השימוש באתר.
                 </p>
                 <div className="mt-3 text-center">
                   <Link 

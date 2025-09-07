@@ -16,7 +16,7 @@ const PrivacyPolicy: React.FC = () => {
             
             <div className="prose prose-lg max-w-none text-right" dir="rtl">
               <p className="text-gray-600 mb-6">
-                <strong>תאריך עדכון אחרון:</strong> 26 באוגוסט 2025
+                <strong>תאריך עדכון אחרון:</strong> 2 בדצמבר 2024
               </p>
 
               <section className="mb-8">
@@ -52,7 +52,8 @@ const PrivacyPolicy: React.FC = () => {
                       <li><strong>כתובת דוא"ל</strong> - נדרש לתקשורת ואימות חשבון</li>
                       <li><strong>מספר טלפון</strong> - נדרש לתקשורת דחופה ושינויים בשיעורים</li>
                       <li><strong>כתובת מגורים</strong> - נדרש להזמנת מוצרים וניהול חשבון</li>
-                      <li><strong>תאריך לידה</strong> - נדרש לקביעת שיעורים מותאמים לגיל</li>
+                      <li><strong>תאריך לידה</strong> - נדרש לאימות גיל ושירותים מותאמים (כגון שיעורים מותאמי גיל)</li>
+                      <li><strong>אישור גיל 18+</strong> - נדרש לצורך עמידה בדרישות חוקיות ותנאי הסטודיו לרישום</li>
                     </ul>
                   </div>
                   <div>
@@ -430,7 +431,7 @@ const PrivacyPolicy: React.FC = () => {
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-gray-600 text-sm text-center">
                   מדיניות זו מתעדכנת מעת לעת בהתאם לשינויים בחוק ובטכנולוגיה. 
-                  עדכון אחרון: 26 באוגוסט 2025. מדיניות זו מהווה חלק בלתי נפרד מתנאי השימוש באתר.
+                  עדכון אחרון: 2 בדצמבר 2024. מדיניות זו מהווה חלק בלתי נפרד מתנאי השימוש באתר.
                 </p>
               </div>
             </div>

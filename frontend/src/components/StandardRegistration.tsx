@@ -41,6 +41,7 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
   const [showFullHealthTerms, setShowFullHealthTerms] = useState(false);
   // Removed userConsents state
   const [loadingConsents, setLoadingConsents] = useState(true); // New state for loading consents
+  const [hasAcceptedAgeConsentPreviously, setHasAcceptedAgeConsentPreviously] = useState(false); // New state
 
   // Prevent modal from closing automatically
   useEffect(() => {
@@ -91,8 +92,8 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
           // Removed setUserConsents(consents);
 
           // Update checkbox states based on fetched consents (for one-time consents)
-          setAgeConfirmationAccepted(consents.some(c => c.consent_type === 'age_18' && c.version === null));
-          setGeneralTermsAccepted(consents.some(c => c.consent_type === 'terms_and_privacy' && c.version === null));
+          setHasAcceptedAgeConsentPreviously(consents.some(c => c.consent_type === 'age_18' && c.version === null));
+          setGeneralTermsAccepted(false); // Ensure this is always false initially for manual user acceptance
           // health_declaration and registration_terms_and_privacy are per-registration, no global state needed
         } else {
           console.error('Failed to fetch consent statuses:', response.status, response.statusText);
@@ -979,20 +980,22 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
             </div>
 
             {/* Age Confirmation Checkbox - New Field */}
-            <div className="mt-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={ageConfirmationAccepted}
-                  onChange={(e) => setAgeConfirmationAccepted(e.target.checked)}
-                  required
-                  className="form-checkbox h-5 w-5 text-[#EC4899] rounded border-gray-300 focus:ring-[#EC4899]"
-                />
-                <span className="text-sm font-medium text-gray-700 text-right mr-2 leading-relaxed">
-                  בהרשמה לשיעורים אני מאשרת כי גילי הוא 18.
-                </span>
-              </label>
-            </div>
+            {!hasAcceptedAgeConsentPreviously && (
+              <div className="mt-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmationAccepted}
+                    onChange={(e) => setAgeConfirmationAccepted(e.target.checked)}
+                    required
+                    className="form-checkbox h-5 w-5 text-[#EC4899] rounded border-gray-300 focus:ring-[#EC4899]"
+                  />
+                  <span className="text-sm font-medium text-gray-700 text-right mr-2 leading-relaxed">
+                    בהרשמה לשיעורים אני מאשרת כי גילי הוא 18+.
+                  </span>
+                </label>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button

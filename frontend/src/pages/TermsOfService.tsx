@@ -16,7 +16,7 @@ const TermsOfService: React.FC = () => {
             
             <div className="prose prose-lg max-w-none text-right" dir="rtl">
               <p className="text-gray-600 mb-6">
-                <strong>תאריך עדכון אחרון:</strong> 26 באוגוסט 2025
+                <strong>תאריך עדכון אחרון:</strong> 2 בדצמבר 2024
               </p>
 
               <section className="mb-8">
@@ -108,6 +108,7 @@ const TermsOfService: React.FC = () => {
                     <li>לא להעביר את החשבון לאחרים או לאפשר שימוש בו על ידי צד שלישי</li>
                     <li>לעדכן מידע אישי בהתאם לשינויים</li>
                     <li>לציית לכללי האבטחה והשימוש באתר</li>
+                    <li>לאשר כי גילה הוא 18+ לצורך רישום ושימוש בשירותים (דרישה חוקית ותנאי סטודיו)</li>
                   </ul>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <p className="text-gray-700 text-sm">
@@ -215,7 +216,7 @@ const TermsOfService: React.FC = () => {
                   <ul className="list-disc list-inside text-gray-700 space-y-2 mr-4">
                     <li>להודיע על בעיות בריאותיות לפני השיעור או בעיות רפואיות מתמשכות</li>
                     <li>להפסיק פעילות במקרה של כאב, אי נוחות או סחרחורת</li>
-                    <li>לקחת אחריות על בריאותו האישית וכושרו הגופני</li>
+                    <li>לקחת אחריות על בריאותו האישית וכושרו הגופני, ולהצהיר על מצב בריאותי תקין טרם ההרשמה</li>
                     <li>להתייעץ עם רופא לפני השתתפות בשיעורים במקרה של בעיות רפואיות</li>
                     <li>להודיע על הריון או מצבים רפואיים מיוחדים</li>
                   </ul>
@@ -411,7 +412,7 @@ const TermsOfService: React.FC = () => {
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-gray-600 text-sm text-center">
                   תנאים אלה מתעדכנים מעת לעת בהתאם לשינויים בחוק ובשירותים. 
-                  עדכון אחרון: 26 באוגוסט 2025. תנאים אלה מהווים חלק בלתי נפרד מהשימוש באתר.
+                  עדכון אחרון: 2 בדצמבר 2024. תנאים אלה מהווים חלק בלתי נפרד מהשימוש באתר.
                 </p>
               </div>
             </div>
