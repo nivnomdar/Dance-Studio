@@ -299,7 +299,7 @@ const ShopPage = () => {
                   onError={handleImageError}
                 />
                 {product.isNew && (
-                  <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex items-center justify-center w-20 h-20 sm:w-9 sm:h-9" aria-hidden="true" title="מוצר חם">
+                  <div className="absolute top-1 right-1 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-10" aria-hidden="true" title="מוצר חם">
                     <svg className="flame-svg w-16 h-16 sm:w-10 sm:h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <defs>
                         <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
