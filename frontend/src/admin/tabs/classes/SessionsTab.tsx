@@ -16,7 +16,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
   const [sessionEditModalOpen, setSessionEditModalOpen] = useState(false);
   const [selectedSessionForEdit, setSelectedSessionForEdit] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('active');
 
   // Handle view session details
   const handleViewSessionDetails = (session: any) => {
@@ -171,7 +171,6 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
               >
-                <option value="all">כל הקבוצות</option>
                 <option value="active">פעילות בלבד</option>
                 <option value="inactive">לא פעילות</option>
               </select>
@@ -244,7 +243,7 @@ export default function SessionsTab({ data, session, fetchClasses }: SessionsTab
       {/* Sessions Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-[#EC4899]/10 overflow-hidden">
         <div className="p-3 sm:p-6 border-b border-[#EC4899]/10">
-          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">ניהול קבוצות</h2>
+          <h2 className="text-lg sm:text-2xl font-bold text-[#4B2E83] mb-1 sm:mb-2">קבוצות במערכת</h2>
           <p className="text-sm sm:text-base text-[#4B2E83]/70">ניהול הקבוצות במערכת עם אפשרויות עריכה</p>
         </div>
         <div className="overflow-x-auto">

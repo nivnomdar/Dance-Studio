@@ -28,7 +28,7 @@ const ALLOWED_FIELDS = [
 export default function ClassesTab({ data, session, fetchClasses }: ClassesTabProps) {
   // State
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('active');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -217,7 +217,6 @@ export default function ClassesTab({ data, session, fetchClasses }: ClassesTabPr
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] outline-none transition-all hover:bg-white hover:shadow-sm"
               >
-                <option value="all">כל השיעורים</option>
                 <option value="active">פעילים בלבד</option>
                 <option value="inactive">לא פעילים</option>
               </select>

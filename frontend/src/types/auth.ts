@@ -48,14 +48,15 @@ export interface UserProfile {
   address?: string;
   city?: string;
   postal_code?: string;
-  avatar_url?: string;
   role: 'user' | 'admin';
-  is_active: boolean;
-  last_login_at?: string;
-  language: string;
   created_at: string;
   updated_at: string;
-  has_used_trial_class?: boolean; // deprecated; kept optional for backward compatibility
+  is_active: boolean;
+  terms_accepted: boolean;
+  marketing_consent: boolean;
+  last_login_at: string;
+  language: string;
+  avatar_url?: string;
 }
 
 export interface UserConsent {

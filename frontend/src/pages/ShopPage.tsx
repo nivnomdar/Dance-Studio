@@ -79,8 +79,7 @@ const ShopPage = () => {
         features: Array.isArray(p.features) ? p.features : [],
         sizes: Array.isArray(p.sizes) ? p.sizes : undefined,
         colors: Array.isArray(p.colors) ? p.colors : undefined,
-        isNew: !!(p.trending ?? p.isNew),
-        isBestSeller: !!(p.recommended ?? p.isBestSeller)
+        isNew: !!(p.trending ?? p.isNew)
       }));
       setProducts(mapped);
     }
@@ -313,11 +312,6 @@ const ShopPage = () => {
                     </svg>
                     <span className="sr-only">מוצר חם</span>
                   </div>
-                )}
-                {product.isBestSeller && (
-                  <span className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-[#4B2E83] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
-                    מומלץ
-                  </span>
                 )}
               </div>
               <div className="p-3 sm:p-4 lg:p-6 flex flex-col flex-grow">

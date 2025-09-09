@@ -149,7 +149,7 @@ export function useProfile(): UseProfileReturn {
       const lastName = nameParts.slice(1).join(' ') || '';
 
       // Check if profile already exists to avoid overwriting existing values - REMOVED TERMS_ACCEPTED AND MARKETING_CONSENT
-      const newProfile = {
+      const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
         first_name: firstName,
@@ -157,11 +157,13 @@ export function useProfile(): UseProfileReturn {
         role: 'user',
         avatar_url: user.user_metadata?.avatar_url || '',
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), // Added
         is_active: true,
-        // terms_accepted and marketing_consent are handled in user_consents table, not directly in profile
+        terms_accepted: false, // Added, default to false as they are managed via user_consents
+        marketing_consent: false, // Added, default to false as they are managed via user_consents
         last_login_at: new Date().toISOString(),
         language: 'he',
-        has_used_trial_class: false
+        // Removed has_used_trial_class
       };
 
       try {

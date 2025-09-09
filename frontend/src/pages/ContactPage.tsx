@@ -281,7 +281,7 @@ function ContactPage() {
                      </div>
                      <div className="mr-2 flex-1">
                        <p className="text-[#2B2B2B] text-sm sm:text-base font-medium">כתובת</p>
-                       <p className="text-gray-600 text-sm break-words">רחוב יוסף לישנסקי 6, ראשון לציון</p>
+                       <p className="text-gray-600 text-sm whitespace-nowrap overflow-hidden text-ellipsis">רחוב יוסף לישנסקי 6, ראשון לציון</p>
                      </div>
                    </motion.div>
 
