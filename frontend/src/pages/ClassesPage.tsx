@@ -589,7 +589,7 @@ function ClassesPage() {
                       slidesPerView={'auto'}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length >= 4}
+                      loop={classes.length > 1}
                       watchSlidesProgress
                       virtualTranslate={false}
                       onSwiper={(swiper) => {
@@ -622,7 +622,7 @@ function ClassesPage() {
                       slidesPerView={1}
                       centeredSlides={true}
                       centeredSlidesBounds={true}
-                      loop={classes.length >= 4}
+                      loop={classes.length > 1}
                       navigation
                       breakpoints={{
                         640: { slidesPerView: 1, spaceBetween: 20 },
