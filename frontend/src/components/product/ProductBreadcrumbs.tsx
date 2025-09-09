@@ -28,7 +28,7 @@ const ProductBreadcrumbs: React.FC<ProductBreadcrumbsProps> = ({ product }) => {
   }, [product.category_id, categories]);
 
   return (
-    <nav className="text-xs sm:text-sm text-gray-600 mb-6 text-center pt-4" aria-label="Breadcrumb">
+    <nav className="text-xs sm:text-sm text-gray-600 mb-6 text-center pt-4 hidden sm:block" aria-label="Breadcrumb">
       <ol className="list-none p-0 inline-flex items-center gap-2 justify-center">
         <li className="flex items-center group">
           <Link to="/" className="flex items-center text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] rounded-md px-2 py-1">

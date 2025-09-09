@@ -40,11 +40,11 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({ product, acti
 
   return (
     <div>
-      <div className="relative flex items-center justify-center rounded-2xl overflow-hidden bg-white border border-[#EC4899]/10 p-2 shadow-sm">
+      <div className="relative flex items-center justify-center rounded-2xl overflow-hidden bg-white border border-[#EC4899]/10 p-3 lg:p-4 shadow-md lg:shadow-lg">
         <img
           src={allImages[activeImageIdx]}
           alt={product.name}
-          className="h-auto max-h-72 sm:max-h-96 w-auto object-contain rounded-xl"
+          className="h-auto max-h-72 sm:max-h-96 lg:max-h-[500px] w-auto object-contain rounded-xl"
           onError={handleImageError}
           loading="lazy"
         />

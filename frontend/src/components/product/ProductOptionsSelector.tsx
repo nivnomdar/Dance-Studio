@@ -21,7 +21,7 @@ const ProductOptionsSelector: React.FC<ProductOptionsSelectorProps> = ({ product
       {/* Size Selection */}
       {product.sizes && product.sizes.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">מידה (EU – אירופי)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-3">מידה (EU – אירופי)</label>
           <div className="flex flex-wrap gap-2">
             {product.sizes.map((size: string) => (
               <button
@@ -40,7 +40,7 @@ const ProductOptionsSelector: React.FC<ProductOptionsSelectorProps> = ({ product
       {/* Color Selection */}
       {product.colors && product.colors.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">צבע</label>
+          <label className="block text-sm font-medium text-gray-700 mb-3">צבע</label>
           <div className="flex flex-wrap gap-2">
             {product.colors.map((color: string) => (
               <button

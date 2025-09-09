@@ -173,9 +173,9 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
         }
         .flame-svg { filter: drop-shadow(0 0 4px rgba(236,72,153,.5)); }
       `}</style>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-clip">
         <div className="text-center mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand">מוצרים שאולי תאהבי</h2>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4B2E83] mb-4 lg:mb-6 font-agrandir-grand">מוצרים שאולי תאהבי</h2>
           <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto" />
         </div>
         <Swiper
@@ -192,11 +192,11 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
             768: { slidesPerView: 3, spaceBetween: 24 },
             1024: { slidesPerView: 4, spaceBetween: 24 },
           }}
-          className="overflow-visible"
+          className="overflow-visible -mx-4 sm:-mx-6 lg:-mx-8"
         >
           {relatedProducts.map((p) => (
             <SwiperSlide key={p.id} className="h-auto">
-              <article className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 flex flex-col h-full">
+              <article className="bg-white rounded-xl border border-[#EC4899]/30 overflow-hidden transition-all duration-200 flex flex-col h-full">
                 <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
                   {p.main_image ? (
                     <>

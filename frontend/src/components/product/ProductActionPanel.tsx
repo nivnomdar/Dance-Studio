@@ -79,7 +79,7 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
 
   return (
     <div className="space-y-6">
-      <div className="text-2xl font-bold text-[#EC4899]">₪{product.price}</div>
+      <div className="text-2xl lg:text-3xl font-bold text-[#EC4899]">₪{product.price}</div>
 
       {/* Stock Quantity Display */}
       {product.stock_quantity !== undefined && product.stock_quantity !== null && (
@@ -97,7 +97,7 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
       {/* Quantity Selection */}
       {!isOutOfStock && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">כמות</label>
+          <label className="block text-sm font-medium text-gray-700 mb-3">כמות</label>
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
@@ -106,7 +106,7 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
             >
               -
             </button>
-            <span className="text-lg font-medium min-w-[2rem] text-center">{quantity}</span>
+            <span className="text-lg font-medium font-semibold min-w-[2rem] text-center">{quantity}</span>
             <button 
               onClick={() => setQuantity(prev => Math.min(product.stock_quantity || Infinity, prev + 1))}
               disabled={quantity >= (product.stock_quantity || Infinity)}
@@ -124,15 +124,15 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5">
         <button 
           onClick={handleAddToCart} 
-          className="bg-[#EC4899] text-white px-6 py-3 rounded-lg hover:bg-[#EC4899]/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-[#EC4899] text-white px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#EC4899]/80 disabled:opacity-50 disabled:cursor-not-allowed lg:text-lg"
           disabled={!canAddToCart || (!!product.sizes && product.sizes.length > 0 && !selectedSize) || (!!product.colors && product.colors.length > 0 && !selectedColor)}
         >
           הוסף לסל
         </button>
-        <button onClick={() => navigate('/cart')} className="border border-[#4B2E83]/20 text-[#4B2E83] px-6 py-3 rounded-lg hover:bg-[#4B2E83]/5">
+        <button onClick={() => navigate('/cart')} className="border border-[#4B2E83]/20 text-[#4B2E83] px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#4B2E83]/5 lg:text-lg">
           מעבר לסל
         </button>
       </div>

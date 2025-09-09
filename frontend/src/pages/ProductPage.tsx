@@ -99,19 +99,13 @@ const ProductPage = () => {
   }
 
   return (
-    <div className="bg-gray-50 py-6 sm:py-8 lg:py-12 relative">
+    <div className="bg-gray-50 py-6 sm:py-8 lg:py-16 relative">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-        <button onClick={() => navigate(-1)} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer">
+        <button onClick={() => navigate(-1)} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer sm:hidden">
           <FiChevronLeft className="w-4 h-4" />
           חזור
         </button>
         <ProductBreadcrumbs product={product} />
-        {/* <div className="mb-6">
-          <button onClick={() => navigate(-1)} className="text-[#4B2E83] hover:underline text-sm">
-            חזרה לחנות
-          </button>
-        </div> */}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
           <div>
             <ProductImageGallery

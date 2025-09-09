@@ -29,8 +29,8 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({ product }
       <style>{`
         .flame-svg { filter: drop-shadow(0 0 4px rgba(236,72,153,.5)); }
       `}</style>
-      <div className="flex items-center gap-3 mb-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{product.name}</h1>
+      <div className="flex items-center gap-3 mb-3">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">{product.name}</h1>
         {(product.trending ?? false) && (
           <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
             <svg className="flame-svg w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -54,7 +54,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({ product }
       <p className="text-gray-600 mb-4">{product.description}</p>
 
       {categoryName && (
-        <div className="text-sm text-gray-500">
+        <div className="text-sm bg-gray-100 px-2 py-1 rounded-md text-gray-700 mt-2">
           <span className="font-medium">קטגוריה:</span> {categoryName}
         </div>
       )}
