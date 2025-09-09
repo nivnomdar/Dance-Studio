@@ -18,7 +18,6 @@ type ProductMini = {
   updated_at?: string | null;
   is_active: boolean;
   trending?: boolean | null;
-  recommended?: boolean | null;
 };
 
 interface RelatedProductsSectionProps {
@@ -65,7 +64,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
             p.id !== currentProductId && 
             p.is_active && 
             p.category_id === categoryId &&
-            ((p.trending ?? false) || (p.recommended ?? false))
+            (p.trending ?? false)
           );
           for (const p of categoryRelated) {
             if (productsToDisplay.length < 8 && !seenProductIds.has(p.id)) {
@@ -202,8 +201,8 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
                     <>
                       <img src={buildImageUrl(p.main_image, p.updated_at || p.created_at)} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={handleImageError} />
                       {(p.trending ?? false) && (
-                        <div className="absolute top-2 sm:top-4 right-2 sm:right-4 flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
-                          <svg className="flame-svg w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <div className="absolute top-1 sm:top-4 right-1 sm:right-1 flex items-center justify-center w-15 h-15 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
+                          <svg className="flame-svg w-12 h-12 sm:w-12 sm:h-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                               <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                                 <stop offset="0%" stopColor="#EC4899"/>
@@ -216,11 +215,6 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
                           </svg>
                           <span className="sr-only">מוצר חם</span>
                         </div>
-                      )}
-                      {(p.recommended ?? false) && (
-                        <span className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 bg-[#4B2E83] text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shadow">
-                          מומלץ
-                        </span>
                       )}
                     </>
                   ) : (
