@@ -39,8 +39,8 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({ product, acti
   }, [product]);
 
   return (
-    <div>
-      <div className="relative flex items-center justify-center rounded-2xl overflow-hidden bg-white border border-[#EC4899]/10 p-3 lg:p-4 shadow-md lg:shadow-lg">
+    <div role="region" aria-roledescription="גלריית תמונות">
+      <div className="relative flex items-center justify-center rounded-2xl overflow-hidden bg-white border border-[#EC4899]/10 p-3 lg:p-4 shadow-md lg:shadow-lg" aria-live="polite">
         <img
           src={allImages[activeImageIdx]}
           alt={product.name}
@@ -58,10 +58,12 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({ product, acti
                 key={idx}
                 onClick={() => setActiveImageIdx(idx)}
                 aria-pressed={activeImageIdx === idx}
-                className={`rounded-md overflow-hidden ring-1 ${activeImageIdx === idx ? 'ring-[#4B2E83]' : 'ring-transparent'}`}
+                aria-label={`בחר תמונה ${idx + 1} של ${product.name}`}
+                aria-current={activeImageIdx === idx ? 'true' : undefined}
+                className={`rounded-md overflow-hidden border ${activeImageIdx === idx ? 'border-2 border-[#EC4899] bg-[#EC4899]/10 shadow-sm' : 'border border-transparent'} focus-visible:outline-none focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-0`}
                 title={`תמונה ${idx + 1}`}
               >
-                <img src={src} alt="" className="h-12 w-12 object-contain bg-gray-50" onError={handleImageError} />
+                <img src={src} alt={`תמונה ${idx + 1} של ${product.name}`} className="h-12 w-12 object-contain bg-gray-50" onError={handleImageError} />
               </button>
             ))}
           </div>

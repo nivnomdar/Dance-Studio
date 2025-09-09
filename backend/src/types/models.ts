@@ -130,6 +130,18 @@ export interface Product {
   description: string;
   price: number;
   image_url?: string;
+  main_image?: string | null;
+  gallery_images?: string[] | null;
+  sizes?: string[] | null;
+  colors?: string[] | null;
+  heel_height?: string[] | null;
+  sole_type?: string[] | null;
+  materials?: string[] | null;
+  trending?: boolean | null;
+  recommended?: boolean | null;
+  category_id?: string | null;
+  stock_quantity?: number | null;
+  features?: string[] | null;
   created_at: string;
   updated_at: string;
 }

@@ -11,6 +11,9 @@ type ProductRecord = {
   main_image?: string | null;
   sizes?: string[] | null;
   colors?: string[] | null;
+  heel_height?: string[] | null;
+  sole_type?: string[] | null;
+  materials?: string[] | null;
   created_at?: string | null;
   updated_at?: string | null;
   stock_quantity?: number | null;
@@ -20,9 +23,12 @@ interface ProductActionPanelProps {
   product: ProductRecord;
   selectedSize: string;
   selectedColor: string;
+  selectedHeelHeight: string;
+  selectedSoleType: string;
+  selectedMaterial: string;
 }
 
-const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, selectedSize, selectedColor }) => {
+const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, selectedSize, selectedColor, selectedHeelHeight, selectedSoleType, selectedMaterial }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { showPopup } = usePopup();
@@ -54,6 +60,18 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
       showPopup({ title: 'שגיאה', message: 'אנא בחרי צבע', type: 'error', duration: 3000 });
       return;
     }
+    if (product.heel_height && product.heel_height.length > 0 && !selectedHeelHeight) {
+      showPopup({ title: 'שגיאה', message: 'אנא בחרי גובה עקב', type: 'error', duration: 3000 });
+      return;
+    }
+    if (product.sole_type && product.sole_type.length > 0 && !selectedSoleType) {
+      showPopup({ title: 'שגיאה', message: 'אנא בחרי סוג סוליה', type: 'error', duration: 3000 });
+      return;
+    }
+    if (product.materials && product.materials.length > 0 && !selectedMaterial) {
+      showPopup({ title: 'שגיאה', message: 'אנא בחרי חומר', type: 'error', duration: 3000 });
+      return;
+    }
     if (product.stock_quantity && quantity > product.stock_quantity) {
         showPopup({ title: 'שגיאה', message: `לא ניתן להוסיף יותר מ-${product.stock_quantity} יחידות במלאי.`, type: 'error', duration: 3000 });
         return;
@@ -67,10 +85,13 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
       image: buildImageUrl(product.main_image || '', product.updated_at || product.created_at || null),
       sizes: (product.sizes as string[] | undefined) || undefined,
       colors: (product.colors as string[] | undefined) || undefined,
+      heel_height: (product.heel_height as string[] | undefined) || undefined,
+      sole_type: (product.sole_type as string[] | undefined) || undefined,
+      materials: (product.materials as string[] | undefined) || undefined,
       features: [] as string[],
     } as any;
 
-    addToCart(mapped, quantity, selectedSize, selectedColor);
+    addToCart(mapped, quantity, selectedSize, selectedColor, selectedHeelHeight, selectedSoleType, selectedMaterial);
     showPopup({ title: 'הוספה לסל', message: `${product.name} נוסף לסל הקניות שלך`, type: 'success', duration: 3000 });
   };
 
@@ -102,7 +123,7 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
             <button 
               onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
               disabled={quantity <= 1}
-              className="p-2 border rounded-lg hover:bg-gray-50 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 border rounded-lg hover:bg-gray-50 text-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899]"
             >
               -
             </button>
@@ -110,7 +131,7 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
             <button 
               onClick={() => setQuantity(prev => Math.min(product.stock_quantity || Infinity, prev + 1))}
               disabled={quantity >= (product.stock_quantity || Infinity)}
-              className="p-2 border rounded-lg hover:bg-gray-50 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 border rounded-lg hover:bg-gray-50 text-lg disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899]"
             >
               +
             </button>
@@ -127,12 +148,18 @@ const ProductActionPanel: React.FC<ProductActionPanelProps> = ({ product, select
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5">
         <button 
           onClick={handleAddToCart} 
-          className="bg-[#EC4899] text-white px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#EC4899]/80 disabled:opacity-50 disabled:cursor-not-allowed lg:text-lg"
-          disabled={!canAddToCart || (!!product.sizes && product.sizes.length > 0 && !selectedSize) || (!!product.colors && product.colors.length > 0 && !selectedColor)}
+          className="bg-[#EC4899] text-white px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#EC4899]/80 disabled:opacity-50 disabled:cursor-not-allowed lg:text-lg focus:ring-4 focus:ring-[#EC4899]/30"
+          disabled={!canAddToCart || 
+                    (!!product.sizes && product.sizes.length > 0 && !selectedSize) || 
+                    (!!product.colors && product.colors.length > 0 && !selectedColor) ||
+                    (!!product.heel_height && product.heel_height.length > 0 && !selectedHeelHeight) ||
+                    (!!product.sole_type && product.sole_type.length > 0 && !selectedSoleType) ||
+                    (!!product.materials && product.materials.length > 0 && !selectedMaterial)}
+          aria-label="הוסף את המוצר לסל הקניות"
         >
           הוסף לסל
         </button>
-        <button onClick={() => navigate('/cart')} className="border border-[#4B2E83]/20 text-[#4B2E83] px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#4B2E83]/5 lg:text-lg">
+        <button onClick={() => navigate('/cart')} className="border border-[#4B2E83]/20 text-[#4B2E83] px-6 py-3 lg:px-7 lg:py-3.5 rounded-lg hover:bg-[#4B2E83]/5 lg:text-lg focus:ring-2 focus:ring-offset-2 focus:ring-[#4B2E83]" aria-label="מעבר לעמוד סל הקניות">
           מעבר לסל
         </button>
       </div>

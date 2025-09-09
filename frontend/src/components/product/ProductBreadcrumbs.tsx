@@ -16,7 +16,7 @@ interface ProductBreadcrumbsProps {
 }
 
 const BreadcrumbSeparator: React.FC = () => (
-  <FiChevronLeft className="mx-2 text-[#4B2E83] w-4 h-4" />
+  <FiChevronLeft className="mx-2 text-[#4B2E83] w-4 h-4" aria-hidden="true" />
 );
 
 const ProductBreadcrumbs: React.FC<ProductBreadcrumbsProps> = ({ product }) => {
@@ -31,14 +31,14 @@ const ProductBreadcrumbs: React.FC<ProductBreadcrumbsProps> = ({ product }) => {
     <nav className="text-xs sm:text-sm text-gray-600 mb-6 text-center pt-4 hidden sm:block" aria-label="Breadcrumb">
       <ol className="list-none p-0 inline-flex items-baseline gap-4 justify-center flex-wrap md:flex-nowrap">
         <li className="flex items-center group">
-          <Link to="/" className="flex items-center text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] rounded-md px-2 py-1">
+          <Link to="/" className="flex items-center text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black rounded-md px-2 py-1">
             <FaHome className="w-4 h-4 ml-2" />
             ראשי
           </Link>
           <BreadcrumbSeparator />
         </li>
         <li className="flex items-center group">
-          <Link to="/shop" className="flex items-center text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] rounded-md px-2 py-1">
+          <Link to="/shop" className="flex items-center text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black rounded-md px-2 py-1">
             <FaShoppingBag className="w-4 h-4 ml-2" />
             חנות
           </Link>
@@ -46,7 +46,7 @@ const ProductBreadcrumbs: React.FC<ProductBreadcrumbsProps> = ({ product }) => {
         </li>
         {category && (
           <li className="flex items-center group">
-            <Link to={`/shop?category=${category.id}`} className="text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] rounded-md px-2 py-1">
+            <Link to={`/shop?category=${category.id}`} className="text-[#4B2E83] hover:text-[#EC4899] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black rounded-md px-2 py-1">
               {category.name}
             </Link>
             <BreadcrumbSeparator />

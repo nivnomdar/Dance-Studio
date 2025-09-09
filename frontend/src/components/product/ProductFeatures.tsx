@@ -11,7 +11,7 @@ const ProductFeatures: React.FC<ProductFeaturesProps> = ({ features }) => {
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg lg:text-xl font-bold text-gray-900 mb-3 lg:mb-4">מאפיינים מרכזיים</h3>
+      <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-3 lg:mb-4">מאפיינים מרכזיים</h2>
       <ul className="space-y-2">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start text-gray-700 text-base">

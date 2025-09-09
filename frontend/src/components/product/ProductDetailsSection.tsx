@@ -32,8 +32,8 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({ product }
       <div className="flex items-center gap-3 mb-3">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">{product.name}</h1>
         {(product.trending ?? false) && (
-          <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
-            <svg className="flame-svg w-7 h-7 sm:w-8 sm:h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div className="flex items-center justify-center w-9 h-9 sm:w-15 sm:h-10" aria-hidden="true" title="מוצר חם">
+            <svg className="flame-svg w-15 h-15 sm:w-10 sm:h-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="flameGradDetails" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="#EC4899"/>

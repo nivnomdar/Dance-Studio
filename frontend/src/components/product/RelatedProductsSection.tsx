@@ -184,7 +184,13 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
           centeredSlides={false}
           loop={true}
           autoHeight={false}
-          navigation
+          navigation={{
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+            // ariaLabel: 'ניווט מוצרים קשורים',
+            // nextSlideMessage: 'הבא',
+            // prevSlideMessage: 'הקודם',
+          }}
           // autoplay={{ delay: 3000, disableOnInteraction: false }} // Removed autoplay
           breakpoints={{
             640: { slidesPerView: 2.15, spaceBetween: 20 },
@@ -192,6 +198,8 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
             1024: { slidesPerView: 4, spaceBetween: 24 },
           }}
           className="overflow-visible -mx-4 sm:-mx-6 lg:-mx-8"
+          role="region"
+          aria-label="מוצרים שאולי תאהבי"
         >
           {relatedProducts.map((p) => (
             <SwiperSlide key={p.id} className="h-auto">
@@ -202,7 +210,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
                       <img src={buildImageUrl(p.main_image, p.updated_at || p.created_at)} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={handleImageError} />
                       {(p.trending ?? false) && (
                         <div className="absolute top-1 sm:top-4 right-1 sm:right-1 flex items-center justify-center w-15 h-15 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
-                          <svg className="flame-svg w-12 h-12 sm:w-12 sm:h-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg className="flame-svg w-12 h-12 sm:w-12 sm:h-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <defs>
                               <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                                 <stop offset="0%" stopColor="#EC4899"/>

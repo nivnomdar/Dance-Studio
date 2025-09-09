@@ -209,13 +209,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const cartCount = Array.isArray(cartItems) ? cartItems.reduce((total, item) => total + item.quantity, 0) : 0;
 
-  const addToCart = (product: Product, quantity: number, size?: string, color?: string) => {
+  const addToCart = (product: Product, quantity: number, size?: string, color?: string, heel_height?: string, sole_type?: string, materials?: string) => {
     setCartItems(prev => {
       const currentItems = Array.isArray(prev) ? prev : [];
       const existingItem = currentItems.find(item => 
         item.product.id === product.id && 
         item.size === size && 
-        item.color === color
+        item.color === color &&
+        item.heel_height === heel_height &&
+        item.sole_type === sole_type &&
+        item.materials === materials
       );
 
       if (existingItem) {
@@ -223,13 +226,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         return currentItems.map(item =>
           item.product.id === product.id && 
           item.size === size && 
-          item.color === color
+          item.color === color &&
+          item.heel_height === heel_height &&
+          item.sole_type === sole_type &&
+          item.materials === materials
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
         // Add new item
-        return [...currentItems, { product, quantity, size, color }];
+        return [...currentItems, { product, quantity, size, color, heel_height, sole_type, materials }];
       }
     });
   };

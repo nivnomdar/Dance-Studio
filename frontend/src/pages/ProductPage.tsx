@@ -25,6 +25,9 @@ type ProductRecord = {
   category_id?: string | null;
   stock_quantity?: number | null;
   features?: string[] | null; // New: Product features
+  heel_height?: string[] | null; // New: Heel height options
+  sole_type?: string[] | null; // New: Sole type options
+  materials?: string[] | null; // New: Materials options
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -42,6 +45,9 @@ const ProductPage = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0);
+  const [selectedHeelHeight, setSelectedHeelHeight] = useState<string>('');
+  const [selectedSoleType, setSelectedSoleType] = useState<string>('');
+  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
 
   useEffect(() => {
     let mounted = true;
@@ -64,8 +70,14 @@ const ProductPage = () => {
         // preselect first size/color if available
         const sizes = (data as ProductRecord).sizes || [];
         const colors = (data as ProductRecord).colors || [];
+        const heelHeights = (data as ProductRecord).heel_height || [];
+        const soleTypes = (data as ProductRecord).sole_type || [];
+        const materials = (data as ProductRecord).materials || [];
         setSelectedSize(sizes?.[0] || '');
         setSelectedColor(colors?.[0] || '');
+        setSelectedHeelHeight(heelHeights?.[0] || '');
+        setSelectedSoleType(soleTypes?.[0] || '');
+        setSelectedMaterial(materials?.[0] || '');
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || 'שגיאה בטעינת מוצר');
@@ -87,10 +99,10 @@ const ProductPage = () => {
   if (error || !product) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="bg-white border border-[#EC4899]/10 rounded-xl p-6 text-center max-w-md w-full">
+        <div className="bg-white border border-[#EC4899]/10 rounded-xl p-6 text-center max-w-md w-full" role="alert">
           <h2 className="text-xl font-bold text-[#4B2E83] mb-2">שגיאה</h2>
           <p className="text-gray-600 mb-4">{error || 'לא נמצאו פרטי המוצר'}</p>
-          <button onClick={() => navigate(-1)} className="px-4 py-2 rounded-lg bg-[#4B2E83] text-white">
+          <button onClick={() => navigate(-1)} className="px-4 py-2 rounded-lg bg-[#4B2E83] text-white" aria-label="חזרה לעמוד הקודם">
             חזרה
           </button>
         </div>
@@ -99,9 +111,9 @@ const ProductPage = () => {
   }
 
   return (
-    <div className="bg-gray-50 py-6 sm:py-8 lg:py-16 relative">
+    <div className="product-page bg-gray-50 py-6 sm:py-8 lg:py-16 relative">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-        <button onClick={() => navigate(-1)} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer sm:hidden">
+        <button onClick={() => navigate(-1)} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer sm:hidden" aria-label="חזור לעמוד הקודם">
           <FiChevronLeft className="w-4 h-4" />
           חזור
         </button>
@@ -128,6 +140,12 @@ const ProductPage = () => {
                 setSelectedSize={setSelectedSize}
                 selectedColor={selectedColor}
                 setSelectedColor={setSelectedColor}
+                selectedHeelHeight={selectedHeelHeight}
+                setSelectedHeelHeight={setSelectedHeelHeight}
+                selectedSoleType={selectedSoleType}
+                setSelectedSoleType={setSelectedSoleType}
+                selectedMaterial={selectedMaterial}
+                setSelectedMaterial={setSelectedMaterial}
               />
             </div>
             
@@ -136,6 +154,9 @@ const ProductPage = () => {
                 product={product}
                 selectedSize={selectedSize}
                 selectedColor={selectedColor}
+                selectedHeelHeight={selectedHeelHeight}
+                selectedSoleType={selectedSoleType}
+                selectedMaterial={selectedMaterial}
               />
             </div>
           </div>
