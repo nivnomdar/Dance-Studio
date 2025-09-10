@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,26 +8,44 @@ interface MarketingConsentFormProps {
 }
 
 export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({ 
-  userEmail, 
   onSuccess 
 }) => {
-  const [email, setEmail] = useState(''); // Always start with an empty email input
+  const [consentChecked, setConsentChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const { loadProfile, profile } = useAuth(); // Also get profile from context
+  const { loadProfile, profile, session } = useAuth() as any;
+
+  // On mount: if user already has marketing_consent in DB, show permanent success
+  useEffect(() => {
+    const checkExistingConsent = async () => {
+      try {
+        if (!session?.access_token) return;
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/consents`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) return;
+        const consents = await response.json();
+        const hasMarketing = Array.isArray(consents) && consents.some((c: any) => c.consent_type === 'marketing_consent' && c.version === null);
+        if (hasMarketing) {
+          setSuccess(true);
+        }
+      } catch (_) {
+        // Silently ignore; fallback to normal flow
+      }
+    };
+    checkExistingConsent();
+  }, [session?.access_token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
-      setError('אנא הזיני כתובת אימייל תקינה');
-      return;
-    }
-
-    // Add validation: If user is logged in, email must match their current email
-    if (profile && profile.email && email.trim() !== profile.email) {
-      setError('המייל שהוזן אינו תואם למייל של המשתמש המחובר.');
+    if (!consentChecked) {
+      setError('אנא סמני את תיבת ההסכמה');
       return;
     }
     
@@ -41,38 +59,33 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
         throw new Error('לא מחובר למערכת');
       }
 
-      // Call backend API - only update marketing consent, not email itself
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/update-marketing`, {
+      // Update marketing consent like in UserProfile
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/profiles/accept-consent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          // Do NOT send email to update here, as userEmail is for validation only
-          marketing_consent: true
+          consent_type: 'marketing_consent',
+          version: null,
+          consented: true
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'שגיאה בעדכון הפרופיל');
+        const errorText = await response.text();
+        throw new Error(errorText || 'שגיאה בעדכון הפרופיל');
       }
 
-      const result = await response.json();
+      // Immediately refetch the profile to update the state
+      await loadProfile();
       
-      if (result.success) {
-        // Immediately refetch the profile to update the state
-        await loadProfile();
-        
-        setSuccess(true);
-        // Trigger a re-render to show the regular newsletter form
-        setTimeout(() => {
-          onSuccess();
-        }, 2000);
-      } else {
-        throw new Error('שגיאה בעדכון הפרופיל');
-      }
+      setSuccess(true);
+      // Trigger a re-render to show the regular newsletter form
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
 
     } catch (error) {
       console.error('Error updating marketing consent:', error);
@@ -82,14 +95,12 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
     }
   };
 
-  if (success) {
+  if (success || (profile && profile.marketing_consent)) {
     return (
       <div className="p-3 bg-green-900/20 border-2 border-green-500/30 rounded-md">
         <div className="flex items-center justify-center">
           <div className="w-3 h-3 rounded-full mr-2 bg-green-400"></div>
-          <span className="text-sm font-medium text-green-300">
-            תודה! הוספת אותך לרשימת התפוצה
-          </span>
+          <span className="text-sm font-medium text-green-300 mr-1">תודה! התווספת לרשימת התפוצה</span>
         </div>
       </div>
     );
@@ -97,18 +108,26 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="האימייל שלך"
-        required
-        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-pink-400 focus:ring-1 focus:ring-pink-400"
-        disabled={isLoading}
-      />
+      <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          id="marketing_consent"
+          name="marketing_consent"
+          checked={consentChecked}
+          onChange={(e) => setConsentChecked(e.target.checked)}
+          disabled={isLoading}
+          className="w-4 h-4 text-[#EC4899] bg-white border-2 border-[#4B2E83]/30 rounded focus:ring-2 focus:ring-[#EC4899]/20 focus:border-[#EC4899] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        />
+        <label
+          htmlFor="marketing_consent"
+          className="text-sm text-[#4B2E83] font-medium leading-relaxed cursor-pointer"
+        >
+          אני מסכימה לקבל עדכונים ומבצעים מהסטודיו
+        </label>
+      </div>
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !consentChecked}
         className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-md transition-all duration-200 transform hover:scale-105 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
@@ -122,7 +141,7 @@ export const MarketingConsentForm: React.FC<MarketingConsentFormProps> = ({
       </button>
       
       <p className="text-gray-400 text-xs text-center mt-3">
-        בלחיצה על כפתור זה אני מאשרת קבלת תוכן שיווקי לכתובת המייל.
+        בסימון התיבה ולחיצה על הכפתור אני מאשרת קבלת תוכן שיווקי לכתובת המייל.
       </p>
       
       {error && (
