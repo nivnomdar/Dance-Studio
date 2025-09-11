@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
  
 import { FaRedo } from 'react-icons/fa';
 import { classesService } from '../lib/classes';
@@ -7,7 +8,6 @@ import { Class } from '../types/class';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { UserProfile } from '../types/auth';
-import { SkeletonBox, SkeletonText, SkeletonIcon } from '../components/skeleton/SkeletonComponents';
 import { RefreshButton } from '../admin';
 import ClassCard from '../components/ClassCard';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -22,59 +22,21 @@ import {
 const CLASSES_CACHE_KEY = 'classes_cache';
 const CLASSES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Class Card Skeleton Components
-const ClassCardImageSkeleton = () => (
-  <div className="relative h-32 sm:h-40 lg:h-48 hidden lg:block">
-    <SkeletonBox className="w-full h-full rounded-t-2xl" />
-    <div className="absolute bottom-3 right-3">
-      <SkeletonBox className="w-16 h-6 rounded-full" />
-    </div>
-  </div>
-);
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2
+    }
+  }
+};
 
-const ClassCardContentSkeleton = () => (
-  <div className="p-3 sm:p-4 lg:p-6 lg:flex lg:flex-col lg:h-full lg:pt-6 pt-3">
-    {/* Title */}
-    <SkeletonBox className="h-5 sm:h-6 mb-2 sm:mb-3" />
-    
-    {/* Description */}
-    <div className="h-12 sm:h-16 lg:h-20 mb-3 sm:mb-4">
-      <SkeletonText lines={3} />
-    </div>
-    
-    {/* Details */}
-    <div className="space-y-2 mb-4 sm:mb-6 h-10 sm:h-12 lg:h-14">
-      <div className="flex items-center">
-        <SkeletonIcon className="ml-2" />
-        <SkeletonBox className="h-3 w-20" />
-      </div>
-      <div className="flex items-center">
-        <SkeletonIcon className="ml-2" />
-        <SkeletonBox className="h-3 w-16" />
-      </div>
-    </div>
-    
-    {/* Button */}
-    <div className="lg:mt-auto">
-      <SkeletonBox className="w-full h-7 sm:h-8 rounded-xl" />
-    </div>
-  </div>
-);
-
-const ClassCardSkeleton = () => (
-  <div className="bg-white rounded-2xl shadow-xl h-full lg:flex lg:flex-col">
-    <ClassCardImageSkeleton />
-    <ClassCardContentSkeleton />
-  </div>
-);
-
-const ClassesSkeletonGrid = () => (
-  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-    {Array.from({ length: 8 }).map((_, index) => (
-      <ClassCardSkeleton key={index} />
-    ))}
-  </div>
-);
+const fadeInUp = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] } }
+};
 
 function ClassesPage() {
   const { profile: contextProfile, user, session, loading: authLoading } = useAuth();
@@ -382,24 +344,7 @@ function ClassesPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDF9F6] py-8 sm:py-12 lg:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="text-center mb-8 sm:mb-12 lg:mb-16">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
-              שיעורים
-            </h1>
-            <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#4B2E83] mx-auto mb-6 sm:mb-8"></div>
-            <p className="text-base sm:text-lg lg:text-xl text-[#2B2B2B] max-w-3xl mx-auto font-agrandir-regular leading-relaxed px-4">
-              בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
-              הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
-            </p>
-          </div>
-
-          {/* Skeleton Loading */}
-          <ClassesSkeletonGrid />
-        </div>
-      </div>
+      null
     );
   }
 
@@ -438,10 +383,15 @@ function ClassesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF9F6] overflow-x-hidden py-8 sm:py-12 lg:py-16">
+    <motion.div
+      className="min-h-screen bg-[#FDF9F6] overflow-x-hidden py-8 sm:py-12 lg:py-16"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-12 lg:mb-16">
+        <motion.div variants={fadeInUp} className="text-center mb-8 sm:mb-12 lg:mb-16">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#4B2E83] mb-4 sm:mb-6 font-agrandir-grand">
             שיעורים
           </h1>
@@ -450,12 +400,12 @@ function ClassesPage() {
             בסטודיו שלי תמצאי שיעורי ריקוד עקב לקבוצת מתחילות. <br className="hidden sm:block"/>
             הצטרפי אלי לחוויה מקצועית ומהנה של ריקוד על עקבים.
           </p>
-        </div>
+        </motion.div>
 
         
 
         {/* Inline Classes Carousel */}
-        <section className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-12" id="classes-carousel">
+        <motion.section variants={fadeInUp} className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-12" id="classes-carousel">
           <style>{`
             .swiper-button-next, .swiper-button-prev { color: #EC4899 !important; }
             .swiper-pagination { display: none !important; }
@@ -667,11 +617,11 @@ function ClassesPage() {
               )}
             </div>
           </div>
-        </section>
+        </motion.section>
 
 
       </div>
-    </div>
+    </motion.div>
   );
 }
 
