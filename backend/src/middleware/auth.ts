@@ -24,14 +24,12 @@ declare global {
 
 export const auth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    console.log('Auth middleware: checking authorization...');
-    console.log('Auth middleware: headers:', req.headers);
-    
     // קבל את ה-token מה-headers
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Auth middleware: No authorization header or invalid format');
-      throw new AppError('No authorization token provided', 401);
+      console.log('Auth middleware: No authorization header or invalid format. Proceeding as guest.');
+      req.user = undefined; // Set user to undefined for guest access
+      return next(); // Proceed to next middleware/route
     }
 
     const token = authHeader.substring(7); // הסר את "Bearer "

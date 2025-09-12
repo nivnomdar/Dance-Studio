@@ -1,29 +1,24 @@
 import { supabase } from '../lib/supabase'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { logActivity } from '../utils/activityLogger'; // Corrected import path
 
 // CSS ספציפי לצ'קבוקסים
-const checkboxStyles: React.CSSProperties = {
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  width: '16px',
-  height: '16px',
-  border: '2px solid #d1d5db',
-  borderRadius: '4px',
-  backgroundColor: 'white',
-  cursor: 'pointer',
-  position: 'relative',
-  flexShrink: 0,
-  margin: 0,
-  padding: 0,
-  boxSizing: 'border-box',
-}
-
-const checkedStyles: React.CSSProperties = {
-  ...checkboxStyles,
-  backgroundColor: '#4B2E83',
-  borderColor: '#4B2E83',
-}
+// const checkboxStyles: React.CSSProperties = {
+//   appearance: 'none',
+//   WebkitAppearance: 'none',
+//   MozAppearance: 'none',
+//   width: '16px',
+//   height: '16px',
+//   border: '2px solid #d1d5db',
+//   borderRadius: '4px',
+//   backgroundColor: 'white',
+//   cursor: 'pointer',
+//   position: 'relative',
+//   flexShrink: 0,
+//   margin: 0,
+//   padding: 0,
+//   boxSizing: 'border-box',
+// }
 
 // Check if user prefers reduced motion
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -53,7 +48,10 @@ export const GoogleLogin = () => {
         }
       })
       
-      if (error) throw error
+      if (error) {
+        await logActivity('User Login Failed', `Google OAuth initiation error: ${error.message}`, { error: error.message }, undefined, 'error');
+        throw error;
+      }
       
       // If we get here, the sign in was successful
       // Google sign in successful
@@ -134,7 +132,10 @@ export const GoogleLoginModal = ({ isOpen, onClose }: GoogleLoginModalProps) => 
         }
       })
       
-      if (error) throw error
+      if (error) {
+        await logActivity('User Login Failed', `Google OAuth initiation error (modal): ${error.message}`, { error: error.message }, undefined, 'error');
+        throw error;
+      }
       
       // The profile will be updated in the auth callback
       

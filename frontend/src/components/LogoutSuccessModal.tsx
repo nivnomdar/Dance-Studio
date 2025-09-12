@@ -119,15 +119,18 @@ export const LogoutSuccessModal = ({ isOpen, onClose, onConfirm }: LogoutSuccess
           {/* Title */}
           <div className="relative z-10">
             <h2 id="logout-success-title" className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 font-agrandir-grand">התנתקות מוצלחת! 👋</h2>
-            <p id="logout-success-desc" className="text-sm sm:text-base text-white/90">התנתקת בהצלחה מהמערכת.</p>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-4 sm:p-6">
           <p className="text-gray-600 text-sm text-center mb-6">
+            התנתקת בהצלחה מהמערכת.
+            <br/>
             אשמח לראות אותך שוב בקרוב!
+
           </p>
+          
           
           {/* Button */}
           <button

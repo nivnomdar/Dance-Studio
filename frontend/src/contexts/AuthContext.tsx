@@ -20,6 +20,7 @@ import {
   clearAllCookies,
   frontendCookieManager // Added this import
 } from '../utils/cookieManager';
+import { logActivity } from '../utils/activityLogger'; // Added this import
 import { TermsCookieManager } from '../utils/termsCookieManager';
 import { throttledApiFetch } from '../utils/api'; // Added this import
 
@@ -55,20 +56,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Check if we're already creating a profile to prevent race condition
       const creatingKey = `creating_profile_${safeUser.id}`;
       if (hasCookie(creatingKey)) {
-        // Another process is creating the profile, wait a bit and retry
         await new Promise(resolve => setTimeout(resolve, 500));
         return await createProfileForUser(safeUser);
       }
+      setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000);
 
-      // Set flag to prevent other processes from creating profile
-      setDataWithTimestamp(creatingKey, 'true', 5 * 60 * 1000); // 5 דקות
-
-      // Check if profile already exists to avoid overwriting existing values - removed terms_accepted, marketing_consent
-      // No need to fetch existingProfile explicitly, upsert handles conflicts by 'id'
-      // Removed explicit select of 'id' and 'maybeSingle()' as it's redundant with upsert on 'id'
+      let existingProfile = null;
+      try {
+        // First, try to fetch the profile. If it exists, it's not a *new* creation by this frontend call.
+        const response = await throttledApiFetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?select=*&id=eq.${safeUser.id}`,
+          {
+            method: 'GET',
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (!response.ok) {
+          // If not found (404) or other error, assume no profile exists for now. Log and continue.
+          const errorText = await response.text();
+          console.error(`AuthContext: Error fetching existing profile (may not exist yet): Status ${response.status} - ${errorText}`);
+          // console.log('AuthContext: Raw error from Supabase (fetch existing profile):', errorText); // Removed debug log
+        } else {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            existingProfile = data[0];
+          }
+        }
+      } catch (fetchError) {
+        console.error('AuthContext: Unexpected error during initial profile fetch:', fetchError);
+      }
 
       const avatarUrl = safeUser.user_metadata?.avatar_url || '';
       const profileData = {
@@ -78,54 +100,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         last_name: safeUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
         role: 'user',
         avatar_url: avatarUrl,
-        created_at: new Date().toISOString(),
         is_active: true,
-        // Removed explicit setting of terms_accepted and marketing_consent as they are managed in user_consents table
         last_login_at: new Date().toISOString(),
         language: 'he'
+        // created_at should only be set on initial insert.
+        // terms_accepted and marketing_consent are managed separately via user_consents.
       };
 
-      // Use throttledApiFetch for profile creation
-      const { data: newProfile, error: createError } = await (async () => {
-        const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
-          method: 'POST',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify(profileData)
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to create profile: ${response.status} - ${errorText}`);
+      let newProfile = null;
+
+      if (existingProfile) {
+        // If profile already exists (likely by trigger), perform an UPDATE.
+        try {
+          const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${safeUser.id}`, {
+            method: 'PATCH', // Use PATCH for update
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation' // Return updated data
+            },
+            body: JSON.stringify(profileData) // Update with current data
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('AuthContext: Error during profile PATCH:', { status: response.status, errorText });
+            // console.log('AuthContext: Raw error from Supabase (PATCH profile):', errorText); // Removed debug log
+            throw new Error(`Failed to update profile: ${response.status} - ${errorText}`);
+          }
+          newProfile = (await response.json())[0];
+          localStorage.removeItem('is_new_user_registration'); // Not a new registration for this session
+
+        } catch (patchError) {
+          console.error('AuthContext: Unexpected error during profile PATCH operation:', patchError);
+          throw patchError; // Re-throw to be caught by the outer catch
         }
-        const data = await response.json();
-        return { data: data[0], error: null }; // Supabase returns an array for inserts
-      })();
+
+      } else {
+        // No profile found (trigger might be missing or delayed), perform initial INSERT.
+        try {
+          const response = await throttledApiFetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles`, {
+            method: 'POST', // Use POST for insert
+            headers: {
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation' // Return created data
+            },
+            body: JSON.stringify({ ...profileData, created_at: new Date().toISOString() }) // Include created_at for new insert
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('AuthContext: Error during profile POST:', { status: response.status, errorText });
+            // console.log('AuthContext: Raw error from Supabase (POST profile):', errorText); // Removed debug log
+            throw new Error(`Failed to create profile: ${response.status} - ${errorText}`);
+          }
+          newProfile = (await response.json())[0];
+          localStorage.setItem('is_new_user_registration', 'true'); // This is a new registration by frontend
+
+        } catch (postError) {
+          console.error('AuthContext: Unexpected error during profile POST operation:', postError);
+          throw postError; // Re-throw to be caught by the outer catch
+        }
+      }
       
-      if (createError) {
-        handleAuthError(createError, 'create profile');
-        return null;
+      if (!newProfile) {
+        throw new Error('Profile operation failed: no profile data returned.');
       }
 
-      // Cache the new profile immediately
-      if (newProfile) {
-        const cacheKey = `profile_${safeUser.id}`;
-        setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000); // 5 דקות
-      }
+      // Cache the new/updated profile immediately
+      const cacheKey = `profile_${safeUser.id}`;
+      setDataWithTimestamp(cacheKey, newProfile, 5 * 60 * 1000);
 
       return newProfile;
     } catch (error) {
       handleAuthError(error, 'createProfileForUser');
+      localStorage.removeItem('is_new_user_registration'); // Clear flag on error
       return null;
     } finally {
-      // Always remove the flag
       const creatingKey = `creating_profile_${safeUser.id}`;
-      frontendCookieManager.removeCookie(creatingKey); // Remove only the specific flag cookie
+      frontendCookieManager.removeCookie(creatingKey);
     }
-  }, []);
+  }, [session]); // Depend on session to get access_token. Note: user is passed as safeUser and is not a direct dependency of useCallback here. Adjust if needed. 
 
   // Store function in ref immediately
   createProfileForUserRef.current = createProfileForUser;
@@ -276,6 +332,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Sign out function
   const signOut = useCallback(async () => {
     try {
+      const userId = user?.id; // Get user ID before clearing state
+      const currentAccessToken = session?.access_token; // Capture access token before clearing session
+
+      // Log logout activity directly before clearing session
+      if (userId && currentAccessToken && user?.email && user.app_metadata?.provider) {
+        const logSuccess = await logActivity(
+          'User Logout',
+          `Successful logout for user ${user.email || userId}`,
+          { userId: userId, email: user.email, provider: user.app_metadata.provider },
+          currentAccessToken,
+          'info'
+        );
+        if (!logSuccess) {
+          console.error('AuthContext: Failed to log logout activity during signOut.');
+        }
+      } else {
+        console.error('AuthContext: User or session data missing for logging during signOut.');
+      }
+
       // Immediate state cleanup with setTimeout to avoid setState during render
       setTimeout(() => {
         setProfile(null);
@@ -323,7 +398,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error in signOut:', error);
       throw error;
     }
-  }, []);
+  }, [user, session]); // Added user and session to dependencies to capture latest values
 
   // Load profile function
   const loadProfile = useCallback(async (forceRefresh: boolean = false) => {
@@ -374,6 +449,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         switch (event) {
           case 'SIGNED_OUT':
+            // Removed direct logging here as it's handled in signOut
+            
             setTimeout(() => {
               setAuthState(AuthState.UNAUTHENTICATED);
               setProfile(null);

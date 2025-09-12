@@ -25,6 +25,7 @@ import {
   getAvailableCreditsForGroup,
   formatCreditMessage
 } from '../lib/creditLogic';
+import { logActivity } from '../utils/activityLogger'; // Added this import
 import { throttledApiFetch } from '../utils/api'; // Added this import
 
 interface SubscriptionRegistrationProps {
@@ -378,6 +379,8 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
     setIsSubmitting(true);
     setRegistrationError(null);
 
+    let registrationData: any; // Declare registrationData here
+
     try {
       // Get spots info for session data
       const spotsKey = classData.id + '_' + selectedDate;
@@ -398,7 +401,7 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       }
       
       // Create registration first
-      const registrationData = {
+      registrationData = { // Assign to registrationData here
         class_id: classData.id,
         user_id: user.id, // Add user_id explicitly
         ...(spotsInfo?.sessionId && { session_id: spotsInfo.sessionId }),
@@ -418,6 +421,28 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       };
 
       const newRegistration = await registrationsService.createRegistration(registrationData, session!.access_token); // Ensure non-null access_token
+
+      // Log the class registration activity
+      await logActivity(
+        'Class Registration (Subscription)',
+        `הרשמה לשיעור מנוי ${classData.name} בתאריך ${selectedDate} בשעה ${timeForBackend}. נרשמה: ${formData.first_name} ${formData.last_name}, טלפון: ${formData.phone}, אימייל: ${user.email}. מחיר: ${classData.price} ש"ח. שימוש בקרדיטים: ${registrationData.used_credit ? `כן (${registrationData.credit_type})` : 'לא'}.`,
+        {
+          userId: user.id,
+          classId: classData.id,
+          sessionId: spotsInfo?.sessionId,
+          sessionClassId: spotsInfo?.sessionClassId,
+          registrationId: newRegistration.id,
+          usedCredits: registrationData.used_credit,
+          creditType: registrationData.credit_type,
+          price: classData.price,
+          email: user.email,
+          firstName: formData.first_name,
+          lastName: formData.last_name,
+          phone: formData.phone,
+        },
+        session!.access_token,
+        'info'
+      );
 
       // Handle consents after successful registration
       const consentPromises = [];
@@ -507,6 +532,22 @@ const SubscriptionRegistration: React.FC<SubscriptionRegistrationProps> = ({ cla
       }
       
       setRegistrationError(errorMessage);
+      
+      await logActivity(
+        'Class Registration Failed (Subscription)',
+        `Subscription registration error for ${user?.email || 'unknown user'}: ${errorMessage}`,
+        {
+          userId: user?.id,
+          classId: classData.id,
+          selectedDate,
+          selectedTime,
+          usedCredits: registrationData.used_credit,
+          creditType: registrationData.credit_type,
+          error: (error as Error).message || String(error),
+        },
+        session?.access_token,
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }

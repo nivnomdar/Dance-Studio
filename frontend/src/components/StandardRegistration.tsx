@@ -13,6 +13,7 @@ import {
   getAvailableSpotsBatchFromSessions,
   clearSessionsCache
 } from '../utils/sessionsUtils';
+import { logActivity } from '../utils/activityLogger'; // Added this import
 import { getColorScheme } from '../utils/colorUtils';
 import { SkeletonBox } from './skeleton/SkeletonComponents';
 import { throttledApiFetch } from '../utils/api';
@@ -515,7 +516,27 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       };
       
       const newRegistration = await registrationsService.createRegistration(registrationData, session!.access_token); // Added non-null assertion
-      
+
+      // Log the class registration activity
+      await logActivity(
+        'Class Registration',
+        `הרשמה לשיעור ${classData.name} בתאריך ${selectedDate} בשעה ${timeForBackend}. נרשמה: ${formData.first_name} ${formData.last_name}, טלפון: ${formData.phone}, אימייל: ${user.email}. מחיר: ${classData.price} ש"ח.`,
+        {
+          userId: user.id,
+          classId: classData.id,
+          sessionId: spotsInfo?.sessionId,
+          sessionClassId: spotsInfo?.sessionClassId,
+          registrationId: newRegistration.id,
+          price: classData.price,
+          email: user.email,
+          firstName: formData.first_name,
+          lastName: formData.last_name,
+          phone: formData.phone,
+        },
+        session!.access_token,
+        'info'
+      );
+
       // Handle consents after successful registration
       const consentPromises = [];
 
@@ -608,6 +629,20 @@ const StandardRegistration: React.FC<StandardRegistrationProps> = ({ classData }
       
       setRegistrationError(errorMessage);
       setIsSubmitting(false);
+      
+      await logActivity(
+        'Class Registration Failed',
+        `Standard registration error for ${user?.email || 'unknown user'}: ${errorMessage}`,
+        {
+          userId: user?.id,
+          classId: classData.id,
+          selectedDate,
+          selectedTime,
+          error: (error as Error).message || String(error),
+        },
+        session?.access_token,
+        'error'
+      );
     }
   };
 

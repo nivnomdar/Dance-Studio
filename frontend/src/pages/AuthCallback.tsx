@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { logActivity } from '../utils/activityLogger';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -41,6 +42,23 @@ export default function AuthCallback() {
         if (existingSession && !hasNavigated) {
           setIsAuthenticated(true);
           setHasNavigated(true);
+          
+          // Log re-authentication activity
+          const logReauthSuccess = await logActivity(
+            'User Re-authenticated',
+            `Existing session found for ${existingSession.user.email || existingSession.user.id}`,
+            {
+              userId: existingSession.user.id,
+              email: existingSession.user.email,
+              provider: existingSession.user.app_metadata.provider,
+            },
+            existingSession.access_token,
+            'info'
+          );
+          if (!logReauthSuccess) {
+            console.error('AuthCallback: Failed to log re-authentication activity.');
+          }
+          
           navigate('/', { replace: true });
           return;
         }
@@ -53,6 +71,10 @@ export default function AuthCallback() {
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
+          const logOAuthError = await logActivity('User Login Failed', `OAuth error: ${error} - ${errorDescription}`, { error, errorDescription }, undefined, 'error');
+          if (!logOAuthError) {
+            console.error('AuthCallback: Failed to log OAuth error activity.');
+          }
           return;
         }
 
@@ -60,6 +82,10 @@ export default function AuthCallback() {
         if (!code) {
           setHasNavigated(true);
           navigate('/', { replace: true });
+          const logNoCode = await logActivity('User Login Failed', 'No auth code provided', {}, undefined, 'warn');
+          if (!logNoCode) {
+            console.error('AuthCallback: Failed to log no auth code activity.');
+          }
           return;
         }
 
@@ -73,6 +99,10 @@ export default function AuthCallback() {
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
+          const logExchangeError = await logActivity('User Login Failed', `Error exchanging code for session: ${exchangeError.message}`, { code, error: exchangeError }, undefined, 'error');
+          if (!logExchangeError) {
+            console.error('AuthCallback: Failed to log exchange code error activity.');
+          }
           return;
         }
 
@@ -83,6 +113,30 @@ export default function AuthCallback() {
             setIsAuthenticated(true);
             setHasNavigated(true);
             navigate('/', { replace: true });
+
+            const isNewUser = localStorage.getItem('is_new_user_registration') === 'true';
+            localStorage.removeItem('is_new_user_registration'); // Clear the flag after checking
+
+            const actionType = isNewUser ? 'New User Registration' : 'User Login';
+            const details = isNewUser
+              ? `New user registration for ${data.session.user.email} using ${data.session.user.app_metadata.provider}`
+              : `Successful login for ${data.session.user.email} using ${data.session.user.app_metadata.provider}`;
+
+            const logSuccess = await logActivity(
+              actionType,
+              details,
+              {
+                userId: data.session.user.id,
+                email: data.session.user.email,
+                provider: data.session.user.app_metadata.provider,
+                isNewUser: isNewUser,
+              },
+              data.session.access_token,
+              'info'
+            );
+            if (!logSuccess) {
+              console.error(`AuthCallback: Failed to log ${actionType} activity.`);
+            }
           }
         } else {
           console.error('No session returned from code exchange');
@@ -91,15 +145,31 @@ export default function AuthCallback() {
           setTimeout(() => {
             navigate('/', { replace: true });
           }, 3000);
+          const logFailure = await logActivity('User Login Failed', 'No session returned from code exchange', { code }, undefined, 'warn');
+          if (!logFailure) {
+            console.error('AuthCallback: Failed to log login failure (no session) activity.');
+          }
         }
 
       } catch (error) {
-        console.error('Unexpected error in auth callback:', error);
+        console.error('AuthCallback: Unexpected error in auth callback:', error); // Log the full error object
         setError('שגיאה לא צפויה. אנא נסה שוב.');
         setHasNavigated(true);
         setTimeout(() => {
           navigate('/', { replace: true });
         }, 3000);
+        
+        const errorMessage = (error instanceof Error) ? error.message : String(error);
+        const logUnexpectedFailure = await logActivity(
+          'User Login Failed',
+          `Unexpected error in auth callback: ${errorMessage}`,
+          { error: errorMessage, fullError: error }, // Include full error object in metadata
+          undefined,
+          'error'
+        );
+        if (!logUnexpectedFailure) {
+          console.error('AuthCallback: Failed to log unexpected login error activity.');
+        }
       }
     };
 
