@@ -31,6 +31,7 @@ export interface AdminData {
   session_classes: any[];
   profiles: any[];
   overview: any;
+  messages: any[]; // Add messages property
 }
 
 export interface SummaryStats {

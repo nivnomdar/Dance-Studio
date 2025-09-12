@@ -1,7 +1,7 @@
 export const HOMEPAGE_ASSETS = {
   hero: {
-    desktop: 'hero/v1/desktop.png',
-    mobile: 'hero/v1/mobile.png',
+    desktop: 'hero/v1/desktop.avif',
+    mobile: 'hero/v1/mobile.avif',
   },
   about: {
     portrait: 'about/v1/portrait.svg',

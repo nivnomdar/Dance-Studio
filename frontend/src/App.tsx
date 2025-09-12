@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import DeveloperCredit from './components/layout/DeveloperCredit';
-import HomePage from './pages/HomePage';
+// import HomePage from './pages/HomePage'; // Original import
 import ClassesPage from './pages/ClassesPage';
 import ContactPage from './pages/ContactPage';
 import UserProfile from './pages/UserProfile';
@@ -26,7 +26,24 @@ import ClassesReportsWrapper from './admin/pages/dashboard/ClassesReportsWrapper
 import CookieConsentBanner from './components/layout/CookieConsentBanner';
 import NotFoundPage from './pages/NotFoundPage'; // Import NotFoundPage
 // import { ThrottleMonitor } from './components/ThrottleMonitor';
-import { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react'; // Import React, useEffect, and Suspense
+
+const LazyHomePage = React.lazy(() => import('./pages/HomePage')); // Lazy load HomePage
+const LazyClassesPage = React.lazy(() => import('./pages/ClassesPage')); // Lazy load ClassesPage
+const LazyContactPage = React.lazy(() => import('./pages/ContactPage')); // Lazy load ContactPage
+const LazyUserProfile = React.lazy(() => import('./pages/UserProfile')); // Lazy load UserProfile
+const LazyShopPage = React.lazy(() => import('./pages/ShopPage')); // Lazy load ShopPage
+const LazyCartPage = React.lazy(() => import('./pages/CartPage')); // Lazy load CartPage
+const LazyAuthCallback = React.lazy(() => import('./pages/AuthCallback')); // Lazy load AuthCallback
+const LazyClassDetailPage = React.lazy(() => import('./components/ClassDetailPage')); // Lazy load ClassDetailPage
+const LazyPrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy')); // Lazy load PrivacyPolicy
+const LazyTermsOfService = React.lazy(() => import('./pages/TermsOfService')); // Lazy load TermsOfService
+const LazyAccessibilityStatement = React.lazy(() => import('./pages/AccessibilityStatement')); // Lazy load AccessibilityStatement
+const LazyPhysicalAccessibility = React.lazy(() => import('./pages/PhysicalAccessibility')); // Lazy load PhysicalAccessibility
+const LazyProductPage = React.lazy(() => import('./pages/ProductPage')); // Lazy load ProductPage
+const LazyAdminDashboard = React.lazy(() => import('./admin/pages/dashboard/AdminDashboard')); // Lazy load AdminDashboard
+const LazyClassesReportsWrapper = React.lazy(() => import('./admin/pages/dashboard/ClassesReportsWrapper')); // Lazy load ClassesReportsWrapper
+const LazyNotFoundPage = React.lazy(() => import('./pages/NotFoundPage')); // Lazy load NotFoundPage
 
 function AppContent() {
   const location = useLocation();
@@ -43,25 +60,27 @@ function AppContent() {
     <div className="min-h-screen bg-black flex flex-col">
       <Navbar />
       <main className="pt-12 flex-grow"> {/* Add padding-top to account for fixed navbar */}
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          {/* <Route path="/about" element={<AboutPage />} /> */}
-          <Route path="/classes" element={<ClassesPage />} />
-          <Route path="/class/:slug" element={<ClassDetailPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/profile" element={<UserProfile />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/classes-reports" element={<ClassesReportsWrapper />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/auth/v1/callback" element={<AuthCallback />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/accessibility-statement" element={<AccessibilityStatement />} />
-          <Route path="/physical-accessibility" element={<PhysicalAccessibility />} />
-          <Route path="*" element={<NotFoundPage />} /> {/* Catch-all route for 404 */}
-        </Routes>
+        <Suspense fallback={<div className="text-white text-center py-8">טוען...</div>}>
+          <Routes>
+            <Route path="/" element={<LazyHomePage />} />
+            {/* <Route path="/about" element={<AboutPage />} /> */}
+            <Route path="/classes" element={<LazyClassesPage />} />
+            <Route path="/class/:slug" element={<LazyClassDetailPage />} />
+            <Route path="/contact" element={<LazyContactPage />} />
+            <Route path="/profile" element={<LazyUserProfile />} />
+            <Route path="/admin" element={<LazyAdminDashboard />} />
+            <Route path="/admin/classes-reports" element={<LazyClassesReportsWrapper />} />
+            <Route path="/shop" element={<LazyShopPage />} />
+            <Route path="/product/:id" element={<LazyProductPage />} />
+            <Route path="/cart" element={<LazyCartPage />} />
+            <Route path="/auth/v1/callback" element={<LazyAuthCallback />} />
+            <Route path="/privacy-policy" element={<LazyPrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<LazyTermsOfService />} />
+            <Route path="/accessibility-statement" element={<LazyAccessibilityStatement />} />
+            <Route path="/physical-accessibility" element={<LazyPhysicalAccessibility />} />
+            <Route path="*" element={<LazyNotFoundPage />} /> {/* Catch-all route for 404 */}
+          </Routes>
+        </Suspense>
       </main>
       {!isAdminPath ? <Footer /> : <DeveloperCredit />}
       <CookieConsentBanner />

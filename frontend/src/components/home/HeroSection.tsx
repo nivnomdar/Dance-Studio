@@ -7,11 +7,11 @@ function HeroSection() {
     <section className="relative w-full h-auto md:h-screen overflow-visible md:overflow-hidden">
       {/* Large screens background image */}
       <div className="absolute inset-0 w-full h-full hidden md:block">
-        <div
-          className="w-full h-full bg-cover bg-bottom bg-no-repeat"
-          style={{ backgroundImage: `url(${assetUrl(HOMEPAGE_ASSETS.hero.desktop)})` }}
-          aria-label="רקע סטודיו לדנסאס"
-          role="img"
+        <img
+          src={assetUrl(HOMEPAGE_ASSETS.hero.desktop)}
+          alt="רקע סטודיו לדנסאס"
+          className="w-full h-full object-cover object-bottom"
+          loading="eager"
         />
       </div>
 
@@ -25,7 +25,7 @@ function HeroSection() {
             objectFit: 'contain',
             objectPosition: 'top'
           }}
-          loading="eager"
+          loading="lazy" // Changed from eager to lazy
         />
       </div>
 
