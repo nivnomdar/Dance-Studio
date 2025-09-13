@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { apiService } from '../lib/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ProductImageGallery from '../components/product/ProductImageGallery';
@@ -31,6 +32,22 @@ type ProductRecord = {
   created_at?: string | null;
   updated_at?: string | null;
 };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+  
+  const fadeInUp = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1, transition: { duration: 0.6, ease: [0.6, -0.05, 0.01, 0.99] } }
+  };
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -111,23 +128,30 @@ const ProductPage = () => {
   }
 
   return (
-    <div className="product-page bg-gray-50 py-6 sm:py-8 lg:py-16 relative">
+    <motion.div
+      className="product-page bg-gray-50 py-6 sm:py-8 lg:py-16 relative"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-        <button onClick={() => navigate(-1)} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer sm:hidden" aria-label="חזור לעמוד הקודם">
+        <motion.button onClick={() => navigate(-1)} variants={fadeInUp} className="absolute top-6 right-3 sm:right-4 lg:right-8 flex items-center gap-1 px-3 py-1.5 rounded-md text-[#4B2E83] hover:text-[#EC4899] hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#EC4899] text-sm md:text-base cursor-pointer sm:hidden" aria-label="חזור לעמוד הקודם">
           <FiChevronLeft className="w-4 h-4" />
           חזור
-        </button>
-        <ProductBreadcrumbs product={product} />
+        </motion.button>
+        <motion.div variants={fadeInUp}>
+          <ProductBreadcrumbs product={product} />
+        </motion.div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-          <div>
+          <motion.div variants={fadeInUp}>
             <ProductImageGallery
               product={product}
               activeImageIdx={activeImageIdx}
               setActiveImageIdx={setActiveImageIdx}
             />
-          </div>
+          </motion.div>
 
-          <div className="lg:pl-4">
+          <motion.div variants={fadeInUp} className="lg:pl-4">
             <ProductDetailsSection product={product} />
             
             {/* Product Features */}
@@ -159,11 +183,13 @@ const ProductPage = () => {
                 selectedMaterial={selectedMaterial}
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-      <RelatedProductsSection currentProductId={product.id} categoryId={product.category_id} />
-    </div>
+      <motion.div variants={fadeInUp}>
+        <RelatedProductsSection currentProductId={product.id} categoryId={product.category_id} />
+      </motion.div>
+    </motion.div>
   );
 };
 

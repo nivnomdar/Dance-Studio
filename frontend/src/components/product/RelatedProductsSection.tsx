@@ -164,7 +164,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
         .swiper-button-prev:focus-visible {
           outline: none;
           box-shadow: 0 0 0 3px rgba(236,72,153,0.45);
-          outline: 2px solid #ffffff !important;
+          outline: 2px solid #000000 !important; /* Changed to black */
           outline-offset: 2px;
           border-radius: 9999px;
           box-shadow: none;

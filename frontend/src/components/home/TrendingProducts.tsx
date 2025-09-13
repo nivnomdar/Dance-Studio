@@ -5,7 +5,7 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 import { useProducts } from '../../hooks/useProducts';
 
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 
 type ShopProduct = {
   id: string;
@@ -107,6 +107,7 @@ function TrendingProducts() {
           outline-offset: 2px;
           border-radius: 9999px;
           box-shadow: none; /* הסרת ה-box-shadow כדי למנוע כפילות */
+          outline: 2px solid #000000 !important; /* Changed to black */
           transition: none; /* מניעת אנימציה בפוקוס */
         }
         .swiper-button-disabled {
