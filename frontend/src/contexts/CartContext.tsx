@@ -209,57 +209,56 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const cartCount = Array.isArray(cartItems) ? cartItems.reduce((total, item) => total + item.quantity, 0) : 0;
 
+  // Helper to generate a unique key for a cart item based on its unique attributes
+  const getCartItemKey = (productId: number, size?: string, color?: string, heel_height?: string, sole_type?: string, materials?: string) => {
+    return `${productId}-${size || 'no-size'}-${color || 'no-color'}-${heel_height || 'no-heel'}-${sole_type || 'no-sole'}-${materials || 'no-materials'}`;
+  };
+
   const addToCart = (product: Product, quantity: number, size?: string, color?: string, heel_height?: string, sole_type?: string, materials?: string) => {
     setCartItems(prev => {
       const currentItems = Array.isArray(prev) ? prev : [];
+      // Find existing item using a comprehensive key
+      const newItemKey = getCartItemKey(product.id, size, color, heel_height, sole_type, materials);
       const existingItem = currentItems.find(item => 
-        item.product.id === product.id && 
-        item.size === size && 
-        item.color === color &&
-        item.heel_height === heel_height &&
-        item.sole_type === sole_type &&
-        item.materials === materials
+        getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials) === newItemKey
       );
 
       if (existingItem) {
         // Update existing item quantity
-        return currentItems.map(item =>
-          item.product.id === product.id && 
-          item.size === size && 
-          item.color === color &&
-          item.heel_height === heel_height &&
-          item.sole_type === sole_type &&
-          item.materials === materials
+        return currentItems.map(item => {
+          const itemKey = getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials);
+          return itemKey === newItemKey
             ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
+            : item;
+        });
       } else {
-        // Add new item
+        // Add new item with a key
         return [...currentItems, { product, quantity, size, color, heel_height, sole_type, materials }];
       }
     });
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (itemKeyToRemove: string) => {
     setCartItems(prev => {
       const currentItems = Array.isArray(prev) ? prev : [];
-      return currentItems.filter(item => item.product.id !== productId);
+      return currentItems.filter(item => getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials) !== itemKeyToRemove);
     });
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
+  const updateQuantity = (itemKeyToUpdate: string, quantity: number) => {
     setCartItems(prev => {
       const currentItems = Array.isArray(prev) ? prev : [];
-      return currentItems.map(item =>
-        item.product.id === productId
+      
+      if (quantity <= 0) {
+        return currentItems.filter(item => getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials) !== itemKeyToUpdate);
+      }
+
+      return currentItems.map(item => {
+        const itemKey = getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials);
+        return itemKey === itemKeyToUpdate
           ? { ...item, quantity }
-          : item
-      );
+          : item;
+      });
     });
   };
 
@@ -275,6 +274,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     updateQuantity,
     clearCart,
     getCartTotal,
+    getCartItemKey,
   };
 
   return (
