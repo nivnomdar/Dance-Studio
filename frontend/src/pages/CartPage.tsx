@@ -183,7 +183,8 @@ const CartPage = () => {
                               <button
                                 onClick={() => updateQuantity(getCartItemKey(item.product.id, item.size, item.color, item.heel_height, item.sole_type, item.materials), item.quantity - 1)}
                                 aria-label={`הפחיתי כמות של ${item.product.name} באחת`}
-                                className="w-6 h-6 sm:w-5 sm:h-5 lg:w-6 lg:h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-[#EC4899] transition-all duration-200 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black focus:border-2 focus:border-black"
+                                className={`w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 transition-all duration-200 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black focus:border-2 focus:border-black ${item.quantity === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 hover:text-[#EC4899]'}`}
+                                disabled={item.quantity === 1}
                               >
                                 -
                               </button>
