@@ -59,7 +59,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-black flex flex-col">
       <Navbar />
-      <main className="pt-[100px] flex-grow"> {/* Add padding-top to account for fixed navbar */}
+      <main className="pt-[48px] md:pt-[100px] flex-grow"> {/* Add padding-top to account for fixed navbar */}
         <Suspense fallback={<div className="text-white text-center py-8">טוען...</div>}>
           <Routes>
             <Route path="/" element={<LazyHomePage />} />
