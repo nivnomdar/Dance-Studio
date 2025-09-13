@@ -50,7 +50,7 @@ const PersonalDetailsTab: React.FC<PersonalDetailsTabProps> = ({
               isEditing 
                 ? 'bg-red-500 text-white hover:bg-red-600' 
                 : 'bg-white text-[#4B2E83] hover:bg-gray-50 hover:scale-105'
-            }`}
+            } focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:border-2 focus:border-black`}
           >
             {isEditing ? 'ביטול עריכה' : 'עריכת פרופיל'}
           </button>

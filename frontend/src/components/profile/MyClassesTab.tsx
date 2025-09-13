@@ -20,11 +20,13 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
   const [registrations, setRegistrations] = useState<RegistrationWithClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'past' | 'cancelled'>('all');
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [selectedRegistration, setSelectedRegistration] = useState<RegistrationWithClass | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1); // Current page for pagination
+  const itemsPerPage = 6; // Number of items to display per page
 
   useEffect(() => {
     const fetchRegistrations = async (retryCount = 0) => {
@@ -82,6 +84,11 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
     }
   }, [userId, session?.access_token, isFetching, lastFetchTime, registrations.length]);
 
+  // Reset current page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
   // פילטור הרשמות לפי תאריך
   const filteredRegistrations = registrations.filter(registration => {
     const registrationDate = new Date(registration.selected_date);
@@ -106,6 +113,12 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
     const dateB = new Date(b.selected_date);
     return dateA.getTime() - dateB.getTime();
   });
+
+  // Calculate total pages and slice registrations for current page
+  const totalPages = Math.ceil(sortedRegistrations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentRegistrations = sortedRegistrations.slice(startIndex, endIndex);
 
   const getStatusBadge = (registration: RegistrationWithClass) => {
     // בדוק קודם את הסטטוס מהדאטהבייס
@@ -244,24 +257,13 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
           </div>
           <div className="flex flex-wrap items-center bg-white/10 rounded-xl p-0.5 sm:p-1 backdrop-blur-sm gap-0.5 sm:gap-1 w-fit">
             <button
-              onClick={() => setFilter('all')}
-              aria-label="הצג את כל השיעורים"
-              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
-                filter === 'all'
-                  ? 'bg-white text-[#4B2E83] shadow-md'
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
-              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
-            >
-              הכל
-            </button>
-            <button
               onClick={() => setFilter('upcoming')}
               aria-label="הצג שיעורים עתידיים"
               className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'upcoming'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-            } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
             >
               עתידיים
             </button>
@@ -287,13 +289,24 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
             >
               בוטלו
             </button>
+            <button
+              onClick={() => setFilter('all')}
+              aria-label="הצג את כל השיעורים"
+              className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+                filter === 'all'
+                  ? 'bg-white text-[#4B2E83] shadow-md'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
+            >
+              הכל
+            </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4 sm:p-8">
-        {sortedRegistrations.length === 0 ? (
+        {currentRegistrations.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
             <div className="mx-auto mb-4 sm:mb-6 w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center">
               <FaCalendarAlt className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
@@ -321,7 +334,7 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            {sortedRegistrations.map((registration) => {
+            {currentRegistrations.map((registration) => {
               
               return (
                 <button
@@ -377,6 +390,33 @@ const MyClassesTab: React.FC<MyClassesTabProps> = ({ userId, session, onClassesC
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center py-4 sm:py-6">
+          <nav className="flex items-center space-x-2" aria-label="ניווט בין דפי שיעורים">
+              <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              aria-label="עמוד קודם"
+              className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
+            >
+              קודם
+              </button>
+            <span className="text-gray-600">
+              עמוד {currentPage} מתוך {totalPages}
+                      </span>
+                <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="עמוד הבא"
+              className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
+            >
+              הבא
+                </button>
+          </nav>
+        </div>
+      )}
 
       {/* Registration Details Modal */}
       {/* ClassDetailsModal Component */}
