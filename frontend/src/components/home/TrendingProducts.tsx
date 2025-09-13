@@ -5,6 +5,8 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 import { useProducts } from '../../hooks/useProducts';
 
+import { useRef, useEffect } from 'react';
+
 type ShopProduct = {
   id: string;
   name: string;
@@ -24,6 +26,36 @@ function TrendingProducts() {
     const flagged = items.filter((p: ShopProduct) => !!(p as any).trending);
     return flagged.length ? flagged : [];
   }, [products]);
+
+  const swiperRef = useRef<any>(null);
+
+  // useEffect(() => {
+  //   const setNavigationAttributes = () => {
+  //     if (swiperRef.current && swiperRef.current.el) {
+  //       const nextButton = swiperRef.current.el.querySelector('.swiper-button-next');
+  //       const prevButton = swiperRef.current.el.querySelector('.swiper-button-prev');
+
+  //       if (nextButton) {
+  //         nextButton.tabIndex = 0;
+  //         nextButton.setAttribute('role', 'button');
+  //         nextButton.setAttribute('aria-label', 'המוצר הבא');
+  //       }
+  //       if (prevButton) {
+  //         prevButton.tabIndex = 0;
+  //         prevButton.setAttribute('role', 'button');
+  //         prevButton.setAttribute('aria-label', 'המוצר הקודם');
+  //       }
+  //     }
+  //   };
+
+  //   // Run on mount and when swiperRef changes
+  //   setNavigationAttributes();
+
+  //   // Also, try with a slight delay in case Swiper renders buttons asynchronously
+  //   const timeoutId = setTimeout(setNavigationAttributes, 100); // Small delay
+
+  //   return () => clearTimeout(timeoutId);
+  // }, [swiperRef.current]);
 
   if (loading) {
     return (
@@ -71,8 +103,11 @@ function TrendingProducts() {
         }
         .swiper-button-next:focus-visible,
         .swiper-button-prev:focus-visible {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(236,72,153,0.45);
+          outline: 2px solid #ffffff !important; /* שינוי ל-outline לבן */
+          outline-offset: 2px;
+          border-radius: 9999px;
+          box-shadow: none; /* הסרת ה-box-shadow כדי למנוע כפילות */
+          transition: none; /* מניעת אנימציה בפוקוס */
         }
         .swiper-button-disabled {
           opacity: .35 !important;
@@ -104,31 +139,66 @@ function TrendingProducts() {
             1024: { slidesPerView: 4, spaceBetween: 24 },
           }}
           className="overflow-visible"
+          ref={swiperRef}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+            // Set tabindex and aria-label for navigation buttons
+            const nextButton = swiper.navigation.nextEl as HTMLElement;
+            const prevButton = swiper.navigation.prevEl as HTMLElement;
+            if (nextButton) {
+              nextButton.tabIndex = 0; // החזרת ל-0
+              nextButton.setAttribute('role', 'button');
+              nextButton.setAttribute('aria-label', 'המוצר הבא');
+              nextButton.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  nextButton.click();
+                }
+              });
+            }
+            if (prevButton) {
+              prevButton.tabIndex = 0; // החזרת ל-0
+              prevButton.setAttribute('role', 'button');
+              prevButton.setAttribute('aria-label', 'המוצר הקודם');
+              prevButton.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  prevButton.click();
+                }
+              });
+            }
+          }}
         >
           {trending.map((p) => (
             <SwiperSlide key={p.id} className="h-auto">
-              <article className="bg-white/5 rounded-xl border border-white/10 overflow-hidden shadow-sm hover:shadow-pink-500/10 transition-all duration-200 flex flex-col h-full">
-                <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
-                  {p.main_image ? (
-                    <>
-                      <img src={p.main_image} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/40">No image</div>
-                  )}
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="text-white font-semibold text-base sm:text-lg line-clamp-1 min-h-[1.75rem]">{p.name}</h3>
-                  <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
-                  <div className="mt-auto pt-3 flex items-center justify-between">
-                    <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button type="button" aria-label={`הצגת מוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer">
-                      <span>צפי במוצר</span>
-                   
-                    </button>
+              {({ isActive }) => (
+                <article className="bg-white/5 rounded-xl border border-white/10 overflow-hidden shadow-sm hover:shadow-pink-500/10 transition-all duration-200 flex flex-col h-full">
+                  <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
+                    {p.main_image ? (
+                      <>
+                        <img src={p.main_image} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/40">No image</div>
+                    )}
                   </div>
-                </div>
-              </article>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <h3 className="text-white font-semibold text-base sm:text-lg line-clamp-1 min-h-[1.75rem]">{p.name}</h3>
+                    <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p>
+                    <div className="mt-auto pt-3 flex items-center justify-between">
+                      <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
+                      <button
+                        type="button"
+                        aria-label={`הצגת מוצר ${p.name}`}
+                        onClick={() => navigate(`/product/${p.id}`)}
+                        className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer"
+                        tabIndex={isActive ? 0 : -1}
+                      >
+                        <span>צפי במוצר</span>
+                     
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              )}
             </SwiperSlide>
           ))}
         </Swiper>

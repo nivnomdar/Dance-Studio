@@ -135,6 +135,33 @@ function PhotosCarousel() {
     generateThumbnails();
   }, []); // Run only once on mount
 
+  useEffect(() => {
+    if (swiperRef.current) {
+      const nextButton = swiperRef.current.navigation.nextEl;
+      const prevButton = swiperRef.current.navigation.prevEl;
+      if (nextButton) {
+        nextButton.tabIndex = 0;
+        nextButton.setAttribute('role', 'button');
+        nextButton.setAttribute('aria-label', 'הסרטון הבא');
+        nextButton.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            nextButton.click();
+          }
+        });
+      }
+      if (prevButton) {
+        prevButton.tabIndex = 0;
+        prevButton.setAttribute('role', 'button');
+        prevButton.setAttribute('aria-label', 'הסרטון הקודם');
+        prevButton.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            prevButton.click();
+          }
+        });
+      }
+    }
+  }, [swiperRef.current]);
+
   return (
     <section id="photos-carousel" role="region" aria-label="קרוסלת תמונות ווידאו" className="pt-2 sm:pt-3 lg:pt-0 pb-4 sm:pb-6 lg:pb-8 mb-4 sm:mb-6 lg:mb-1 bg-black overflow-visible">
       <style>{`
