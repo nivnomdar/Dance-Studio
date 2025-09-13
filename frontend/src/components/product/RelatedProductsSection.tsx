@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 import 'swiper/swiper-bundle.css'; // Corrected import path
+import { useRef } from 'react';
 // import 'swiper/css'; // Removed
 // import 'swiper/css/pagination'; // Removed
 // import 'swiper/css/navigation'; // Removed
@@ -44,6 +45,9 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const swiperRef = useRef<any>(null);
+
+  
   useEffect(() => {
     let mounted = true;
     const fetchProducts = async () => {
@@ -90,7 +94,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
               seenProductIds.add(p.id);
             } else {
               break;
-            }
+            }  
           }
         }
         
@@ -125,7 +129,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
   }
 
   return (
-    <section className="mt-10 lg:mt-12 bg-white py-8 sm:py-12 lg:py-16">
+    <section className="mt-10 lg:mt-12 bg-white py-8 sm:py-12 lg:py-16 relative">
       <style>{`
         .swiper-button-next,
         .swiper-button-prev {
@@ -144,22 +148,27 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
         }
         .swiper-button-next::after,
         .swiper-button-prev::after { font-size: 18px !important; }
-        .swiper-button-prev { right: max(8px, env(safe-area-inset-right)) !important; left: auto !important; }
-        .swiper-button-next { left: max(8px, env(safe-area-inset-left)) !important; right: auto !important; }
+        .swiper-button-prev { right: 20px !important; left: auto !important; }
+        .swiper-button-next { left: 20px !important; right: auto !important; }
         .swiper-button-next:hover,
         .swiper-button-prev:hover {
-          transform: translateY(-50%) scale(1.05);
+          transform: translateY(-50%) scale(1);
           box-shadow: 0 10px 28px rgba(236,72,153,0.35);
           background: linear-gradient(135deg, rgba(236,72,153,0.18), rgba(75,46,131,0.18)) !important;
         }
         .swiper-button-next:active,
         .swiper-button-prev:active {
-          transform: translateY(-50%) scale(0.98);
+          transform: translateY(-50%) scale(1);
         }
         .swiper-button-next:focus-visible,
         .swiper-button-prev:focus-visible {
           outline: none;
           box-shadow: 0 0 0 3px rgba(236,72,153,0.45);
+          outline: 2px solid #ffffff !important;
+          outline-offset: 2px;
+          border-radius: 9999px;
+          box-shadow: none;
+          transition: none;
         }
         .swiper-button-disabled {
           opacity: .35 !important;
@@ -167,12 +176,21 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
           cursor: not-allowed !important;
         }
         .swiper-pagination { display: none !important; }
-        @media (max-width: 640px) {
-          .swiper-button-next, .swiper-button-prev { display: none !important; }
+        /* Always show navigation buttons, but adjust visibility for small screens dynamically if needed */
+        @media (max-width: 768px) {
+          .swiper-button-next,
+          .swiper-button-prev {
+            display: flex !important; /* Ensure they are visible */
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 14px !important; /* Adjust font size for smaller buttons */
+          }
+          .swiper-button-prev { right: 4px !important; }
+          .swiper-button-next { left: 4px !important; }
         }
         .flame-svg { filter: drop-shadow(0 0 4px rgba(236,72,153,.5)); }
       `}</style>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-clip">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4B2E83] mb-4 lg:mb-6 font-agrandir-grand">מוצרים שאולי תאהבי</h2>
           <div className="w-16 sm:w-20 lg:w-24 h-1 bg-[#EC4899] mx-auto" />
@@ -184,13 +202,7 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
           centeredSlides={false}
           loop={true}
           autoHeight={false}
-          navigation={{
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-            // ariaLabel: 'ניווט מוצרים קשורים',
-            // nextSlideMessage: 'הבא',
-            // prevSlideMessage: 'הקודם',
-          }}
+          navigation={true}
           // autoplay={{ delay: 3000, disableOnInteraction: false }} // Removed autoplay
           breakpoints={{
             640: { slidesPerView: 2.15, spaceBetween: 20 },
@@ -200,46 +212,76 @@ const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ current
           className="overflow-visible -mx-4 sm:-mx-6 lg:-mx-8"
           role="region"
           aria-label="מוצרים שאולי תאהבי"
+          ref={swiperRef}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+            const nextButton = swiper.navigation.nextEl as HTMLElement;
+            const prevButton = swiper.navigation.prevEl as HTMLElement;
+
+            if (nextButton) {
+              nextButton.tabIndex = 0;
+              nextButton.setAttribute('role', 'button');
+              nextButton.setAttribute('aria-label', 'המוצר הבא');
+              nextButton.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  nextButton.click();
+                }
+              });
+            }
+            if (prevButton) {
+              prevButton.tabIndex = 0;
+              prevButton.setAttribute('role', 'button');
+              prevButton.setAttribute('aria-label', 'המוצר הקודם');
+              prevButton.addEventListener('keydown', (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                  prevButton.click();
+                }
+              });
+            }
+          }}
         >
           {relatedProducts.map((p) => (
             <SwiperSlide key={p.id} className="h-auto">
-              <article className="bg-white rounded-xl border border-[#EC4899]/30 overflow-hidden transition-all duration-200 flex flex-col h-full">
-                <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
-                  {p.main_image ? (
-                    <>
-                      <img src={buildImageUrl(p.main_image, p.updated_at || p.created_at)} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={handleImageError} />
-                      {(p.trending ?? false) && (
-                        <div className="absolute top-1 sm:top-4 right-1 sm:right-1 flex items-center justify-center w-15 h-15 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
-                          <svg className="flame-svg w-12 h-12 sm:w-12 sm:h-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                            <defs>
-                              <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="#EC4899"/>
-                                <stop offset="60%" stopColor="#F59E0B"/>
-                                <stop offset="100%" stopColor="#FDBA74"/>
-                              </linearGradient>
-                            </defs>
-                            <path d="M12 2c2 3 5 4.5 5 8.5 0 3.59-2.91 6.5-6.5 6.5S4 14.09 4 10.5c0-1.7.66-3.25 1.76-4.41C7.12 4.67 8.3 3.94 9 3c-.2 1.6.4 2.6 1.5 3.5C11.7 5.6 12 4 12 2z" fill="url(#flameGrad)"/>
-                            <path d="M10.5 9.8c1.1.9 1.5 2 .8 3.2-.6 1-1.9 1.5-3 1-1-.5-1.6-1.8-1.2-2.9.3-.9 1-1.6 1.9-2 .1.8.6 1.2 1.5 1.7z" fill="#FFF3E0" opacity=".8"/>
-                          </svg>
-                          <span className="sr-only">מוצר חם</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">אין תמונה</div>
-                  )}
-                </div>
-                <div className="p-4 flex-1 flex flex-col">
-                  <h3 className="text-gray-900 font-semibold text-base sm:text-lg line-clamp-1 min-h-[1.75rem]">{p.name}</h3>
-                  {/* <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p> */}
-                  <div className="mt-auto pt-3 flex items-center justify-between">
-                    <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
-                    <button type="button" aria-label={`הצגת מוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer">
-                      <span>צפי במוצר</span>
-                    </button>
+              {({ isActive }) => (
+                <article className="bg-white rounded-xl border border-[#EC4899]/30 overflow-hidden transition-all duration-200 flex flex-col h-full">
+                  <div className="relative w-full h-48 sm:h-56 md:h-64 lg:h-72 overflow-hidden rounded-t-xl">
+                    {p.main_image ? (
+                      <>
+                        <img src={buildImageUrl(p.main_image, p.updated_at || p.created_at)} alt={p.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" onError={handleImageError} />
+                        {(p.trending ?? false) && (
+                          <div className="absolute top-1 sm:top-4 right-1 sm:right-1 flex items-center justify-center w-15 h-15 sm:w-10 sm:h-10" aria-hidden="true" title="מוצר חם">
+                            <svg className="flame-svg w-12 h-12 sm:w-12 sm:h-12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <defs>
+                                <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor="#EC4899"/>
+                                  <stop offset="60%" stopColor="#F59E0B"/>
+                                  <stop offset="100%" stopColor="#FDBA74"/>
+                                </linearGradient>
+                              </defs>
+                              <path d="M12 2c2 3 5 4.5 5 8.5 0 3.59-2.91 6.5-6.5 6.5S4 14.09 4 10.5c0-1.7.66-3.25 1.76-4.41C7.12 4.67 8.3 3.94 9 3c-.2 1.6.4 2.6 1.5 3.5C11.7 5.6 12 4 12 2z" fill="url(#flameGrad)"/>
+                              <path d="M10.5 9.8c1.1.9 1.5 2 .8 3.2-.6 1-1.9 1.5-3 1-1-.5-1.6-1.8-1.2-2.9.3-.9 1-1.6 1.9-2 .1.8.6 1.2 1.5 1.7z" fill="#FFF3E0" opacity=".8"/>
+                            </svg>
+                            <span className="sr-only">מוצר חם</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">אין תמונה</div>
+                    )}
                   </div>
-                </div>
-              </article>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <h3 className="text-gray-900 font-semibold text-base sm:text-lg line-clamp-1 min-h-[1.75rem]">{p.name}</h3>
+                    {/* <p className="text-white/70 text-sm line-clamp-2 mt-1 min-h-[2.5rem]">{p.description || ''}</p> */}
+                    <div className="mt-auto pt-3 flex items-center justify-between">
+                      <span className="text-[#EC4899] font-bold text-base">₪{Number(p.price).toLocaleString()}</span>
+                      <button type="button" aria-label={`הצגת מוצר ${p.name}`} onClick={() => navigate(`/product/${p.id}`)} className="group px-3 py-1.5 rounded-full bg-gradient-to-r from-[#4B2E83] to-[#EC4899] text-white text-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 transition inline-flex items-center gap-1.5 cursor-pointer"
+                        tabIndex={isActive ? 0 : -1}>
+                        <span>צפי במוצר</span>
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              )}
             </SwiperSlide>
           ))}
         </Swiper>
