@@ -596,7 +596,7 @@ function UserProfile() {
                       {(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? (
                         <img 
                           src={user.user_metadata?.avatar_url || user.user_metadata?.picture} 
-                          alt="Profile" 
+                          alt="תמונת פרופיל של המשתמש" 
                           className="w-full h-full object-cover"
                           loading="eager"
                           onError={(e) => {
@@ -607,7 +607,7 @@ function UserProfile() {
                         />
                       ) : null}
                       <div className={`w-full h-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center ${(user?.user_metadata?.avatar_url || user?.user_metadata?.picture) ? 'hidden' : ''}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-white" viewBox="0 0 24 24" fill="currentColor" role="img" aria-hidden="true">
                           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
                       </div>
@@ -636,7 +636,7 @@ function UserProfile() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-[#4B2E83]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5V8H2v12h5m10 0V4a2 2 0 00-2-2H9a2 2 0 00-2 2v16m10 0H7" />
                       </svg>
-                      <span className="text-xs sm:text-sm text-[#4B2E83]/80 font-semibold whitespace-nowrap">השיעורים שלי</span>
+                      <h3 className="text-xs sm:text-sm text-[#4B2E83]/80 font-semibold whitespace-nowrap">השיעורים שלי</h3>
                     </div>
                     <div className="inline-flex items-baseline gap-3 px-4 py-2 rounded-lg bg-white/80 border border-[#4B2E83]/10">
                     <span className="text-[12px] sm:text-sm text-[#4B2E83]/70 whitespace-nowrap">השתתפת ב-</span>
@@ -653,7 +653,7 @@ function UserProfile() {
                   <div className="mb-4 sm:mb-6">
                     <Link
                       to="/admin"
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs sm:text-sm rounded-lg sm:rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-300 hover:scale-105 shadow-md flex items-center justify-center gap-2"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs sm:text-sm rounded-lg sm:rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-300 hover:scale-105 shadow-md flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -668,7 +668,7 @@ function UserProfile() {
                   {/* Trial Class Status */}
                   <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-white/20">
                     <div className="mb-1.5 sm:mb-2 text-center">
-                      <span className="text-sm font-semibold text-[#4B2E83]">שיעור ניסיון</span>
+                      <h3 className="text-sm font-semibold text-[#4B2E83]">שיעור ניסיון</h3>
                     </div>
                     <div className="space-y-1.5">
                       {trialStatuses.length === 0 ? (
@@ -684,7 +684,7 @@ function UserProfile() {
                     </div>
                     {trialStatuses.some(t => !t.used) && (
                       <div className="mt-2 text-center">
-                        <Link to="/classes" className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 transition-colors text-xs font-medium">בחירת שיעור ניסיון</Link>
+                        <Link to="/classes" className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 transition-colors text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]">בחירת שיעור ניסיון</Link>
                       </div>
                     )}
                   </div>
@@ -692,7 +692,7 @@ function UserProfile() {
                   {/* Credits Status */}
                   <div className="bg-white/50 backdrop-blur-sm rounded-lg sm:rounded-xl p-2.5 sm:p-3 border border-[#4B2E83]/10">
                     <div className="text-center">
-                      <span className="text-sm font-semibold text-[#4B2E83]">יתרת שיעורים</span>
+                      <h3 className="text-sm font-semibold text-[#4B2E83]">יתרת שיעורים</h3>
                       <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-2">
                         <div className="inline-flex items-baseline gap-2 px-3 py-1.5 rounded-lg bg-white/70 border border-[#EC4899]/10 shadow-sm">
                           <span className="text-lg sm:text-xl font-extrabold text-[#EC4899]">{creditsTotals['group'] || 0}</span>
@@ -701,7 +701,7 @@ function UserProfile() {
                         {/* ניתן להוסיף סוגי שיעורים נוספים כמו זום, סדנה וכו' */}
                       </div>
                       {creditsTotals.group === 0 && (
-                        <p className="mt-3 text-xs text-gray-500">אין לך שיעורי מנוי זמינים. לרכישת מנוי, לחצי <Link to="/pricing" className="text-[#EC4899] font-medium hover:underline">כאן</Link>.</p>
+                        <p className="mt-3 text-xs text-gray-500">אין לך שיעורי מנוי זמינים. לרכישת מנוי, לחצי <Link to="/pricing" className="text-[#EC4899] font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]">לרכישת מנוי</Link>.</p>
                       )}
                     </div>
                   </div>

@@ -54,7 +54,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
         <p id="status-modal-message" className="text-[#4B2E83]/70 mb-6" role="alert" aria-live="polite">{message}</p>
         <button
           onClick={onClose}
-          className={`px-6 py-3 text-white rounded-xl font-medium transition-all duration-300 ${buttonClasses[type]}`}
+          className={`px-6 py-3 text-white rounded-xl font-medium transition-all duration-300 ${buttonClasses[type]} focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
           aria-label={`${buttonText} - ${title}`}
         >
           {buttonText}

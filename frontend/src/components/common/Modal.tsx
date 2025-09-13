@@ -98,7 +98,7 @@ const Modal: React.FC<ModalProps> = ({
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
             aria-label="סגירת חלונית"
           >
             <FaTimes className="w-5 h-5" aria-hidden="true" />

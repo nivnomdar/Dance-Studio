@@ -85,21 +85,21 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
       case 'pending':
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <FaClock className="w-3 h-3 ml-1" />
+            <FaClock className="w-3 h-3 ml-1" aria-hidden="true" />
             בהמתנה
           </span>
         );
       case 'completed':
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <FaCheckCircle className="w-3 h-3 ml-1" />
+            <FaCheckCircle className="w-3 h-3 ml-1" aria-hidden="true" />
             הושלם
           </span>
         );
       case 'cancelled':
         return (
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <FaTimesCircle className="w-3 h-3 ml-1" />
+            <FaTimesCircle className="w-3 h-3 ml-1" aria-hidden="true" />
             בוטל
           </span>
         );
@@ -175,13 +175,13 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
         <div className="p-8">
           <div className="text-center py-12">
             <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <FaTimesCircle className="w-8 h-8 text-red-600" />
+              <FaTimesCircle className="w-8 h-8 text-red-600" aria-hidden="true" />
             </div>
             <h3 className="text-xl font-bold text-[#4B2E83] mb-2">שגיאה בטעינת ההזמנות</h3>
             <p className="text-[#4B2E83]/70 mb-6">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300"
+              className="px-6 py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
             >
               נסה שוב
             </button>
@@ -207,41 +207,45 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
           <div className="flex flex-wrap items-center bg-white/10 rounded-xl p-0.5 sm:p-1 backdrop-blur-sm gap-0.5 sm:gap-1 w-fit">
             <button
               onClick={() => setFilter('all')}
+              aria-label="הצג את כל ההזמנות"
               className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'all'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
             >
               הכל
             </button>
             <button
               onClick={() => setFilter('pending')}
+              aria-label="הצג הזמנות בהמתנה"
               className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'pending'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
             >
               בהמתנה
             </button>
             <button
               onClick={() => setFilter('completed')}
+              aria-label="הצג הזמנות שהושלמו"
               className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'completed'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
             >
               הושלמו
             </button>
             <button
               onClick={() => setFilter('cancelled')}
+              aria-label="הצג הזמנות שבוטלו"
               className={`px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                 filter === 'cancelled'
                   ? 'bg-white text-[#4B2E83] shadow-md'
                   : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
+              } focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]`}
             >
               בוטלו
             </button>
@@ -255,7 +259,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
           <div className="text-center py-8 sm:py-12">
             {/* Empty State Icon */}
             <div className="mx-auto mb-4 sm:mb-6 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#EC4899]/10 to-[#4B2E83]/10 rounded-full flex items-center justify-center">
-              <FaShoppingBag className="w-8 h-8 sm:w-10 sm:h-10 text-[#EC4899]" />
+              <FaShoppingBag className="w-8 h-8 sm:w-10 sm:h-10 text-[#EC4899]" aria-hidden="true" />
             </div>
             
             {/* Title */}
@@ -275,9 +279,10 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
             {/* Action Button */}
             <a
               href="/shop"
-              className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-md hover:shadow-lg text-sm sm:text-base"
+              aria-label="עבור לחנות כדי להזמין מוצרים"
+              className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white rounded-xl font-medium hover:from-[#4B2E83] hover:to-[#EC4899] transition-all duration-300 shadow-md hover:shadow-lg text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
             >
-              <FaShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
+              <FaShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 ml-2" aria-hidden="true" />
               לקנייה בחנות
             </a>
           </div>
@@ -321,7 +326,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
                     {order.items.map((item, index) => (
                       <div key={index} className="flex items-center gap-3 sm:gap-4 p-3 bg-white rounded-xl border border-gray-100">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <FaBox className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" />
+                          <FaBox className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h5 className="font-semibold text-[#4B2E83] text-sm sm:text-base truncate">{item.name}</h5>
@@ -339,7 +344,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
                       <h5 className="font-semibold text-[#4B2E83] flex items-center text-sm sm:text-base">
-                        <FaCalendarAlt className="w-4 h-4 ml-2 text-[#EC4899]" />
+                        <FaCalendarAlt className="w-4 h-4 ml-2 text-[#EC4899]" aria-hidden="true" />
                         פרטי הזמנה
                       </h5>
                       <div className="text-xs sm:text-sm text-[#4B2E83]/70 space-y-1">
@@ -356,7 +361,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
                     
                     <div className="space-y-2">
                       <h5 className="font-semibold text-[#4B2E83] flex items-center text-sm sm:text-base">
-                        <FaTruck className="w-4 h-4 ml-2 text-[#EC4899]" />
+                        <FaTruck className="w-4 h-4 ml-2 text-[#EC4899]" aria-hidden="true" />
                         כתובת משלוח
                       </h5>
                       <div className="text-xs sm:text-sm text-[#4B2E83]/70 space-y-1">
@@ -370,7 +375,7 @@ const MyOrdersTab: React.FC<MyOrdersTabProps> = ({ userId, session }) => {
                   {/* Payment Info */}
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 gap-2">
                     <div className="flex items-center text-[#4B2E83]/60">
-                      <FaCreditCard className="w-4 h-4 ml-2" />
+                      <FaCreditCard className="w-4 h-4 ml-2" aria-hidden="true" />
                       <span className="text-xs sm:text-sm">
                         {order.payment_method === 'credit_card' ? 'כרטיס אשראי' : order.payment_method}
                       </span>

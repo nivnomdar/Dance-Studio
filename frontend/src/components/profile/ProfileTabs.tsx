@@ -132,7 +132,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-[#EC4899]/10">
         <div className="p-3 sm:p-4">
-          <div className="flex flex-wrap gap-1 sm:gap-2 justify-center sm:justify-start">
+          <div className="flex flex-wrap gap-1 sm:gap-2 justify-center sm:justify-start" role="tablist">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -140,20 +140,23 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
               return (
                 <button
                   key={tab.id}
+                  id={`${tab.id}-tab`}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`${tab.id}-panel`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 hover:scale-105 ${
-                    isActive
+                  className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 hover:scale-105 
+                    ${isActive
                       ? 'bg-gradient-to-r from-[#EC4899] to-[#4B2E83] text-white shadow-md'
-                      : 'bg-gray-50 text-[#4B2E83] hover:bg-gray-100 border border-gray-200'
+                      : 'bg-gray-50 text-[#4B2E83] hover:bg-gray-100 border border-gray-200'}
+                    focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]
                   }`}
                 >
                   <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   {tab.count !== null && (
-                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                      isActive ? 'bg-white/20' : 'bg-[#EC4899] text-white'
-                    }`}>
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-white/20' : 'bg-[#EC4899] text-white'}`}>
                       {tab.count}
                     </span>
                   )}
@@ -165,7 +168,14 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
       </div>
 
       {/* Tab Content */}
-      {renderTabContent()}
+      <div
+        id={`${activeTab}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${activeTab}-tab`}
+        tabIndex={0}
+      >
+        {renderTabContent()}
+      </div>
     </div>
   );
 };
