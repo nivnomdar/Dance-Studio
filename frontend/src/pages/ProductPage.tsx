@@ -90,11 +90,12 @@ const ProductPage = () => {
         const heelHeights = (data as ProductRecord).heel_height || [];
         const soleTypes = (data as ProductRecord).sole_type || [];
         const materials = (data as ProductRecord).materials || [];
-        setSelectedSize(sizes?.[0] || '');
-        setSelectedColor(colors?.[0] || '');
-        setSelectedHeelHeight(heelHeights?.[0] || '');
-        setSelectedSoleType(soleTypes?.[0] || '');
-        setSelectedMaterial(materials?.[0] || '');
+        // preselect first size/color if available
+        // setSelectedSize(sizes?.[0] || '');
+        // setSelectedColor(colors?.[0] || '');
+        // setSelectedHeelHeight(heelHeights?.[0] || '');
+        // setSelectedSoleType(soleTypes?.[0] || '');
+        // setSelectedMaterial(materials?.[0] || '');
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || 'שגיאה בטעינת מוצר');
