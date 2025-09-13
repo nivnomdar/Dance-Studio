@@ -110,7 +110,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ classItem, usedTrialClassIds }) =
           ) : (
             <Link
               to={route}
-              className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-1.5 sm:py-2 rounded-xl transition-colors duration-300 font-medium text-xs sm:text-sm`}
+              className={`inline-flex items-center justify-center w-full ${colorScheme.bgColor} ${colorScheme.hoverColor} text-white px-3 lg:px-4 py-1.5 sm:py-2 rounded-xl transition-colors duration-300 font-medium text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:border-2 focus:border-black`}
               aria-label={`הרשמה לשיעור ${classItem.name}`}
             >
               הרשמה

@@ -136,7 +136,7 @@ function ClassesPage() {
           setRetryCount(retryAttempt);
         }
       } else if (err instanceof Error && err.message.includes('Failed to fetch')) {
-        setError('השרת לא זמין. אנא ודא שהשרת פועל ונסה שוב.');
+        setError('השרת לא זמין. אנא ודאי שהשרת פועל ונסי שוב.');
       } else if (err instanceof Error && err.message.includes('Request timeout')) {
         setError('הבקשה ארכה זמן רב מדי. אנא נסי שוב.');
       } else {
@@ -365,6 +365,7 @@ function ClassesPage() {
               <button 
                 onClick={handleRetry} 
                 className="w-full bg-red-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-red-600 transition-colors duration-200 font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
+                aria-label="נסי לטעון שיעורים מחדש"
               >
                 <FaRedo className="w-4 h-4" />
                 נסה שוב
@@ -406,6 +407,7 @@ function ClassesPage() {
 
         {/* Inline Classes Carousel */}
         <motion.section variants={fadeInUp} className="pt-4 sm:pt-6 lg:pt-8 pb-8 sm:pb-12 lg:pb-12" id="classes-carousel">
+          <h2 className="sr-only">שיעורים זמינים</h2>
           <style>{`
             .swiper-button-next, .swiper-button-prev { color: #EC4899 !important; }
             .swiper-pagination { display: none !important; }
@@ -447,15 +449,21 @@ function ClassesPage() {
                {showSwipeHint && classes.length > 3 && (
                  <div className="absolute inset-x-0 bottom-0 z-40 flex justify-center md:hidden pointer-events-none">
                    <div className="backdrop-blur-sm bg-black/50 text-white text-xs px-3.5 py-1.5 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
-                   <svg className="w-4 h-4 opacity-90 animate-pulse" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                   <svg className="w-4 h-4 opacity-90 animate-pulse motion-reduce:animate-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                        <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L13.586 11H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
                      </svg>
                      <span className="font-agrandir-regular">החליקי שמאלה או ימינה כדי לראות עוד שיעורים</span>
                    
-                     <svg className="w-4 h-4 opacity-90 transform -scale-x-100 animate-pulse" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                     <svg className="w-4 h-4 opacity-90 transform -scale-x-100 animate-pulse motion-reduce:animate-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                        <path fillRule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L13.586 11H4a1 1 0 110-2h9.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clipRule="evenodd" />
                      </svg>
                    </div>
+                 </div>
+               )}
+               {classes.length > 3 && (
+                 <div className="hidden sm:block">
+                   <div className="swiper-button-prev focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:border-2 focus:border-black" aria-label="השיעור הקודם" role="button" tabIndex={0}></div>
+                   <div className="swiper-button-next focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:border-2 focus:border-black" aria-label="השיעור הבא" role="button" tabIndex={0}></div>
                  </div>
                )}
               {classes.length > 3 ? (
@@ -502,10 +510,10 @@ function ClassesPage() {
                       centeredSlides={true}
                       centeredSlidesBounds={true}
                       loop={classes.length >= 4}
-                      navigation
+                      navigation={{ prevEl: '.swiper-button-prev', nextEl: '.swiper-button-next' }}
                       breakpoints={{
                         640: { slidesPerView: 1, spaceBetween: 20 },
-                        768: { slidesPerView: 1, spaceBetween: 24 },
+                        768: { slidesPerView: 3, spaceBetween: 30 },
                         1024: { slidesPerView: 3, spaceBetween: 30 },
                       }}
                       className="rounded-lg overflow-visible w-full mx-auto"
@@ -565,40 +573,8 @@ function ClassesPage() {
                     </Swiper>
                   </div>
                   {/* Tablet-only keep Swiper; Desktop keep grid */}
-                  <div className="hidden sm:block lg:hidden">
-                    <Swiper
-                      modules={[Navigation]}
-                      spaceBetween={20}
-                      slidesPerView={1}
-                      centeredSlides={true}
-                      centeredSlidesBounds={true}
-                      loop={classes.length > 1}
-                      navigation
-                      breakpoints={{
-                        640: { slidesPerView: 1, spaceBetween: 20 },
-                        768: { slidesPerView: 1, spaceBetween: 24 },
-                      }}
-                      className="rounded-lg overflow-visible w-full mx-auto"
-                      role="region"
-                      aria-label="קרוסלת שיעורים - טאבלט עד 3 שיעורים"
-                    >
-                      {classes.slice(0, 3).map((classItem) => (
-                        <SwiperSlide key={classItem.id} aria-roledescription="slide" aria-label={`שיעור ${classItem.name}`}>
-                          {({ isActive }) => (
-                            <div
-                              className={`transition-transform duration-300 flex justify-center py-4 sm:py-5 lg:py-6 mx-auto w-full max-w-[360px] sm:max-w-[420px] px-4 ${
-                                isActive ? 'scale-[1.04]' : 'scale-[0.95]'
-                              }`}
-                              style={{ transformOrigin: 'center center' }}
-                            >
-                              <ClassCard classItem={classItem} usedTrialClassIds={usedTrialClassIds} />
-                            </div>
-                          )}
-                        </SwiperSlide>
-                      ))}
-                    </Swiper>
-                  </div>
-                  <div className="hidden lg:grid lg:grid-cols-3 gap-0" role="group" aria-label="רשימת שיעורים - דסקטופ עד 3 שיעורים">
+                  
+                  <div className="hidden sm:grid sm:grid-cols-3 gap-0" role="group" aria-label="רשימת שיעורים - דסקטופ עד 3 שיעורים">
                     {classes.slice(0, 3).map((classItem, index) => (
                       <div
                         key={classItem.id}
