@@ -352,12 +352,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Immediate state cleanup with setTimeout to avoid setState during render
-      setTimeout(() => {
-        setProfile(null);
-        setUser(null);
-        setSession(null);
-        setAuthState(AuthState.UNAUTHENTICATED);
-      }, 0);
+      setProfile(null);
+      setUser(null);
+      setSession(null);
+      setAuthState(AuthState.UNAUTHENTICATED);
 
       // Clear timeouts
       if (profileUpdateTimeoutRef.current) {
@@ -442,20 +440,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const safeUser = safeSession?.user || null;
 
         // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          setSession(safeSession);
-          setUser(safeUser);
-        }, 0);
+        setSession(safeSession);
+        setUser(safeUser);
 
         switch (event) {
           case 'SIGNED_OUT':
             // Removed direct logging here as it's handled in signOut
             
-            setTimeout(() => {
+            // setTimeout(() => {
               setAuthState(AuthState.UNAUTHENTICATED);
               setProfile(null);
               setProfileLoading(false);
-            }, 0);
+            // }, 0);
             // Clear timeouts
             if (profileUpdateTimeoutRef.current) {
               clearTimeout(profileUpdateTimeoutRef.current);
@@ -465,10 +461,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           case 'SIGNED_IN':
           case 'INITIAL_SESSION':
             if (safeUser) {
-              setTimeout(() => {
+              // setTimeout(() => {
                 setAuthState(AuthState.AUTHENTICATED);
                 // setProfileLoading(true);
-              }, 0);
+              // }, 0);
               // Profile loading is handled by initializeAuth
               // await handleProfileOperations(safeUser, event);
               // setTimeout(() => {
@@ -479,9 +475,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           case 'USER_UPDATED':
             if (safeUser) {
-              setTimeout(() => {
+              // setTimeout(() => {
                 setAuthState(AuthState.AUTHENTICATED);
-              }, 0);
+              // }, 0);
             }
             break;
 
@@ -490,9 +486,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             break;
         }
 
-        setTimeout(() => {
+        // setTimeout(() => {
           setLoading(false);
-        }, 0);
+        // }, 0);
       }
     );
 

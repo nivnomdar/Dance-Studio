@@ -25,7 +25,7 @@ export default function AuthCallback() {
         setHasNavigated(true);
         navigate('/', { replace: true });
       }
-    }, 8000); // Reduced to 8 seconds
+    }, 5000); // Reduced to 5 seconds
 
     const handleAuthCallback = async () => {
       try {

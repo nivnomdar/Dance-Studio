@@ -1,32 +1,80 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { HOMEPAGE_ASSETS } from '../../config/homepageAssets';
 import { assetUrl } from '../../lib/assets';
 
 function HeroSection() {
+  const [desktopImageLoaded, setDesktopImageLoaded] = useState(false);
+  const [mobileImageLoaded, setMobileImageLoaded] = useState(false);
+
+  const desktopLqipUrl = assetUrl(HOMEPAGE_ASSETS.hero.desktop, { width: 40, quality: 10, format: 'jpeg' });
+  const mobileLqipUrl = assetUrl(HOMEPAGE_ASSETS.hero.mobile, { width: 20, quality: 10, format: 'jpeg' });
+
+  // Preload desktop image
+  useEffect(() => {
+    const img = new Image();
+    img.src = assetUrl(HOMEPAGE_ASSETS.hero.desktop);
+    img.onload = () => setDesktopImageLoaded(true);
+    img.onerror = () => {
+      console.error('Failed to load desktop hero image');
+      setDesktopImageLoaded(true); // Still show LQIP if full image fails
+    };
+  }, []);
+
+  // Preload mobile image
+  useEffect(() => {
+    const img = new Image();
+    img.src = assetUrl(HOMEPAGE_ASSETS.hero.mobile);
+    img.onload = () => setMobileImageLoaded(true);
+    img.onerror = () => {
+      console.error('Failed to load mobile hero image');
+      setMobileImageLoaded(true); // Still show LQIP if full image fails
+    };
+  }, []);
+
   return (
-    <section className="relative w-full h-auto md:h-screen overflow-visible md:overflow-hidden">
+    <section className="relative w-full h-auto md:h-screen overflow-visible md:overflow-hidden bg-black">
       {/* Large screens background image */}
       <div className="absolute inset-0 w-full h-full hidden md:block">
         <img
-          src={assetUrl(HOMEPAGE_ASSETS.hero.desktop)}
+          src={desktopImageLoaded ? assetUrl(HOMEPAGE_ASSETS.hero.desktop) : desktopLqipUrl}
           alt="רקע סטודיו לדנסאס"
-          className="w-full h-full object-cover object-bottom"
+          className="w-full h-full object-cover object-bottom transition-opacity duration-500"
+          style={{ opacity: desktopImageLoaded ? 1 : 0 }}
           loading="eager"
         />
+        {!desktopImageLoaded && (
+          <img
+            src={desktopLqipUrl}
+            alt="רקע סטודיו לדנסאס (טוען)"
+            className="absolute inset-0 w-full h-full object-cover object-bottom blur-lg scale-110"
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {/* Small screens background image */}
       <div className="block md:hidden w-full">
         <img
-          src={assetUrl(HOMEPAGE_ASSETS.hero.mobile)}
+          src={mobileImageLoaded ? assetUrl(HOMEPAGE_ASSETS.hero.mobile) : mobileLqipUrl}
           alt="רקע סטודיו לדנסאס"
-          className="w-full h-auto object-contain"
+          className="w-full h-auto object-contain transition-opacity duration-500"
           style={{
             objectFit: 'contain',
-            objectPosition: 'top'
+            objectPosition: 'top',
+            opacity: mobileImageLoaded ? 1 : 0
           }}
           loading="lazy" // Changed from eager to lazy
         />
+        {!mobileImageLoaded && (
+          <img
+            src={mobileLqipUrl}
+            alt="רקע סטודיו לדנסאס (טוען)"
+            className="absolute inset-0 w-full h-full object-contain blur-lg scale-110"
+            style={{ objectPosition: 'top' }}
+            aria-hidden="true"
+          />
+        )}
       </div>
 
       {/* Gradient Overlay */}

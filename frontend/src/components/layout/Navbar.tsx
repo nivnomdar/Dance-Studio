@@ -149,7 +149,7 @@ function Navbar() {
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
                         role="menuitem"
                       >
-                        התנתק
+                        התנתקי
                       </button>
                     </div>
                   </div>
@@ -249,7 +249,7 @@ function Navbar() {
                         className="block w-full text-right px-4 py-2 text-sm text-[#FDF9F6] hover:bg-[#EC4899]/80 hover:text-black transition-colors duration-200"
                         role="menuitem"
                       >
-                        התנתק
+                        התנתקי
                       </button>
                     </div>
                   </div>

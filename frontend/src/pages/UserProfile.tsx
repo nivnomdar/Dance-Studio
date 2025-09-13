@@ -270,9 +270,7 @@ function UserProfile() {
       // const userCredits = await subscriptionCreditsService.getUserCredits(user.id);
       const totals = await subscriptionCreditsService.getTotalCredits(user.id);
       // Use setTimeout to avoid setState during render
-      setTimeout(() => {
-        setCreditsTotals(totals);
-      }, 0);
+      setCreditsTotals(totals);
     } catch (error) {
       console.error('Error fetching subscription credits:', error);
     }
@@ -290,10 +288,10 @@ function UserProfile() {
       if (usedErr) throw usedErr;
       const usedSet = new Set((usedRows || []).map((r: any) => r.class_id));
       const statuses = (trials || []).map((c: any) => ({ id: c.id as string, name: (c.name as string) || 'Trial', used: usedSet.has(c.id) }));
-      setTimeout(() => setTrialStatuses(statuses), 0);
+      setTrialStatuses(statuses);
     } catch (e) {
       console.error('Error fetching trial status:', e);
-      setTimeout(() => setTrialStatuses([]), 0);
+      setTrialStatuses([]);
     }
   }, [user?.id]);
 
@@ -307,16 +305,12 @@ function UserProfile() {
 
     if (cachedData !== null) {
       // Use setTimeout to avoid setState during render
-      setTimeout(() => {
-        setClassesCount(parseInt(cachedData, 10) || 0);
-      }, 0);
+      setClassesCount(parseInt(cachedData, 10) || 0);
       return;
     }
     
     // Use setTimeout to avoid setState during render
-    setTimeout(() => {
-      setIsFetchingCount(true);
-    }, 0);
+    setIsFetchingCount(true);
     
     // Add debouncing to prevent too many requests
     const timeoutId = setTimeout(async () => {
@@ -335,9 +329,7 @@ function UserProfile() {
 
         const count = completedRegistrations.length;
         // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          setClassesCount(count);
-        }, 0);
+        setClassesCount(count);
         
         // Cache the result
         setDataWithTimestamp(cacheKey, count.toString(), 5 * 60 * 1000); // 5 דקות
@@ -355,9 +347,7 @@ function UserProfile() {
         }
       } finally {
         // Use setTimeout to avoid setState during render
-        setTimeout(() => {
-          setIsFetchingCount(false);
-        }, 0);
+        setIsFetchingCount(false);
       }
     }, 100); // 100ms debounce
     
@@ -535,9 +525,7 @@ function UserProfile() {
       
       // עדכון מיד של הפרופיל בקונטקסט
       if (contextProfile) {
-        setTimeout(() => {
-          loadProfile().catch(console.error);
-        }, 100);
+        loadProfile().catch(console.error);
       }
       await loadProfileData(); // Reload consents and profile to reflect all changes
       

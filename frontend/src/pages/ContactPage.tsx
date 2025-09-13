@@ -224,15 +224,15 @@ function ContactPage() {
                   aria-invalid={error ? 'true' : 'false'}
                 />
                 <label htmlFor="contactTermsAccepted" className="mr-2 block text-xs sm:text-sm text-[#2B2B2B] cursor-pointer">
-                  אני מאשרת את <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300">התקנון</a> ואת <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300">מדיניות הפרטיות</a> <span className="text-red-500" aria-label="שדה חובה">*</span>
+                  אני מאשרת את <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]" aria-label="קראי את התקנון (נפתח בחלון חדש)">התקנון</a> ואת <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#4B2E83] hover:text-[#EC4899] font-medium transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]" aria-label="קראי את מדיניות הפרטיות (נפתח בחלון חדש)">מדיניות הפרטיות</a> <span className="text-red-500" aria-label="שדה חובה">*</span>
                 </label>
-                <div id="terms-help" className="sr-only">אנא אשר/י את התקנון ומדיניות הפרטיות כדי להמשיך</div>
+                <div id="terms-help" className="sr-only">אנא אשרי את התקנון ומדיניות הפרטיות כדי להמשיך</div>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-[#EC4899] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:bg-[#EC4899]/90 transition-colors duration-300 font-medium text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
                 aria-label={isSubmitting ? 'שולח הודעה...' : 'שלחי הודעה'}
                 aria-describedby="submit-help"
               >
@@ -255,14 +255,14 @@ function ContactPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
             >
-              <motion.h3 
+              <motion.h2 
                 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4B2E83] mb-3 sm:mb-4 font-agrandir-grand"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.7, ease: "easeOut" }}
               >
                 פרטי התקשרות
-              </motion.h3>
+              </motion.h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                   {/* פרטי התקשרות */}
                    <div className="space-y-4 sm:space-y-5">
@@ -329,7 +329,7 @@ function ContactPage() {
                 href="https://www.instagram.com/avigailladani?igsh=MXc4ZXU5cGdsM3U2cw==" 
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center p-4 sm:p-6 rounded-lg bg-white shadow-md group transition-all duration-300 hover:scale-110 relative"
+                className="flex flex-col items-center p-4 sm:p-6 rounded-lg bg-white shadow-md group transition-all duration-300 hover:scale-110 relative focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
                 aria-label="עקבי אחרי באינסטגרם - @avigailladani"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -349,7 +349,7 @@ function ContactPage() {
                 href="https://wa.me/972XXXXXXXXX"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center p-4 sm:p-6 rounded-lg bg-white shadow-md group transition-all duration-300 hover:scale-110 relative"
+                className="flex flex-col items-center p-4 sm:p-6 rounded-lg bg-white shadow-md group transition-all duration-300 hover:scale-110 relative focus:outline-none focus:ring-2 focus:ring-[#4B2E83] focus:ring-offset-2 focus:border-2 focus:border-[#4B2E83]"
                 aria-label="שלחי הודעה בוואטסאפ - צרי קשר ישיר"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

@@ -21,6 +21,7 @@ const AccessibilityStatementPage: React.FC = () => {
           <li>טקסט תיאורי לקישורים וכפתורים: כל הקישורים והכפתורים מכילים טקסט תיאורי וברור.</li>
           <li>טיפול בשגיאות טפסים: הודעות שגיאה בטפסים ברורות ונגישות לקוראי מסך.</li>
           <li>שדות חובה ברורים: שדות חובה בטפסים מזוהים באופן ברור.</li>
+          <li>נגישות מודלים ודיאלוגים: מודלים וחלונות קופצים מונגשים באופן מלא, כולל מלכודת פוקוס ותכונות ARIA מתאימות.</li>
         </ul>
       </section>
 
@@ -38,8 +39,8 @@ const AccessibilityStatementPage: React.FC = () => {
         </p>
         <ul className="list-disc list-inside space-y-2 text-gray-700">
           <li><strong>שם רכזת הנגישות:</strong> אביגיל דנס סטודיו</li>
-          <li><strong>טלפון:</strong> 05X-XXXXXXX</li>
-          <li><strong>דוא"ל:</strong> accessibility@example.com</li>
+          <li><strong>טלפון:</strong> 050-1234567 (יש להחליף במספר טלפון אמיתי)</li>
+          <li><strong>דוא"ל:</strong> avigail@ladances.com (יש להחליף בכתובת דוא"ל אמיתית)</li>
           <li><strong>שעות פעילות:</strong> ימים א-ה, 9:00-17:00</li>
         </ul>
       </section>

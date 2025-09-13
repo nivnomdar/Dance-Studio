@@ -17,7 +17,7 @@ const getVideoThumbnail = (videoPath: string): Promise<string | null> => {
   return new Promise((resolve) => {
     const video = document.createElement('video');
     video.src = videoPath;
-    video.preload = 'metadata';
+    video.preload = 'none'; // Change to 'none' to avoid loading entire video
     video.crossOrigin = 'anonymous';
     video.autoplay = false;
     video.loop = false;
@@ -30,12 +30,30 @@ const getVideoThumbnail = (videoPath: string): Promise<string | null> => {
 
     video.onseeked = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const MAX_WIDTH = 320; // Define max width for thumbnail
+      const MAX_HEIGHT = 180; // Define max height for thumbnail
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      // Calculate new dimensions to fit within MAX_WIDTH and MAX_HEIGHT while maintaining aspect ratio
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataURL = canvas.toDataURL('image/jpeg');
+        const dataURL = canvas.toDataURL('image/jpeg', 0.8); // Add quality parameter
         resolve(dataURL);
       } else {
         console.error('Could not get canvas context for video:', videoPath);

@@ -91,7 +91,7 @@ export const ContactSuccessModal = ({ isOpen, onClose }: ContactSuccessModalProp
         </div>
 
         <div className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50/50">
-          <button onClick={onClose} className="w-full py-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium">
+          <button onClick={onClose} className="w-full py-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium" aria-label="סגירת הודעת הצלחה">
             חזרה
           </button>
         </div>
