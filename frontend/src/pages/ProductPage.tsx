@@ -11,6 +11,7 @@ import ProductFeatures from '../components/product/ProductFeatures';
 import ProductBreadcrumbs from '../components/product/ProductBreadcrumbs';
 import RelatedProductsSection from '../components/product/RelatedProductsSection';
 import { FiChevronLeft } from 'react-icons/fi';
+import ProductDetailsTabs from '../components/product/ProductDetailsTabs';
 
 type ProductRecord = {
   id: string;
@@ -62,9 +63,6 @@ const ProductPage = () => {
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColor, setSelectedColor] = useState<string>('');
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0);
-  const [selectedHeelHeight, setSelectedHeelHeight] = useState<string>('');
-  const [selectedSoleType, setSelectedSoleType] = useState<string>('');
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
 
   useEffect(() => {
     let mounted = true;
@@ -83,19 +81,13 @@ const ProductPage = () => {
           setProduct(null);
           return;
         }
-        setProduct(data as ProductRecord);
+        const processedData = {
+          ...data,
+          materials: data.materials ? (Array.isArray(data.materials) ? data.materials : [data.materials]) : null,
+          sole_type: data.sole_type ? (Array.isArray(data.sole_type) ? data.sole_type : [data.sole_type]) : null,
+        };
+        setProduct(processedData as ProductRecord);
         // preselect first size/color if available
-        const sizes = (data as ProductRecord).sizes || [];
-        const colors = (data as ProductRecord).colors || [];
-        const heelHeights = (data as ProductRecord).heel_height || [];
-        const soleTypes = (data as ProductRecord).sole_type || [];
-        const materials = (data as ProductRecord).materials || [];
-        // preselect first size/color if available
-        // setSelectedSize(sizes?.[0] || '');
-        // setSelectedColor(colors?.[0] || '');
-        // setSelectedHeelHeight(heelHeights?.[0] || '');
-        // setSelectedSoleType(soleTypes?.[0] || '');
-        // setSelectedMaterial(materials?.[0] || '');
       } catch (e: any) {
         if (!mounted) return;
         setError(e?.message || 'שגיאה בטעינת מוצר');
@@ -153,7 +145,9 @@ const ProductPage = () => {
           </motion.div>
 
           <motion.div variants={fadeInUp} className="lg:pl-4">
-            <ProductDetailsSection product={product} />
+            <ProductDetailsSection 
+              product={product}
+            />
             
             {/* Product Features */}
             <ProductFeatures features={product.features} />
@@ -165,12 +159,6 @@ const ProductPage = () => {
                 setSelectedSize={setSelectedSize}
                 selectedColor={selectedColor}
                 setSelectedColor={setSelectedColor}
-                selectedHeelHeight={selectedHeelHeight}
-                setSelectedHeelHeight={setSelectedHeelHeight}
-                selectedSoleType={selectedSoleType}
-                setSelectedSoleType={setSelectedSoleType}
-                selectedMaterial={selectedMaterial}
-                setSelectedMaterial={setSelectedMaterial}
               />
             </div>
             
@@ -179,11 +167,14 @@ const ProductPage = () => {
                 product={product}
                 selectedSize={selectedSize}
                 selectedColor={selectedColor}
-                selectedHeelHeight={selectedHeelHeight}
-                selectedSoleType={selectedSoleType}
-                selectedMaterial={selectedMaterial}
               />
             </div>
+            {/* Product Details Tabs */}
+            <ProductDetailsTabs
+              product={product}
+              selectedSize={selectedSize}
+              selectedColor={selectedColor}
+            />
           </motion.div>
         </div>
       </div>
